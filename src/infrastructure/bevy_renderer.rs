@@ -283,7 +283,7 @@ impl BevyRenderer {
                             .with_children(|row_container| {
                                 for _ in 0..11 {
                                     row_container.spawn((
-                                        Enemy::new(30.0, 30.0),
+                                        Enemy::new(1),
                                         ImageNode {
                                             image: asset_server.load("red.png"),
                                             ..default()

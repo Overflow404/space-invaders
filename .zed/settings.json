@@ -19,11 +19,9 @@
     }
   },
   "terminal": {
-    "env": {}
-  },
-  "autosave": {
-    "after_delay": {
-      "milliseconds": 500
+    "env": {
+      "RUST_BACKTRACE": "1"
     }
-  }
+  },
+  "autosave": "on_focus_change"
 }
