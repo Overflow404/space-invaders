@@ -1,6 +1,4 @@
-use bevy::ecs::component::Component;
-
-#[derive(Component, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Enemy {
     id: usize,
 }

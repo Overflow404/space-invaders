@@ -10,7 +10,8 @@ pub mod infrastructure;
 fn setup_tracing_subscriber() {
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -18,9 +19,6 @@ fn setup_tracing_subscriber() {
 
 fn main() {
     setup_tracing_subscriber();
-    render_game_with(Arc::new(BevyRenderer::new()));
-}
-
-fn render_game_with(renderer: Arc<BevyRenderer>) {
-    renderer.start_game_loop();
+    let renderer = Arc::new(BevyRenderer::default());
+    renderer.render();
 }
