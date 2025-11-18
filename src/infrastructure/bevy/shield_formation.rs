@@ -6,7 +6,6 @@ use bevy::{
         query::With,
         system::{Commands, Query},
     },
-    transform::components::Transform,
     ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, Val, ZIndex},
     utils::default,
 };

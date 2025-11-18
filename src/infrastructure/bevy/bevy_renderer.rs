@@ -16,11 +16,7 @@ use crate::{
         renderer::Renderer,
     },
 };
-use bevy::{
-    ecs::{error::info, relationship::Relationship},
-    prelude::*,
-    window::WindowResolution,
-};
+use bevy::{prelude::*, window::WindowResolution};
 
 #[derive(Default)]
 pub struct BevyRenderer;
@@ -113,7 +109,7 @@ impl BevyRenderer {
     pub fn on_player_move(
         keyboard: Res<ButtonInput<KeyCode>>,
         mut player_query: Query<(&mut Node, &ComputedNode), With<PlayerView>>,
-        container_query: Query<
+        parent_query: Query<
             (&ComputedNode, &Node),
             (With<PlayerContainerView>, Without<PlayerView>),
         >,
@@ -123,24 +119,24 @@ impl BevyRenderer {
         let window = windows.single().unwrap();
         let scale_factor = window.scale_factor();
 
-        let (container_computed, container_style) = if let Ok(res) = container_query.single() {
+        let (parent_computed, parent) = if let Ok(res) = parent_query.single() {
             res
         } else {
             return;
         };
 
-        let unscaled_container_width = container_computed.size().x / scale_factor;
+        let scaled_parent_width = parent_computed.size().x / scale_factor;
 
-        let get_val_px = |val: &Val| match val {
+        let get_val_from_px = |val: &Val| match val {
             Val::Px(px) => *px,
             _ => 0.0,
         };
 
-        let pad_left = get_val_px(&container_style.padding.left);
-        let pad_right = get_val_px(&container_style.padding.right);
+        let pad_left = get_val_from_px(&parent.padding.left);
+        let pad_right = get_val_from_px(&parent.padding.right);
 
-        for (mut node, player_computed) in player_query.iter_mut() {
-            let current_left = get_val_px(&node.left);
+        for (mut player, player_computed) in player_query.iter_mut() {
+            let current_left = get_val_from_px(&player.left);
 
             let speed = 300.0;
             let delta = speed * time.delta_secs();
@@ -154,17 +150,16 @@ impl BevyRenderer {
                 new_left += delta;
             }
 
-            let player_width_logical = player_computed.size().x / scale_factor;
-            let half_container = unscaled_container_width / 2.0;
-            let half_player = player_width_logical / 2.0;
+            let scaled_player_width = player_computed.size().x / scale_factor;
+            let half_container = scaled_parent_width / 2.0;
+            let half_player = scaled_player_width / 2.0;
 
             let min_bound = -half_container + pad_left + half_player;
-
             let max_bound = half_container - pad_right - half_player;
 
             new_left = new_left.clamp(min_bound, max_bound);
 
-            node.left = Val::Px(new_left);
+            player.left = Val::Px(new_left);
         }
     }
 }

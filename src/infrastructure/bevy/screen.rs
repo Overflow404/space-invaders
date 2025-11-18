@@ -3,7 +3,6 @@ use bevy::{
     ecs::{component::Component, system::Commands},
     math::Vec2,
     sprite::Sprite,
-    transform::components::Transform,
     ui::{FlexDirection, Node, UiRect, Val, ZIndex},
     utils::default,
 };
