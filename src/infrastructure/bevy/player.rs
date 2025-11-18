@@ -126,4 +126,8 @@ impl PlayerView {
             player.left = Val::Px(new_left);
         }
     }
+
+    pub fn on_fire() {
+        //TODO funny part :D
+    }
 }

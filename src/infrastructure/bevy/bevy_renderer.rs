@@ -59,6 +59,7 @@ impl Renderer for BevyRenderer {
                 Update,
                 (
                     PlayerView::on_move,
+                    PlayerView::on_fire,
                     EnemyFormationView::on_move,
                     EnemyFormationView::advance_on_tick,
                 ),
