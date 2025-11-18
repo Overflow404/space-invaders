@@ -54,14 +54,11 @@ impl Renderer for BevyRenderer {
             .add_systems(
                 Update,
                 (
-                    // update_score_display,
-                    // update_lives_display,
                     Self::on_player_move,
                     Self::on_advance_enemies,
                     Self::update_enemy_formation_display,
                 ),
             )
-            //.add_systems(Update, Self::on_player_move)
             .run();
     }
 }
@@ -116,51 +113,58 @@ impl BevyRenderer {
     pub fn on_player_move(
         keyboard: Res<ButtonInput<KeyCode>>,
         mut player_query: Query<(&mut Node, &ComputedNode), With<PlayerView>>,
-        container_query: Query<&ComputedNode, (With<PlayerContainerView>, Without<PlayerView>)>,
-        time: Res<Time>,
+        container_query: Query<
+            (&ComputedNode, &Node),
+            (With<PlayerContainerView>, Without<PlayerView>),
+        >,
         windows: Query<&Window>,
+        time: Res<Time>,
     ) {
         let window = windows.single().unwrap();
-        let scale_factor = window.scale_factor() as f32;
+        let scale_factor = window.scale_factor();
 
-        let container_width = if let Ok(container_computed) = container_query.single() {
-            container_computed.size().x
+        let (container_computed, container_style) = if let Ok(res) = container_query.single() {
+            res
         } else {
             return;
         };
 
+        let unscaled_container_width = container_computed.size().x / scale_factor;
+
+        let get_val_px = |val: &Val| match val {
+            Val::Px(px) => *px,
+            _ => 0.0,
+        };
+
+        let pad_left = get_val_px(&container_style.padding.left);
+        let pad_right = get_val_px(&container_style.padding.right);
+
         for (mut node, player_computed) in player_query.iter_mut() {
-            // Use ComputedNode to get the actual rendered position!
-            let current_left = player_computed.unrounded_size().x; // This won't work...
+            let current_left = get_val_px(&node.left);
 
-            // Actually, let's just track position ourselves
-            let current_left = match node.margin.left {
-                Val::Px(px) => {
-                    println!("Reading margin.left as Px: {}", px);
-                    px * scale_factor
-                }
-                _ => 0.0,
-            };
-
-            let speed = 300.0 * scale_factor;
-            let movement = speed * time.delta_secs();
+            let speed = 300.0;
+            let delta = speed * time.delta_secs();
 
             let mut new_left = current_left;
+
             if keyboard.pressed(KeyCode::ArrowLeft) {
-                new_left -= movement;
+                new_left -= delta;
             }
             if keyboard.pressed(KeyCode::ArrowRight) {
-                new_left += movement;
+                new_left += delta;
             }
 
-            let player_width = player_computed.size().x;
-            let max_left = container_width - player_width;
+            let player_width_logical = player_computed.size().x / scale_factor;
+            let half_container = unscaled_container_width / 2.0;
+            let half_player = player_width_logical / 2.0;
 
-            new_left = new_left.clamp(0.0, max_left);
+            let min_bound = -half_container + pad_left + half_player;
 
-            let physical_left = new_left / scale_factor;
-            println!("Setting margin.left to: {}", physical_left);
-            node.margin.left = Val::Px(physical_left);
+            let max_bound = half_container - pad_right - half_player;
+
+            new_left = new_left.clamp(min_bound, max_bound);
+
+            node.left = Val::Px(new_left);
         }
     }
 }

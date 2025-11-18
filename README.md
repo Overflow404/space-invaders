@@ -1,2 +1,2 @@
 # space-invaders
-A rust implementation of the old fashioned space invaders game
+Work in progress - A rust implementation of the old fashioned space invaders game

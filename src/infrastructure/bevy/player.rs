@@ -13,7 +13,6 @@ use bevy::{
         widget::ImageNode,
     },
     utils::default,
-    window::Window,
 };
 
 use crate::{domain::player::Player, infrastructure::bevy::game_area::GameAreaView};
@@ -36,15 +35,8 @@ impl PlayerView {
         mut commands: Commands,
         asset_server: Res<AssetServer>,
         game_area_query: Query<Entity, With<GameAreaView>>,
-        windows: Query<&Window>,
     ) {
         if let Ok(game_area) = game_area_query.single() {
-            let window = windows.single().unwrap();
-
-            let player_width_physical = 70.0;
-            let container_width_physical = window.width();
-            let center_left = (container_width_physical - player_width_physical) / 2.0;
-
             commands.entity(game_area).with_children(|parent| {
                 parent
                     .spawn((
@@ -66,11 +58,7 @@ impl PlayerView {
                             Node {
                                 height: Val::Px(35.0),
                                 width: Val::Px(70.0),
-                                margin: UiRect {
-                                    left: Val::Px(center_left), // Start centered
-                                    bottom: Val::Px(20.0),
-                                    ..default()
-                                },
+                                margin: UiRect::bottom(Val::Px(20.0)),
                                 ..default()
                             },
                         ));
