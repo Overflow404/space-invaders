@@ -35,7 +35,7 @@ enum FormationStatus {
 
 impl fmt::Debug for EnemyFormation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "     y: ")?;
+        write!(f, "\n     y: ")?;
         for y in 0..COLUMNS {
             write!(f, "{:^3}", y)?;
         }
@@ -122,7 +122,11 @@ impl EnemyFormation {
         self.status = FormationStatus::Advancing;
 
         debug!("Enemy formation advanced!");
-        debug!("{:?}", self);
+        debug!("\n{:?}", self);
+    }
+
+    pub fn get_enemies(&self) -> &Vec<Vec<Option<Enemy>>> {
+        &self.enemies
     }
 
     fn enemies_won(&self) -> bool {
@@ -370,7 +374,7 @@ mod tests {
     }
 
     #[test]
-    fn should_not_advance_anymore_when_end_state_is_reached() {
+    fn should_not_advance_anymore_when_end_is_reached() {
         let mut formation = EnemyFormation::new();
 
         let row_jumps = 10;

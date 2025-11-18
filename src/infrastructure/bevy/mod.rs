@@ -1,3 +1,10 @@
 pub mod background;
+pub mod bevy_renderer;
+pub mod enemy_formation;
 pub mod game_area;
 pub mod header;
+pub mod lives;
+pub mod player;
+pub mod score;
+pub mod screen;
+pub mod shield_formation;

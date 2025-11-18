@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::infrastructure::{bevy_renderer::BevyRenderer, renderer::Renderer};
+use crate::infrastructure::{bevy::bevy_renderer::BevyRenderer, renderer::Renderer};
 
 pub mod domain;
 pub mod infrastructure;
