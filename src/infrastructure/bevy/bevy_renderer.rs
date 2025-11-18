@@ -1,5 +1,8 @@
 use crate::{
-    domain::{enemy_formation::EnemyFormation, lives::Lives, player::Player, score::Score},
+    domain::{
+        enemy_formation::EnemyFormation, lives::Lives, player::Player, score::Score,
+        shield_formation::ShieldFormation,
+    },
     infrastructure::{
         bevy::{
             enemy_formation::{
@@ -11,7 +14,7 @@ use crate::{
             player::{PlayerContainerView, PlayerResource, PlayerView},
             score::{ScoreResource, ScoreView},
             screen::ScreenView,
-            shield_formation::ShieldFormationView,
+            shield_formation::{ShieldFormationResource, ShieldFormationView},
         },
         renderer::Renderer,
     },
@@ -97,6 +100,7 @@ impl BevyRenderer {
         commands.insert_resource(ScoreResource(Score::new()));
         commands.insert_resource(LivesResource(Lives::new()));
         commands.insert_resource(PlayerResource(Player::new()));
+        commands.insert_resource(ShieldFormationResource(ShieldFormation::new()));
         commands.insert_resource(EnemyFormationResource(EnemyFormation::new()));
         commands.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
             1.0,
