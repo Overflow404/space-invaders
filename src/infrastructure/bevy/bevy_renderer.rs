@@ -7,11 +7,12 @@ use crate::{
         bevy::{
             enemy_formation::{
                 EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView,
+                ONE_ERA_IN_SECONDS,
             },
             game_area::GameAreaView,
             header::HeaderView,
             lives::{LivesResource, LivesView},
-            player::{PlayerContainerView, PlayerResource, PlayerView},
+            player::{PlayerResource, PlayerView},
             score::{ScoreResource, ScoreView},
             screen::ScreenView,
             shield_formation::{ShieldFormationResource, ShieldFormationView},
@@ -57,9 +58,9 @@ impl Renderer for BevyRenderer {
             .add_systems(
                 Update,
                 (
-                    Self::on_player_move,
-                    Self::advance_enemies_on_tick,
-                    Self::on_enemy_formation_move,
+                    PlayerView::on_move,
+                    EnemyFormationView::on_move,
+                    EnemyFormationView::advance_on_tick,
                 ),
             )
             .run();
@@ -76,99 +77,10 @@ impl BevyRenderer {
         commands.insert_resource(ShieldFormationResource(ShieldFormation::new()));
         commands.insert_resource(EnemyFormationResource(EnemyFormation::new()));
         commands.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
-            1.0,
+            ONE_ERA_IN_SECONDS,
             TimerMode::Repeating,
         )));
 
         ScreenView::render(&mut commands, &asset_server);
-    }
-
-    fn on_enemy_formation_move(
-        mut commands: Commands,
-        asset_server: Res<AssetServer>,
-        enemy_formation_res: Res<EnemyFormationResource>,
-        container_query: Query<Entity, With<EnemyFormationView>>,
-    ) {
-        if enemy_formation_res.is_changed() {
-            if let Ok(container) = container_query.single() {
-                commands.entity(container).despawn_children();
-                commands
-                    .entity(container)
-                    .with_children(|formation_container| {
-                        EnemyFormationView::on_update(
-                            formation_container,
-                            &asset_server,
-                            &enemy_formation_res,
-                        );
-                    });
-            }
-        }
-    }
-
-    fn advance_enemies_on_tick(
-        time: Res<Time>,
-        mut enemy_formation_res: ResMut<EnemyFormationResource>,
-        mut timer: ResMut<EnemyFormationMovementTimer>,
-    ) {
-        if timer.0.tick(time.delta()).just_finished() {
-            enemy_formation_res.0.advance_enemies();
-        }
-    }
-
-    pub fn on_player_move(
-        keyboard: Res<ButtonInput<KeyCode>>,
-        mut player_query: Query<(&mut Node, &ComputedNode), With<PlayerView>>,
-        parent_query: Query<
-            (&ComputedNode, &Node),
-            (With<PlayerContainerView>, Without<PlayerView>),
-        >,
-        windows: Query<&Window>,
-        time: Res<Time>,
-    ) {
-        let window = windows.single().unwrap();
-        let scale_factor = window.scale_factor();
-
-        let (parent_computed, parent) = if let Ok(res) = parent_query.single() {
-            res
-        } else {
-            return;
-        };
-
-        let scaled_parent_width = parent_computed.size().x / scale_factor;
-
-        let get_val_from_px = |val: &Val| match val {
-            Val::Px(px) => *px,
-            _ => 0.0,
-        };
-
-        let pad_left = get_val_from_px(&parent.padding.left);
-        let pad_right = get_val_from_px(&parent.padding.right);
-
-        for (mut player, player_computed) in player_query.iter_mut() {
-            let current_left = get_val_from_px(&player.left);
-
-            let speed = 300.0;
-            let delta = speed * time.delta_secs();
-
-            let mut new_left = current_left;
-
-            if keyboard.pressed(KeyCode::ArrowLeft) {
-                new_left -= delta;
-            }
-            if keyboard.pressed(KeyCode::ArrowRight) {
-                new_left += delta;
-            }
-
-            let scaled_player_width = player_computed.size().x / scale_factor;
-            let half_container = scaled_parent_width / 2.0;
-            let half_player = scaled_player_width / 2.0;
-
-            let min_bound = -half_container + pad_left + half_player;
-            let max_bound = half_container - pad_right - half_player;
-
-            new_left = new_left.clamp(min_bound, max_bound);
-
-            player.left = Val::Px(new_left);
-        }
     }
 }

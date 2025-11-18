@@ -2,14 +2,15 @@ use bevy::{
     asset::AssetServer,
     color::Color,
     ecs::{
+        change_detection::DetectChanges,
         component::Component,
         entity::Entity,
         hierarchy::ChildSpawnerCommands,
         query::With,
         resource::Resource,
-        system::{Commands, Query, Res},
+        system::{Commands, Query, Res, ResMut},
     },
-    time::Timer,
+    time::{Time, Timer},
     ui::{
         AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, UiRect, Val,
         widget::ImageNode,
@@ -20,6 +21,8 @@ use bevy::{
 use crate::{
     domain::enemy_formation::EnemyFormation, infrastructure::bevy::game_area::GameAreaView,
 };
+
+pub const ONE_ERA_IN_SECONDS: f32 = 1.0;
 
 #[derive(Resource)]
 pub struct EnemyFormationResource(pub EnemyFormation);
@@ -101,6 +104,38 @@ impl EnemyFormationView {
                         }
                     }
                 });
+        }
+    }
+
+    pub fn on_move(
+        mut commands: Commands,
+        asset_server: Res<AssetServer>,
+        enemy_formation_res: Res<EnemyFormationResource>,
+        container_query: Query<Entity, With<EnemyFormationView>>,
+    ) {
+        if enemy_formation_res.is_changed() {
+            if let Ok(container) = container_query.single() {
+                commands.entity(container).despawn_children();
+                commands
+                    .entity(container)
+                    .with_children(|formation_container| {
+                        EnemyFormationView::on_update(
+                            formation_container,
+                            &asset_server,
+                            &enemy_formation_res,
+                        );
+                    });
+            }
+        }
+    }
+
+    pub fn advance_on_tick(
+        time: Res<Time>,
+        mut enemy_formation_res: ResMut<EnemyFormationResource>,
+        mut timer: ResMut<EnemyFormationMovementTimer>,
+    ) {
+        if timer.0.tick(time.delta()).just_finished() {
+            enemy_formation_res.0.advance_enemies();
         }
     }
 }
