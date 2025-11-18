@@ -7,11 +7,13 @@ use crate::infrastructure::{bevy::bevy_renderer::BevyRenderer, renderer::Rendere
 pub mod domain;
 pub mod infrastructure;
 
+const DEFAULT_LOG_LEVEL: &str = "INFO";
+
 fn setup_tracing_subscriber() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "debug".into()),
+                .unwrap_or_else(|_| DEFAULT_LOG_LEVEL.into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -19,6 +21,7 @@ fn setup_tracing_subscriber() {
 
 fn main() {
     setup_tracing_subscriber();
+
     let renderer = Arc::new(BevyRenderer::default());
     renderer.render();
 }

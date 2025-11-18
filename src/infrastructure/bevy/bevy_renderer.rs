@@ -24,13 +24,17 @@ use bevy::{prelude::*, window::WindowResolution};
 #[derive(Default)]
 pub struct BevyRenderer;
 
+const WINDOW_NAME: &str = "Space Invaders";
+const WINDOW_WIDTH: u32 = 1200;
+const WINDOW_HEIGHT: u32 = 700;
+
 impl Renderer for BevyRenderer {
     fn render(&self) {
         App::new()
             .add_plugins(DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    resolution: WindowResolution::new(1200, 700),
-                    title: "Space Invaders".to_string(),
+                    resolution: WindowResolution::new(WINDOW_WIDTH, WINDOW_HEIGHT),
+                    title: WINDOW_NAME.to_string(),
                     resizable: false,
                     ..default()
                 }),
@@ -54,8 +58,8 @@ impl Renderer for BevyRenderer {
                 Update,
                 (
                     Self::on_player_move,
-                    Self::on_advance_enemies,
-                    Self::update_enemy_formation_display,
+                    Self::advance_enemies_on_tick,
+                    Self::on_enemy_formation_move,
                 ),
             )
             .run();
@@ -63,7 +67,23 @@ impl Renderer for BevyRenderer {
 }
 
 impl BevyRenderer {
-    fn update_enemy_formation_display(
+    fn on_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
+        commands.spawn(Camera2d);
+
+        commands.insert_resource(ScoreResource(Score::new()));
+        commands.insert_resource(LivesResource(Lives::new()));
+        commands.insert_resource(PlayerResource(Player::new()));
+        commands.insert_resource(ShieldFormationResource(ShieldFormation::new()));
+        commands.insert_resource(EnemyFormationResource(EnemyFormation::new()));
+        commands.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
+            1.0,
+            TimerMode::Repeating,
+        )));
+
+        ScreenView::render(&mut commands, &asset_server);
+    }
+
+    fn on_enemy_formation_move(
         mut commands: Commands,
         asset_server: Res<AssetServer>,
         enemy_formation_res: Res<EnemyFormationResource>,
@@ -84,7 +104,8 @@ impl BevyRenderer {
             }
         }
     }
-    fn on_advance_enemies(
+
+    fn advance_enemies_on_tick(
         time: Res<Time>,
         mut enemy_formation_res: ResMut<EnemyFormationResource>,
         mut timer: ResMut<EnemyFormationMovementTimer>,
@@ -92,22 +113,6 @@ impl BevyRenderer {
         if timer.0.tick(time.delta()).just_finished() {
             enemy_formation_res.0.advance_enemies();
         }
-    }
-
-    fn on_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
-        commands.spawn(Camera2d);
-
-        commands.insert_resource(ScoreResource(Score::new()));
-        commands.insert_resource(LivesResource(Lives::new()));
-        commands.insert_resource(PlayerResource(Player::new()));
-        commands.insert_resource(ShieldFormationResource(ShieldFormation::new()));
-        commands.insert_resource(EnemyFormationResource(EnemyFormation::new()));
-        commands.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
-            1.0,
-            TimerMode::Repeating,
-        )));
-
-        ScreenView::render(&mut commands, &asset_server);
     }
 
     pub fn on_player_move(
