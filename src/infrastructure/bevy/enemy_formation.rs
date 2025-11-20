@@ -12,17 +12,17 @@ use bevy::{
     },
     time::{Time, Timer},
     ui::{
-        AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, UiRect, Val,
-        widget::ImageNode,
+        widget::ImageNode, AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, UiRect,
+        Val,
     },
     utils::default,
 };
-
+use bevy::reflect::List;
 use crate::{
     domain::enemy_formation::EnemyFormation, infrastructure::bevy::game_area::GameAreaView,
 };
 
-pub const ONE_ERA_IN_SECONDS: f32 = 1.0;
+pub const ONE_ERA_IN_SECONDS: f32 = 0.05;
 
 #[derive(Resource)]
 pub struct EnemyFormationResource(pub EnemyFormation);
@@ -47,7 +47,7 @@ impl EnemyFormationView {
                         Self,
                         Node {
                             width: Val::Percent(100.0),
-                            height: Val::Percent(85.0),
+                            height: Val::Percent(75.0),
                             flex_direction: FlexDirection::Column,
                             justify_content: JustifyContent::FlexStart,
                             align_items: AlignItems::Center,
@@ -71,7 +71,7 @@ impl EnemyFormationView {
 
         for (x, row) in grid.iter().enumerate() {
             parent
-                .spawn((Node {
+                .spawn(Node {
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0 / 15.0),
                     flex_direction: FlexDirection::Row,
@@ -79,19 +79,19 @@ impl EnemyFormationView {
                     align_items: AlignItems::Center,
                     margin: UiRect::axes(Val::Px(7.0), Val::Px(7.0)),
                     ..default()
-                },))
+                })
                 .with_children(|row_container| {
                     for (y, _) in row.iter().enumerate() {
                         if grid[x][y].is_some() {
                             row_container.spawn((
-                                ImageNode {
-                                    image: asset_server.load("red.png"),
-                                    ..default()
-                                },
                                 Node {
                                     width: Val::Px(30.0),
                                     height: Val::Percent(100.0),
                                     margin: UiRect::axes(Val::Px(12.0), Val::Px(0.0)),
+                                    ..default()
+                                },
+                                ImageNode {
+                                    image: asset_server.load("red.png"),
                                     ..default()
                                 },
                             ));
@@ -121,8 +121,8 @@ impl EnemyFormationView {
                     .with_children(|formation_container| {
                         EnemyFormationView::on_update(
                             formation_container,
-                            &asset_server,
-                            &enemy_formation_res,
+                            &*asset_server,
+                            &*enemy_formation_res,
                         );
                     });
             }
@@ -134,8 +134,8 @@ impl EnemyFormationView {
         mut enemy_formation_res: ResMut<EnemyFormationResource>,
         mut timer: ResMut<EnemyFormationMovementTimer>,
     ) {
-        if timer.0.tick(time.delta()).just_finished() {
-            enemy_formation_res.0.advance_enemies();
+        if (*timer).0.tick((*time).delta()).just_finished() {
+            (*enemy_formation_res).0.advance_enemies();
         }
     }
 }

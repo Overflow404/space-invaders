@@ -5,6 +5,7 @@ pub mod game_area;
 pub mod header;
 pub mod lives;
 pub mod player;
+pub mod projectile;
 pub mod score;
 pub mod screen;
 pub mod shield_formation;

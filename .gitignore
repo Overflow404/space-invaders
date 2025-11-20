@@ -25,3 +25,4 @@ github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 # Added by cargo
 
 /target
+/.idea

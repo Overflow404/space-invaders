@@ -13,6 +13,7 @@ use crate::{
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
+            projectile::{PROJECTILE_TIME_IN_SECONDS, ProjectileMovementTimer},
             score::{ScoreResource, ScoreView},
             screen::ScreenView,
             shield_formation::{ShieldFormationResource, ShieldFormationView},
@@ -22,7 +23,6 @@ use crate::{
 };
 use bevy::{prelude::*, window::WindowResolution};
 
-#[derive(Default)]
 pub struct BevyRenderer;
 
 const WINDOW_NAME: &str = "Space Invaders";
@@ -30,6 +30,7 @@ const WINDOW_WIDTH: u32 = 1200;
 const WINDOW_HEIGHT: u32 = 700;
 
 impl Renderer for BevyRenderer {
+
     fn render(&self) {
         App::new()
             .add_plugins(DefaultPlugins.set(WindowPlugin {
@@ -69,6 +70,10 @@ impl Renderer for BevyRenderer {
 }
 
 impl BevyRenderer {
+
+    pub fn new() -> Self {
+        Self
+    }
     fn on_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
         commands.spawn(Camera2d);
 
@@ -81,7 +86,11 @@ impl BevyRenderer {
             ONE_ERA_IN_SECONDS,
             TimerMode::Repeating,
         )));
+        commands.insert_resource(ProjectileMovementTimer(Timer::from_seconds(
+            PROJECTILE_TIME_IN_SECONDS,
+            TimerMode::Once,
+        )));
 
-        ScreenView::render(&mut commands, &asset_server);
+        ScreenView::render(&mut commands, &*asset_server);
     }
 }

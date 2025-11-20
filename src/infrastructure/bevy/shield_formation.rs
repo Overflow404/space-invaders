@@ -33,13 +33,13 @@ impl ShieldFormationView {
         shield_formation_res: Res<ShieldFormationResource>,
     ) {
         if let Ok(game_area) = game_area_query.single() {
-            let shields = shield_formation_res.0.get_shields();
+            let shields = (*shield_formation_res).0.get_shields();
             commands.entity(game_area).with_children(|parent| {
                 parent
                     .spawn((
                         Node {
                             width: Val::Percent(100.0),
-                            height: Val::Percent(10.0),
+                            height: Val::Percent(15.0),
                             flex_direction: FlexDirection::Row,
                             justify_content: JustifyContent::SpaceAround,
                             align_items: AlignItems::Center,
@@ -52,11 +52,12 @@ impl ShieldFormationView {
                         for _ in 0..shields.len() {
                             shield_area.spawn((
                                 ImageNode {
-                                    image: asset_server.load("shield.png"),
+                                    image: (*asset_server).load("shield.png"),
                                     ..default()
                                 },
                                 Node {
                                     height: Val::Percent(100.0),
+                                    width: Val::Percent(10.0),
                                     margin: UiRect::right(Val::Px(25.0)),
                                     ..default()
                                 },

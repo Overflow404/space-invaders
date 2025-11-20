@@ -29,7 +29,7 @@ impl ScoreView {
         header_query: Query<Entity, With<HeaderView>>,
     ) {
         if let Ok(header) = header_query.single() {
-            let font = asset_server.load("pixeled.ttf");
+            let font = (*asset_server).load("pixeled.ttf");
 
             commands.entity(header).with_children(|parent| {
                 parent
@@ -62,7 +62,7 @@ impl ScoreView {
                                 height: Val::Percent(50.0),
                                 ..default()
                             },
-                            Text::new(score_res.0.get_current().to_string()),
+                            Text::new((*score_res).0.get_current().to_string()),
                             TextFont {
                                 font: font.clone(),
                                 font_size: 14.0,

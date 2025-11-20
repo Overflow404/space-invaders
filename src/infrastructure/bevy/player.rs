@@ -6,19 +6,27 @@ use bevy::{
         entity::Entity,
         query::{With, Without},
         resource::Resource,
-        system::{Commands, Query, Res},
+        system::{Commands, Query, Res, ResMut},
     },
-    input::{ButtonInput, keyboard::KeyCode},
+    input::{keyboard::KeyCode, ButtonInput},
     time::Time,
+    transform::components::GlobalTransform,
     ui::{
-        AlignItems, BackgroundColor, ComputedNode, FlexDirection, JustifyContent, Node, UiRect,
-        Val, widget::ImageNode,
+        widget::ImageNode, AlignItems, BackgroundColor, ComputedNode, FlexDirection, JustifyContent, Node,
+        UiRect, Val,
     },
     utils::default,
     window::Window,
 };
+use tracing::info;
 
-use crate::{domain::player::Player, infrastructure::bevy::game_area::GameAreaView};
+use crate::{
+    domain::player::Player,
+    infrastructure::bevy::{
+        game_area::GameAreaView,
+        projectile::{ProjectileMovementTimer, ProjectileView},
+    },
+};
 
 #[derive(Resource)]
 pub struct PlayerResource(pub Player);
@@ -70,20 +78,24 @@ impl PlayerView {
         }
     }
 
+    fn get_val_from_px(val: &Val) -> f32 {
+        match val {
+            Val::Px(px) => *px,
+            _ => 0.0,
+        }
+    }
+
     pub fn on_move(
         keyboard: Res<ButtonInput<KeyCode>>,
         mut player_query: Query<(&mut Node, &ComputedNode), With<PlayerView>>,
-        parent_query: Query<
-            (&ComputedNode, &Node),
-            (With<PlayerContainerView>, Without<PlayerView>),
-        >,
+        parent_query: Query<(&ComputedNode), (With<PlayerContainerView>, Without<PlayerView>)>,
         windows: Query<&Window>,
         time: Res<Time>,
     ) {
         let window = windows.single().unwrap();
         let scale_factor = window.scale_factor();
 
-        let (parent_computed, parent) = if let Ok(res) = parent_query.single() {
+        let (parent_computed) = if let Ok(res) = parent_query.single() {
             res
         } else {
             return;
@@ -91,16 +103,8 @@ impl PlayerView {
 
         let scaled_parent_width = parent_computed.size().x / scale_factor;
 
-        let get_val_from_px = |val: &Val| match val {
-            Val::Px(px) => *px,
-            _ => 0.0,
-        };
-
-        let pad_left = get_val_from_px(&parent.padding.left);
-        let pad_right = get_val_from_px(&parent.padding.right);
-
         for (mut player, player_computed) in player_query.iter_mut() {
-            let current_left = get_val_from_px(&player.left);
+            let current_left = Self::get_val_from_px(&player.left);
 
             let speed = 300.0;
             let delta = speed * time.delta_secs();
@@ -118,16 +122,60 @@ impl PlayerView {
             let half_container = scaled_parent_width / 2.0;
             let half_player = scaled_player_width / 2.0;
 
-            let min_bound = -half_container + pad_left + half_player;
-            let max_bound = half_container - pad_right - half_player;
+            let min_bound = -half_container + half_player;
+            let max_bound = half_container - half_player;
 
             new_left = new_left.clamp(min_bound, max_bound);
 
             player.left = Val::Px(new_left);
+            info!("moved to {:?}", player.left);
         }
     }
 
-    pub fn on_fire() {
-        //TODO funny part :D
+    pub fn on_fire(
+        mut commands: Commands,
+        time: Res<Time>,
+        keyboard: Res<ButtonInput<KeyCode>>,
+        mut player_res: ResMut<PlayerResource>,
+        mut timer: ResMut<ProjectileMovementTimer>,
+        player_query: Query<&Node, With<PlayerView>>,
+        parent_query: Query<&ComputedNode, (With<PlayerContainerView>, Without<PlayerView>)>,
+        windows: Query<&Window>,
+    ) {
+        let window = windows.single().unwrap();
+        let scale_factor = window.scale_factor();
+
+        let parent_computed = if let Ok(res) = parent_query.single() {
+            res
+        } else {
+            return;
+        };
+
+        let scaled_parent_width = parent_computed.size().x / scale_factor;
+
+        let half_container = scaled_parent_width / 2.0;
+
+        if keyboard.pressed(KeyCode::Space) && !player_res.0.is_firing() {
+            for player_node in player_query.iter() {
+                let player_left = Self::get_val_from_px(&player_node.left);
+
+                let projectile_x = player_left + half_container + 10.0;
+
+                let projectile_view = ProjectileView::new(projectile_x, 150.0);
+                commands.spawn(projectile_view.spawn_projectile());
+                player_res.0.toggle_fire();
+            }
+        }
+
+        if player_res.0.is_firing() && !timer.0.just_finished() {
+            info!("ADVANCING PROJECTILE");
+            timer.0.tick(time.delta());
+        }
+
+        if timer.0.just_finished() {
+            player_res.0.toggle_fire();
+            timer.0.reset();
+            info!("END PROJECTILE");
+        }
     }
 }

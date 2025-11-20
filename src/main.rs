@@ -22,6 +22,6 @@ fn setup_tracing_subscriber() {
 fn main() {
     setup_tracing_subscriber();
 
-    let renderer = Arc::new(BevyRenderer::default());
+    let renderer = Arc::new(BevyRenderer::new());
     renderer.render();
 }
