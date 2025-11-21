@@ -2,6 +2,12 @@ pub struct Score {
     current: u32,
 }
 
+impl Default for Score {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Score {
     pub fn new() -> Self {
         Score { current: 0 }

@@ -1,12 +1,10 @@
-use std::fmt;
-
 use crate::domain::enemy::Enemy;
+use std::fmt;
 use tracing::debug;
 
 const ROWS: usize = 15;
 const COLUMNS: usize = 41;
 
-const FIRST_ENEMY_X: usize = 0;
 const FIRST_ENEMY_Y: usize = 15;
 
 const LAST_ENEMY_X: usize = 4;
@@ -63,6 +61,11 @@ impl fmt::Debug for EnemyFormation {
         Ok(())
     }
 }
+impl Default for EnemyFormation {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl EnemyFormation {
     pub fn new() -> Self {
@@ -70,14 +73,10 @@ impl EnemyFormation {
 
         let mut id = 1;
 
-        for x in 0..ROWS {
-            for y in 0..COLUMNS {
-                if y >= FIRST_ENEMY_Y
-                    && y <= LAST_ENEMY_Y
-                    && x <= LAST_ENEMY_X
-                    && x >= FIRST_ENEMY_X
-                {
-                    enemies[x][y] = Some(Enemy::new(id));
+        for (x, row) in enemies.iter_mut().enumerate() {
+            for (y, enemy) in row.iter_mut().enumerate() {
+                if (FIRST_ENEMY_Y..=LAST_ENEMY_Y).contains(&y) && x <= LAST_ENEMY_X {
+                    *enemy = Some(Enemy::new(id));
                     id += 1;
                 }
             }
@@ -141,10 +140,11 @@ impl EnemyFormation {
             })
             .max_by_key(|(x, y)| (*x, *y));
 
-        if let Some((x, y)) = bottom_rightmost {
-            if x == ROWS - 1 && y == COLUMNS - 1 {
-                return true;
-            }
+        if let Some((x, y)) = bottom_rightmost
+            && x == ROWS - 1
+            && y == COLUMNS - 1
+        {
+            return true;
         }
 
         false
@@ -154,8 +154,7 @@ impl EnemyFormation {
         let top_leftmost: Option<usize> = self
             .enemies
             .iter()
-            .enumerate()
-            .filter_map(|(_, row)| {
+            .filter_map(|row| {
                 row.iter()
                     .enumerate()
                     .find_map(|(y, enemy)| enemy.as_ref().map(|_| y))
@@ -165,21 +164,26 @@ impl EnemyFormation {
         if let Some(y) = top_leftmost {
             if y == 0 {
                 self.direction = MovingDirection::ToRight;
-                let mut new_enemies = vec![vec![None; COLUMNS]; ROWS];
-                for x in 0..ROWS - 1 {
-                    for y in 0..COLUMNS {
-                        new_enemies[x + 1][y] = self.enemies[x][y].clone();
-                    }
-                }
-                self.enemies = new_enemies;
+
+                let empty_row = vec![None; COLUMNS];
+
+                let mut shifted_rows: Vec<Vec<Option<Enemy>>> =
+                    self.enemies.iter().take(ROWS - 1).cloned().collect();
+
+                shifted_rows.insert(0, empty_row);
+
+                self.enemies = shifted_rows;
             } else {
-                let mut new_enemies = vec![vec![None; COLUMNS]; ROWS];
-                for x in 0..ROWS {
-                    for y in 1..COLUMNS {
-                        new_enemies[x][y - 1] = self.enemies[x][y].clone();
-                    }
-                }
-                self.enemies = new_enemies;
+                self.enemies = self
+                    .enemies
+                    .iter()
+                    .map(|row| {
+                        let mut new_row = row.clone();
+                        new_row.remove(0);
+                        new_row.push(None);
+                        new_row
+                    })
+                    .collect();
             }
         }
     }
@@ -188,8 +192,7 @@ impl EnemyFormation {
         let top_rightmost: Option<usize> = self
             .enemies
             .iter()
-            .enumerate()
-            .filter_map(|(_, row)| {
+            .filter_map(|row| {
                 row.iter()
                     .enumerate()
                     .rev()
@@ -200,21 +203,13 @@ impl EnemyFormation {
         if let Some(y) = top_rightmost {
             if y == COLUMNS - 1 {
                 self.direction = MovingDirection::ToLeft;
-                let mut new_enemies = vec![vec![None; COLUMNS]; ROWS];
-                for x in 0..ROWS - 1 {
-                    for y in 0..COLUMNS {
-                        new_enemies[x + 1][y] = self.enemies[x][y].clone();
-                    }
-                }
-                self.enemies = new_enemies;
+                self.enemies.pop();
+                self.enemies.insert(0, vec![None; COLUMNS]);
             } else {
-                let mut new_enemies = vec![vec![None; COLUMNS]; ROWS];
-                for x in 0..ROWS {
-                    for y in 0..COLUMNS - 1 {
-                        new_enemies[x][y + 1] = self.enemies[x][y].clone();
-                    }
+                for row in self.enemies.iter_mut() {
+                    row.pop();
+                    row.insert(0, None);
                 }
-                self.enemies = new_enemies;
             }
         }
     }
@@ -237,12 +232,10 @@ mod tests {
             for y in 0..(COLUMNS - 1) {
                 if x > LAST_ENEMY_X {
                     assert!(formation.enemies[x][y].is_none());
+                } else if (FIRST_ENEMY_Y..=LAST_ENEMY_Y).contains(&y) {
+                    assert!(formation.enemies[x][y].is_some());
                 } else {
-                    if y >= FIRST_ENEMY_Y && y <= LAST_ENEMY_Y {
-                        assert!(formation.enemies[x][y].is_some());
-                    } else {
-                        assert!(formation.enemies[x][y].is_none());
-                    }
+                    assert!(formation.enemies[x][y].is_none());
                 }
             }
         }
@@ -261,12 +254,10 @@ mod tests {
             for y in 0..(COLUMNS - 1) {
                 if x > LAST_ENEMY_X {
                     assert!(formation.enemies[x][y].is_none());
+                } else if y > FIRST_ENEMY_Y && y <= LAST_ENEMY_Y + 1 {
+                    assert!(formation.enemies[x][y].is_some());
                 } else {
-                    if y > FIRST_ENEMY_Y && y <= LAST_ENEMY_Y + 1 {
-                        assert!(formation.enemies[x][y].is_some());
-                    } else {
-                        assert!(formation.enemies[x][y].is_none());
-                    }
+                    assert!(formation.enemies[x][y].is_none());
                 }
             }
         }
@@ -294,12 +285,10 @@ mod tests {
             for y in 0..(COLUMNS - 1) {
                 if x == 0 || x >= 6 {
                     assert!(formation.enemies[x][y].is_none());
+                } else if ((COLUMNS - ENEMIES_PER_ROW)..COLUMNS).contains(&y) {
+                    assert!(formation.enemies[x][y].is_some());
                 } else {
-                    if y >= (COLUMNS - ENEMIES_PER_ROW) && y < COLUMNS {
-                        assert!(formation.enemies[x][y].is_some());
-                    } else {
-                        assert!(formation.enemies[x][y].is_none());
-                    }
+                    assert!(formation.enemies[x][y].is_none());
                 }
             }
         }
@@ -329,12 +318,10 @@ mod tests {
             for y in 0..(COLUMNS - 1) {
                 if x == 0 || x >= 6 {
                     assert!(formation.enemies[x][y].is_none());
+                } else if ((COLUMNS - ENEMIES_PER_ROW - 1)..(COLUMNS - 1)).contains(&y) {
+                    assert!(formation.enemies[x][y].is_some());
                 } else {
-                    if y >= (COLUMNS - ENEMIES_PER_ROW - 1) && y < (COLUMNS - 1) {
-                        assert!(formation.enemies[x][y].is_some());
-                    } else {
-                        assert!(formation.enemies[x][y].is_none());
-                    }
+                    assert!(formation.enemies[x][y].is_none());
                 }
             }
         }
@@ -362,12 +349,10 @@ mod tests {
             for y in 0..(COLUMNS - 1) {
                 if x <= 1 || x >= 7 {
                     assert!(formation.enemies[x][y].is_none());
+                } else if y < 11 {
+                    assert!(formation.enemies[x][y].is_some());
                 } else {
-                    if y < 11 {
-                        assert!(formation.enemies[x][y].is_some());
-                    } else {
-                        assert!(formation.enemies[x][y].is_none());
-                    }
+                    assert!(formation.enemies[x][y].is_none());
                 }
             }
         }

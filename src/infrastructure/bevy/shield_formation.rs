@@ -33,7 +33,7 @@ impl ShieldFormationView {
         shield_formation_res: Res<ShieldFormationResource>,
     ) {
         if let Ok(game_area) = game_area_query.single() {
-            let shields = (*shield_formation_res).0.get_shields();
+            let shields = shield_formation_res.0.get_shields();
             commands.entity(game_area).with_children(|parent| {
                 parent
                     .spawn((
@@ -52,7 +52,7 @@ impl ShieldFormationView {
                         for _ in 0..shields.len() {
                             shield_area.spawn((
                                 ImageNode {
-                                    image: (*asset_server).load("shield.png"),
+                                    image: asset_server.load("shield.png"),
                                     ..default()
                                 },
                                 Node {

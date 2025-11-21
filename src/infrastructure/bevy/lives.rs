@@ -32,8 +32,8 @@ impl LivesView {
         header_query: Query<Entity, With<HeaderView>>,
     ) {
         if let Ok(header) = header_query.single() {
-            let font = (*asset_server).load("pixeled.ttf");
-            let remaining_lives = (*lives_res).0.get_current();
+            let font = asset_server.load("pixeled.ttf");
+            let remaining_lives = lives_res.0.get_current();
 
             commands.entity(header).with_children(|parent| {
                 parent
@@ -66,7 +66,7 @@ impl LivesView {
                         for _ in 0..remaining_lives {
                             lives_section.spawn((
                                 ImageNode {
-                                    image: (*asset_server).load("player-green.png"),
+                                    image: asset_server.load("player-green.png"),
                                     ..default()
                                 },
                                 Node {

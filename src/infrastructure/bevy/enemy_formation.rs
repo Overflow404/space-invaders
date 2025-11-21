@@ -1,3 +1,6 @@
+use crate::{
+    domain::enemy_formation::EnemyFormation, infrastructure::bevy::game_area::GameAreaView,
+};
 use bevy::{
     asset::AssetServer,
     color::Color,
@@ -16,10 +19,6 @@ use bevy::{
         Val,
     },
     utils::default,
-};
-use bevy::reflect::List;
-use crate::{
-    domain::enemy_formation::EnemyFormation, infrastructure::bevy::game_area::GameAreaView,
 };
 
 pub const ONE_ERA_IN_SECONDS: f32 = 0.05;
@@ -113,19 +112,19 @@ impl EnemyFormationView {
         enemy_formation_res: Res<EnemyFormationResource>,
         container_query: Query<Entity, With<EnemyFormationView>>,
     ) {
-        if enemy_formation_res.is_changed() {
-            if let Ok(container) = container_query.single() {
-                commands.entity(container).despawn_children();
-                commands
-                    .entity(container)
-                    .with_children(|formation_container| {
-                        EnemyFormationView::on_update(
-                            formation_container,
-                            &*asset_server,
-                            &*enemy_formation_res,
-                        );
-                    });
-            }
+        if enemy_formation_res.is_changed()
+            && let Ok(container) = container_query.single()
+        {
+            commands.entity(container).despawn_children();
+            commands
+                .entity(container)
+                .with_children(|formation_container| {
+                    EnemyFormationView::on_update(
+                        formation_container,
+                        &asset_server,
+                        &enemy_formation_res,
+                    );
+                });
         }
     }
 
@@ -134,8 +133,8 @@ impl EnemyFormationView {
         mut enemy_formation_res: ResMut<EnemyFormationResource>,
         mut timer: ResMut<EnemyFormationMovementTimer>,
     ) {
-        if (*timer).0.tick((*time).delta()).just_finished() {
-            (*enemy_formation_res).0.advance_enemies();
+        if timer.0.tick(time.delta()).just_finished() {
+            enemy_formation_res.0.advance_enemies();
         }
     }
 }

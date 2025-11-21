@@ -1,5 +1,12 @@
+
 pub struct Lives {
     current: u32,
+}
+
+impl Default for Lives {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Lives {

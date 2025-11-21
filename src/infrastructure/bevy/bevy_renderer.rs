@@ -13,7 +13,7 @@ use crate::{
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
-            projectile::{PROJECTILE_TIME_IN_SECONDS, ProjectileMovementTimer},
+            projectile::{ProjectileMovementTimer, PROJECTILE_TIME_IN_SECONDS},
             score::{ScoreResource, ScoreView},
             screen::ScreenView,
             shield_formation::{ShieldFormationResource, ShieldFormationView},
@@ -21,7 +21,14 @@ use crate::{
         renderer::Renderer,
     },
 };
-use bevy::{prelude::*, window::WindowResolution};
+use bevy::app::{App, PluginGroup, Startup, Update};
+use bevy::asset::AssetServer;
+use bevy::camera::Camera2d;
+use bevy::prelude::{Commands, IntoScheduleConfigs, Res, Timer};
+use bevy::time::TimerMode;
+use bevy::utils::default;
+use bevy::window::{Window, WindowPlugin, WindowResolution};
+use bevy::DefaultPlugins;
 
 pub struct BevyRenderer;
 
@@ -30,14 +37,12 @@ const WINDOW_WIDTH: u32 = 1200;
 const WINDOW_HEIGHT: u32 = 700;
 
 impl Renderer for BevyRenderer {
-
     fn render(&self) {
         App::new()
             .add_plugins(DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
                     resolution: WindowResolution::new(WINDOW_WIDTH, WINDOW_HEIGHT),
                     title: WINDOW_NAME.to_string(),
-                    resizable: false,
                     ..default()
                 }),
                 ..default()
@@ -69,8 +74,13 @@ impl Renderer for BevyRenderer {
     }
 }
 
-impl BevyRenderer {
+impl Default for BevyRenderer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
+impl BevyRenderer {
     pub fn new() -> Self {
         Self
     }
@@ -91,6 +101,6 @@ impl BevyRenderer {
             TimerMode::Once,
         )));
 
-        ScreenView::render(&mut commands, &*asset_server);
+        ScreenView::render(&mut commands, &asset_server);
     }
 }

@@ -2,6 +2,12 @@ pub struct Player {
     is_firing: bool,
 }
 
+impl Default for Player {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Player {
     pub fn new() -> Self {
         Player { is_firing: false }

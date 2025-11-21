@@ -10,7 +10,6 @@ use bevy::{
     },
     input::{keyboard::KeyCode, ButtonInput},
     time::Time,
-    transform::components::GlobalTransform,
     ui::{
         widget::ImageNode, AlignItems, BackgroundColor, ComputedNode, FlexDirection, JustifyContent, Node,
         UiRect, Val,
@@ -36,6 +35,12 @@ pub struct PlayerView;
 
 #[derive(Component)]
 pub struct PlayerContainerView;
+
+impl Default for PlayerView {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl PlayerView {
     pub fn new() -> Self {
@@ -88,14 +93,14 @@ impl PlayerView {
     pub fn on_move(
         keyboard: Res<ButtonInput<KeyCode>>,
         mut player_query: Query<(&mut Node, &ComputedNode), With<PlayerView>>,
-        parent_query: Query<(&ComputedNode), (With<PlayerContainerView>, Without<PlayerView>)>,
+        parent_query: Query<&ComputedNode, (With<PlayerContainerView>, Without<PlayerView>)>,
         windows: Query<&Window>,
         time: Res<Time>,
     ) {
         let window = windows.single().unwrap();
         let scale_factor = window.scale_factor();
 
-        let (parent_computed) = if let Ok(res) = parent_query.single() {
+        let parent_computed = if let Ok(res) = parent_query.single() {
             res
         } else {
             return;

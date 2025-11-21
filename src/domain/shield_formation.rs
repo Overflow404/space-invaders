@@ -6,6 +6,12 @@ pub struct ShieldFormation {
     shields: Vec<Shield>,
 }
 
+impl Default for ShieldFormation {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShieldFormation {
     pub fn new() -> Self {
         Self {
