@@ -1,3 +1,9 @@
+use crate::infrastructure::bevy::player::{PlayerContainerView, PlayerResource, PlayerView};
+use bevy::ecs::system::SystemParam;
+use bevy::input::ButtonInput;
+use bevy::prelude::{
+    Commands, ComputedNode, KeyCode, Query, Res, ResMut, Time, Window, With, Without,
+};
 use bevy::{
     color::Color,
     ecs::{component::Component, resource::Resource},
@@ -15,6 +21,21 @@ pub struct ProjectileMovementTimer(pub Timer);
 pub struct ProjectileView {
     x: f32,
     y: f32,
+}
+
+#[derive(SystemParam)]
+pub struct FireContext<'w, 's> {
+    pub commands: Commands<'w, 's>,
+    pub time: Res<'w, Time>,
+    pub keyboard: Res<'w, ButtonInput<KeyCode>>,
+    pub player_res: ResMut<'w, PlayerResource>,
+    pub timer: ResMut<'w, ProjectileMovementTimer>,
+    pub player_query: Query<'w, 's, &'static Node, (With<PlayerView>, Without<ProjectileView>)>,
+    pub parent_query:
+        Query<'w, 's, &'static ComputedNode, (With<PlayerContainerView>, Without<PlayerView>)>,
+    pub window_query: Query<'w, 's, &'static Window>,
+    pub projectile_query:
+        Query<'w, 's, &'static mut Node, (With<ProjectileView>, Without<PlayerView>)>,
 }
 
 impl ProjectileView {

@@ -17,6 +17,7 @@ use bevy::{
     utils::default,
     window::Window,
 };
+use bevy::ecs::system::SystemParam;
 use tracing::info;
 
 use crate::{
@@ -26,6 +27,7 @@ use crate::{
         projectile::{ProjectileMovementTimer, ProjectileView},
     },
 };
+use crate::infrastructure::bevy::projectile::FireContext;
 
 #[derive(Resource)]
 pub struct PlayerResource(pub Player);
@@ -137,49 +139,57 @@ impl PlayerView {
         }
     }
 
-    pub fn on_fire(
-        mut commands: Commands,
-        time: Res<Time>,
-        keyboard: Res<ButtonInput<KeyCode>>,
-        mut player_res: ResMut<PlayerResource>,
-        mut timer: ResMut<ProjectileMovementTimer>,
-        player_query: Query<&Node, With<PlayerView>>,
-        parent_query: Query<&ComputedNode, (With<PlayerContainerView>, Without<PlayerView>)>,
-        windows: Query<&Window>,
-    ) {
-        let window = windows.single().unwrap();
-        let scale_factor = window.scale_factor();
 
-        let parent_computed = if let Ok(res) = parent_query.single() {
+
+    pub fn on_fire(mut ctx: FireContext) {
+        let window = ctx.window_query.single();
+        let scale_factor = window.expect("REASON").scale_factor();
+
+        let parent_computed = if let Ok(res) = ctx.parent_query.single() {
             res
         } else {
             return;
         };
 
         let scaled_parent_width = parent_computed.size().x / scale_factor;
-
         let half_container = scaled_parent_width / 2.0;
 
-        if keyboard.pressed(KeyCode::Space) && !player_res.0.is_firing() {
-            for player_node in player_query.iter() {
+        if ctx.keyboard.pressed(KeyCode::Space) && !ctx.player_res.0.is_firing() {
+            for player_node in ctx.player_query.iter() {
                 let player_left = Self::get_val_from_px(&player_node.left);
-
                 let projectile_x = player_left + half_container + 10.0;
 
-                let projectile_view = ProjectileView::new(projectile_x, 150.0);
-                commands.spawn(projectile_view.spawn_projectile());
-                player_res.0.toggle_fire();
+                let player_top = Self::get_val_from_px(&player_node.bottom);
+                let projectile_y = player_top - half_container + 10.0;
+                // info!("fired by {:?}", projectile_y); //-575.0
+                // info!("player top {:?}", player_top); //0.0
+                // info!("player bottom {:?}", player_top); //0.0
+
+                let projectile_view = ProjectileView::new(projectile_x, 600.0);
+
+                ctx.commands.spawn((
+                    projectile_view.spawn_projectile(),
+                ));
+
+                ctx.player_res.0.toggle_fire();
             }
         }
 
-        if player_res.0.is_firing() && !timer.0.just_finished() {
-            info!("ADVANCING PROJECTILE");
-            timer.0.tick(time.delta());
+        if ctx.player_res.0.is_firing() {
+            ctx.timer.0.tick(ctx.time.delta());
+
+            let speed = 500.0;
+
+            for mut node in ctx.projectile_query.iter_mut() {
+                if let Val::Px(current_top) = node.top {
+                    node.top = Val::Px(current_top - (speed * ctx.time.delta_secs()));
+                }
+            }
         }
 
-        if timer.0.just_finished() {
-            player_res.0.toggle_fire();
-            timer.0.reset();
+        if ctx.timer.0.just_finished() {
+            ctx.player_res.0.toggle_fire();
+            ctx.timer.0.reset();
             info!("END PROJECTILE");
         }
     }
