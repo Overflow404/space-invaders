@@ -8,7 +8,7 @@ use crate::{
         bevy::{
             enemy_formation::{
                 EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView,
-                ONE_ERA_IN_SECONDS,
+                ENEMY_FORMATION_SPEED,
             },
             game_area::GameAreaView,
             header::HeaderView,
@@ -106,7 +106,7 @@ impl BevyRenderer {
         commands.insert_resource(ShieldFormationResource(ShieldFormation::new()));
         commands.insert_resource(EnemyFormationResource(EnemyFormation::new()));
         commands.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
-            ONE_ERA_IN_SECONDS,
+            ENEMY_FORMATION_SPEED,
             TimerMode::Repeating,
         )));
         commands.insert_resource(ProjectileMovementTimer(Timer::from_seconds(

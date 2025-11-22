@@ -1,25 +1,16 @@
-use crate::domain::enemy_formation::{COLUMNS, EnemyFormation, X_STEPS};
+use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, X_STEPS};
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use bevy::prelude::*;
 
-pub const ONE_ERA_IN_SECONDS: f32 = 0.6;
+pub const ENEMY_FORMATION_SPEED: f32 = 0.6;
+const ENEMY_WIDTH: f32 = 60.0;
+const ENEMY_HEIGHT: f32 = 40.0;
+const SPACE_BETWEEN_ENEMIES_X: f32 = 15.0;
+const SPACE_BETWEEN_ENEMIES_Y: f32 = 15.0;
+const VERTICAL_DROP: f32 = 15.0;
 
-struct FormationConfig {
-    enemy_width: f32,
-    enemy_height: f32,
-    space_between_enemies_x: f32,
-    space_between_enemies_y: f32,
-    vertical_drop: f32,
-}
-
-const CONFIG: FormationConfig = FormationConfig {
-    enemy_width: 60.0,
-    enemy_height: 40.0,
-    space_between_enemies_x: 15.0,
-    space_between_enemies_y: 15.0,
-    vertical_drop: 15.0,
-};
+const ENEMY_IMAGE: &str = "red.png";
 
 #[derive(Resource)]
 pub struct EnemyFormationResource(pub EnemyFormation);
@@ -93,8 +84,7 @@ impl EnemyFormationView {
             return;
         }
 
-        let step_size_x =
-            Self::calculate_step_x(CONFIG.enemy_width, CONFIG.space_between_enemies_x);
+        let step_size_x = Self::calculate_step_x(ENEMY_WIDTH, SPACE_BETWEEN_ENEMIES_X);
 
         let enemy_formation_start_x = -(GAME_AREA_WIDTH / 2.0);
         let enemy_formation_start_y = (GAME_AREA_HEIGHT / 2.0) - HEADER_HEIGHT;
@@ -102,26 +92,24 @@ impl EnemyFormationView {
         let enemy_formation_width =
             enemy_formation_start_x + (enemy_formation_x as f32 * step_size_x);
         let enemy_formation_height =
-            enemy_formation_start_y - (enemy_formation_y as f32 * CONFIG.vertical_drop);
+            enemy_formation_start_y - (enemy_formation_y as f32 * VERTICAL_DROP);
 
         for (row_index, row) in enemies.iter().enumerate() {
             for (column_index, enemy_slot) in row.iter().enumerate() {
                 if enemy_slot.is_some() {
                     let new_x = enemy_formation_width
-                        + (column_index as f32
-                            * (CONFIG.enemy_width + CONFIG.space_between_enemies_x))
-                        + (CONFIG.enemy_width / 2.0);
+                        + (column_index as f32 * (ENEMY_WIDTH + SPACE_BETWEEN_ENEMIES_X))
+                        + (ENEMY_WIDTH / 2.0);
 
                     let new_y = enemy_formation_height
-                        - (row_index as f32
-                            * (CONFIG.enemy_height + CONFIG.space_between_enemies_y))
-                        - (CONFIG.enemy_height / 2.0);
+                        - (row_index as f32 * (ENEMY_HEIGHT + SPACE_BETWEEN_ENEMIES_Y))
+                        - (ENEMY_HEIGHT / 2.0);
 
                     commands.spawn((
                         Enemy,
                         Sprite {
-                            image: asset_server.load("red.png"),
-                            custom_size: Some(Vec2::new(CONFIG.enemy_width, CONFIG.enemy_height)),
+                            image: asset_server.load(ENEMY_IMAGE),
+                            custom_size: Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
                             ..default()
                         },
                         Transform::from_xyz(new_x, new_y, 0.0),
