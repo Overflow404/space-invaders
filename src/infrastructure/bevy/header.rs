@@ -28,3 +28,32 @@ impl HeaderView {
         ));
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use bevy::app::{App, Startup};
+    use bevy::MinimalPlugins;
+    use bevy::ui::{BackgroundColor, Node};
+    use crate::infrastructure::bevy::header::HeaderView;
+
+    fn setup() -> App {
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+        app.add_systems(Startup, HeaderView::spawn_header);
+        app.update();
+        app
+    }
+
+    #[test]
+    fn should_display_the_header() {
+        let mut app = setup();
+
+        let mut query = app
+            .world_mut()
+            .query::<(&HeaderView, &Node, &BackgroundColor)>();
+
+        let query_result = query.single(app.world());
+
+        assert!(query_result.is_ok());
+    }
+}

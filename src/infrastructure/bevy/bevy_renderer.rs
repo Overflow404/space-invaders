@@ -8,7 +8,7 @@ use crate::{
         bevy::{
             enemy_formation::{
                 EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView,
-                ENEMY_FORMATION_SPEED,
+                ENEMY_FORMATION_STEP_DURATION,
             },
             game_area::GameAreaView,
             header::HeaderView,
@@ -21,12 +21,10 @@ use crate::{
         renderer::Renderer,
     },
 };
-use bevy::app::{App, PluginGroup, PostUpdate, Startup, Update};
+use bevy::app::{App, Plugin, PluginGroup, PostUpdate, Startup, Update};
 use bevy::camera::{Camera2d, OrthographicProjection, Projection, ScalingMode};
 use bevy::log::LogPlugin;
-use bevy::prelude::{
-    Changed, Commands, IntoScheduleConfigs, Query, ResMut, Timer, Transform, UiScale,
-};
+use bevy::prelude::*;
 use bevy::time::TimerMode;
 use bevy::utils::default;
 use bevy::window::{PresentMode, Window, WindowPlugin, WindowResolution};
@@ -38,38 +36,24 @@ const WINDOW_NAME: &str = "Space Invaders";
 pub(crate) const WINDOW_WIDTH: f32 = 1200.0;
 pub(crate) const WINDOW_HEIGHT: f32 = 700.0;
 
-impl Renderer for BevyRenderer {
-    fn render(&self) {
-        App::new()
-            .add_plugins(
-                DefaultPlugins
-                    .set(WindowPlugin {
-                        primary_window: Some(Window {
-                            resolution: WindowResolution::new(
-                                WINDOW_WIDTH as u32,
-                                WINDOW_HEIGHT as u32,
-                            ),
-                            title: WINDOW_NAME.to_string(),
-                            present_mode: PresentMode::Fifo,
-                            ..default()
-                        }),
-                        ..default()
-                    })
-                    .disable::<LogPlugin>(),
-            )
+pub struct SpaceInvadersPlugin;
+
+impl Plugin for SpaceInvadersPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, (Self::spawn_camera, Self::inject_resources))
             .add_systems(
                 Startup,
                 (
-                    Self::on_startup,
-                    HeaderView::spawn_header.after(Self::on_startup),
-                    LivesView::spawn_lives.after(HeaderView::spawn_header),
-                    ScoreView::spawn_score.after(HeaderView::spawn_header),
-                    GameAreaView::spawn_game_area.after(Self::on_startup),
-                    EnemyFormationView::spawn_enemy_formation.after(GameAreaView::spawn_game_area),
-                    ShieldFormationView::spawn_shields
-                        .after(EnemyFormationView::spawn_enemy_formation),
-                    PlayerView::spawn_player.after(ShieldFormationView::spawn_shields),
-                ),
+                    HeaderView::spawn_header,
+                    LivesView::spawn_lives,
+                    ScoreView::spawn_score,
+                    GameAreaView::spawn_game_area,
+                    EnemyFormationView::spawn_enemy_formation,
+                    ShieldFormationView::spawn_shields,
+                    PlayerView::spawn_player,
+                )
+                    .chain()
+                    .after(Self::spawn_camera),
             )
             .add_systems(
                 Update,
@@ -83,22 +67,12 @@ impl Renderer for BevyRenderer {
             .add_systems(
                 PostUpdate,
                 (GameAreaView::resize_game_area, Self::update_window_scale),
-            )
-            .run();
+            );
     }
 }
 
-impl Default for BevyRenderer {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl BevyRenderer {
-    pub fn new() -> Self {
-        Self
-    }
-    fn on_startup(mut commands: Commands) {
+impl SpaceInvadersPlugin {
+    fn spawn_camera(mut commands: Commands) {
         commands.spawn((
             Camera2d,
             Projection::from(OrthographicProjection {
@@ -110,14 +84,16 @@ impl BevyRenderer {
             }),
             Transform::from_xyz(0.0, HEADER_HEIGHT, 0.0),
         ));
+    }
 
+    fn inject_resources(mut commands: Commands) {
         commands.insert_resource(ScoreResource(Score::new()));
         commands.insert_resource(LivesResource(Lives::new()));
         commands.insert_resource(PlayerResource(Player::new()));
         commands.insert_resource(ShieldFormationResource(ShieldFormation::new()));
         commands.insert_resource(EnemyFormationResource(EnemyFormation::new()));
         commands.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
-            ENEMY_FORMATION_SPEED,
+            ENEMY_FORMATION_STEP_DURATION,
             TimerMode::Repeating,
         )));
         commands.insert_resource(ProjectileMovementTimer(Timer::from_seconds(
@@ -133,8 +109,42 @@ impl BevyRenderer {
         if let Ok(window) = window_query.single() {
             let scale_x = window.width() / WINDOW_WIDTH;
             let scale_y = window.height() / WINDOW_HEIGHT;
-
             ui_scale.0 = scale_x.min(scale_y);
         }
+    }
+}
+
+impl Renderer for BevyRenderer {
+    fn render(&self) {
+        App::new()
+            .add_plugins(Self::window_plugin_config())
+            .add_plugins(SpaceInvadersPlugin)
+            .run();
+    }
+}
+
+impl BevyRenderer {
+    pub fn new() -> Self {
+        Self
+    }
+
+    fn window_plugin_config() -> impl PluginGroup {
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: WindowResolution::new(WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32),
+                    title: WINDOW_NAME.to_string(),
+                    present_mode: PresentMode::Fifo,
+                    ..default()
+                }),
+                ..default()
+            })
+            .disable::<LogPlugin>()
+    }
+}
+
+impl Default for BevyRenderer {
+    fn default() -> Self {
+        Self::new()
     }
 }

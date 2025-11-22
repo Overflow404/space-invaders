@@ -9,7 +9,7 @@ use bevy::{
         system::{Commands, Query, Res},
     },
     text::{TextColor, TextFont},
-    ui::{AlignItems, FlexDirection, JustifyContent, Node, UiRect, Val, widget::Text},
+    ui::{widget::Text, AlignItems, FlexDirection, JustifyContent, Node, UiRect, Val},
     utils::default,
 };
 
@@ -34,14 +34,17 @@ impl ScoreView {
 
             commands.entity(header).with_children(|parent| {
                 parent
-                    .spawn((Node {
-                        width: Val::Percent(50.0),
-                        height: Val::Px(50.0),
-                        flex_direction: FlexDirection::Row,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },))
+                    .spawn((
+                        ScoreView,
+                        Node {
+                            width: Val::Percent(50.0),
+                            height: Val::Px(50.0),
+                            flex_direction: FlexDirection::Row,
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            ..default()
+                        },
+                    ))
                     .with_children(|score_section| {
                         score_section.spawn((
                             Node {
@@ -58,7 +61,6 @@ impl ScoreView {
                             TextColor(Color::WHITE),
                         ));
                         score_section.spawn((
-                            Self,
                             Node {
                                 height: Val::Percent(50.0),
                                 ..default()
@@ -74,5 +76,74 @@ impl ScoreView {
                     });
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::domain::score::Score;
+    use crate::infrastructure::bevy::header::HeaderView;
+    use crate::infrastructure::bevy::score::{ScoreResource, ScoreView};
+    use bevy::app::{App, Startup};
+    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::image::Image;
+    use bevy::prelude::{Children, Entity, IntoScheduleConfigs, Text};
+    use bevy::text::Font;
+    use bevy::MinimalPlugins;
+
+    fn setup() -> App {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()));
+
+        app.add_systems(
+            Startup,
+            (HeaderView::spawn_header, ScoreView::spawn_score).chain(),
+        );
+
+        app.insert_resource(ScoreResource(Score::new()));
+
+        app.init_asset::<Image>();
+        app.init_asset::<Font>();
+
+        app.update();
+
+        app
+    }
+
+    #[test]
+    fn should_display_the_score() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        let mut query = app.world_mut().query::<(&ScoreView, &Children)>();
+        let (_, children) = query.single(app.world())?;
+
+        let label = children
+            .iter()
+            .filter(|child| {
+                if let Some(text) = app.world().get::<Text>(**child)
+                    && text.0 == "Score: "
+                {
+                    return true;
+                }
+                false
+            })
+            .collect::<Vec<&Entity>>();
+
+        let score = children
+            .iter()
+            .filter(|child| {
+                if let Some(text) = app.world().get::<Text>(**child)
+                    && text.0 == "0"
+                {
+                    return true;
+                }
+                false
+            })
+            .collect::<Vec<&Entity>>();
+
+        assert!(!label.is_empty());
+        assert!(!score.is_empty());
+
+        Ok(())
     }
 }

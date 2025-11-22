@@ -10,8 +10,8 @@ use bevy::{
     },
     text::{TextColor, TextFont},
     ui::{
-        AlignItems, FlexDirection, JustifyContent, Node, UiRect, Val,
-        widget::{ImageNode, Text},
+        widget::{ImageNode, Text}, AlignItems, FlexDirection, JustifyContent, Node, UiRect,
+        Val,
     },
     utils::default,
 };
@@ -39,7 +39,7 @@ impl LivesView {
             commands.entity(header).with_children(|parent| {
                 parent
                     .spawn((
-                        Self,
+                        LivesView,
                         Node {
                             width: Val::Percent(50.0),
                             height: Val::Px(50.0),
@@ -80,5 +80,67 @@ impl LivesView {
                     });
             });
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::domain::lives::Lives;
+    use crate::infrastructure::bevy::header::HeaderView;
+    use crate::infrastructure::bevy::lives::{LivesResource, LivesView};
+    use bevy::app::{App, Startup};
+    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::image::Image;
+    use bevy::prelude::{Children, Entity, ImageNode, IntoScheduleConfigs, Text};
+    use bevy::text::Font;
+    use bevy::MinimalPlugins;
+
+    fn setup() -> App {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()));
+
+        app.add_systems(
+            Startup,
+            (HeaderView::spawn_header, LivesView::spawn_lives).chain(),
+        );
+
+        app.insert_resource(LivesResource(Lives::new()));
+
+        app.init_asset::<Image>();
+        app.init_asset::<Font>();
+
+        app.update();
+
+        app
+    }
+
+    #[test]
+    fn should_display_the_lives() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        let mut query = app.world_mut().query::<(&LivesView, &Children)>();
+        let (_, children) = query.single(app.world())?;
+
+        let label = children
+            .iter()
+            .filter(|child| {
+                if let Some(text) = app.world().get::<Text>(**child)
+                    && text.0 == "LIVES"
+                {
+                    return true;
+                }
+                false
+            })
+            .collect::<Vec<&Entity>>();
+
+        let lives = children
+            .iter()
+            .filter(|child| app.world().get::<ImageNode>(**child).is_some())
+            .collect::<Vec<&Entity>>();
+
+        assert!(!label.is_empty());
+        assert_eq!(lives.len(), 3);
+
+        Ok(())
     }
 }
