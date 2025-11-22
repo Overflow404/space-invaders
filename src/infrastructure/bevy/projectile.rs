@@ -2,7 +2,10 @@ use crate::infrastructure::bevy::player::{PlayerResource, PlayerView};
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
-pub const PROJECTILE_TIME_IN_SECONDS: f32 = 1.5;
+pub const PROJECTILE_SPEED: f32 = 500.0;
+pub const PROJECTILE_DURATION: f32 = 1.5;
+const PROJECTILE_WIDTH: f32 = 5.0;
+const PROJECTILE_HEIGHT: f32 = 15.0;
 
 #[derive(Resource)]
 pub struct ProjectileMovementTimer(pub Timer);
@@ -38,7 +41,7 @@ impl ProjectileView {
             Projectile,
             Sprite {
                 color: Color::srgb_u8(190, 12, 12),
-                custom_size: Some(Vec2::new(5.0, 15.0)),
+                custom_size: Some(Vec2::new(PROJECTILE_WIDTH, PROJECTILE_HEIGHT)),
                 ..default()
             },
             Transform::from_translation(self.start_pos),

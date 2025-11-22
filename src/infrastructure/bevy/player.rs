@@ -1,13 +1,17 @@
 use bevy::prelude::*;
 
 use crate::infrastructure::bevy::game_area::GAME_AREA_WIDTH;
+use crate::infrastructure::bevy::projectile::PROJECTILE_SPEED;
 use crate::{
     domain::player::Player,
     infrastructure::bevy::projectile::{FireContext, ProjectileView},
 };
 
+const PLAYER_Y: f32 = -280.0;
 const PLAYER_WIDTH: f32 = 60.0;
 const PLAYER_HEIGHT: f32 = 30.0;
+const DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE: f32 = 25.0;
+const PLAYER_IMAGE: &str = "player-green.png";
 
 #[derive(Resource)]
 pub struct PlayerResource(pub Player);
@@ -30,11 +34,11 @@ impl PlayerView {
         commands.spawn((
             PlayerView,
             Sprite {
-                image: asset_server.load("player-green.png"),
+                image: asset_server.load(PLAYER_IMAGE),
                 custom_size: Some(Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT)),
                 ..default()
             },
-            Transform::from_xyz(0.0, -280.0, 0.0),
+            Transform::from_xyz(0.0, PLAYER_Y, 0.0),
         ));
     }
 
@@ -64,7 +68,10 @@ impl PlayerView {
             for player_transform in ctx.player_query.iter() {
                 let player_pos = player_transform.translation;
 
-                let projectile_view = ProjectileView::new(player_pos.x, player_pos.y + 25.0);
+                let projectile_view = ProjectileView::new(
+                    player_pos.x,
+                    player_pos.y + DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE,
+                );
 
                 ctx.commands.spawn(projectile_view.spawn_projectile());
 
@@ -74,10 +81,9 @@ impl PlayerView {
 
         if ctx.player_res.0.is_firing() {
             ctx.timer.0.tick(ctx.time.delta());
-            let speed = 500.0;
 
             for mut transform in ctx.projectile_query.iter_mut() {
-                transform.translation.y += speed * ctx.time.delta_secs();
+                transform.translation.y += PROJECTILE_SPEED * ctx.time.delta_secs();
             }
         }
 

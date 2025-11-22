@@ -9,7 +9,6 @@ const ENEMY_HEIGHT: f32 = 40.0;
 const SPACE_BETWEEN_ENEMIES_X: f32 = 15.0;
 const SPACE_BETWEEN_ENEMIES_Y: f32 = 15.0;
 const VERTICAL_DROP: f32 = 15.0;
-
 const ENEMY_IMAGE: &str = "red.png";
 
 #[derive(Resource)]

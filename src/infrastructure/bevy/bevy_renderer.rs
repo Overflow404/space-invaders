@@ -14,7 +14,7 @@ use crate::{
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
-            projectile::{PROJECTILE_TIME_IN_SECONDS, ProjectileMovementTimer},
+            projectile::{PROJECTILE_DURATION, ProjectileMovementTimer},
             score::{ScoreResource, ScoreView},
             screen::ScreenView,
             shield_formation::{ShieldFormationResource, ShieldFormationView},
@@ -110,7 +110,7 @@ impl BevyRenderer {
             TimerMode::Repeating,
         )));
         commands.insert_resource(ProjectileMovementTimer(Timer::from_seconds(
-            PROJECTILE_TIME_IN_SECONDS,
+            PROJECTILE_DURATION,
             TimerMode::Once,
         )));
 
