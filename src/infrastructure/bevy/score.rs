@@ -13,6 +13,7 @@ use bevy::{
     utils::default,
 };
 
+use crate::infrastructure::bevy::header::FONT;
 use crate::{domain::score::Score, infrastructure::bevy::header::HeaderView};
 
 #[derive(Resource)]
@@ -29,7 +30,7 @@ impl ScoreView {
         header_query: Query<Entity, With<HeaderView>>,
     ) {
         if let Ok(header) = header_query.single() {
-            let font = asset_server.load("pixeled.ttf");
+            let font = asset_server.load(FONT);
 
             commands.entity(header).with_children(|parent| {
                 parent

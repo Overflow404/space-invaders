@@ -16,8 +16,9 @@ use bevy::{
     utils::default,
 };
 
+use crate::infrastructure::bevy::header::FONT;
+use crate::infrastructure::bevy::player::PLAYER_IMAGE;
 use crate::{domain::lives::Lives, infrastructure::bevy::header::HeaderView};
-
 #[derive(Resource)]
 pub struct LivesResource(pub Lives);
 
@@ -32,7 +33,7 @@ impl LivesView {
         header_query: Query<Entity, With<HeaderView>>,
     ) {
         if let Ok(header) = header_query.single() {
-            let font = asset_server.load("pixeled.ttf");
+            let font = asset_server.load(FONT);
             let remaining_lives = lives_res.0.get_current();
 
             commands.entity(header).with_children(|parent| {
@@ -66,7 +67,7 @@ impl LivesView {
                         for _ in 0..remaining_lives {
                             lives_section.spawn((
                                 ImageNode {
-                                    image: asset_server.load("player-green.png"),
+                                    image: asset_server.load(PLAYER_IMAGE),
                                     ..default()
                                 },
                                 Node {

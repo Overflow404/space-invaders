@@ -1,10 +1,10 @@
 use crate::domain::enemy::Enemy;
 use tracing::debug;
 
-pub const X_STEPS: usize = 41;
+pub const NUMBER_OF_STEPS_ON_X_AXE: usize = 41;
 pub const COLUMNS: usize = 11;
 pub const ROWS: usize = 5;
-const MAX_OFFSET_X: usize = X_STEPS - COLUMNS;
+const FREE_MOVING_SPACE_ON_X_AXE: usize = NUMBER_OF_STEPS_ON_X_AXE - COLUMNS;
 
 pub struct EnemyFormation {
     enemies: Vec<Vec<Option<Enemy>>>,
@@ -61,7 +61,7 @@ impl EnemyFormation {
 
         match self.direction {
             MovingDirection::ToRight => {
-                if current_x < MAX_OFFSET_X {
+                if current_x < FREE_MOVING_SPACE_ON_X_AXE {
                     self.position.0 += 1;
                 } else {
                     self.position.1 += 1;
@@ -100,7 +100,9 @@ impl EnemyFormation {
 }
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::domain::enemy_formation::{
+        EnemyFormation, FREE_MOVING_SPACE_ON_X_AXE, FormationStatus, MovingDirection,
+    };
 
     #[test]
     fn should_create_formation() {
@@ -129,7 +131,7 @@ mod tests {
     fn should_hit_right_wall_and_drop_down() {
         let mut formation = EnemyFormation::new();
 
-        for _ in 0..MAX_OFFSET_X {
+        for _ in 0..FREE_MOVING_SPACE_ON_X_AXE {
             formation.advance_enemies();
         }
 
@@ -146,7 +148,7 @@ mod tests {
     fn should_advance_enemies_to_the_left_when_there_is_space() {
         let mut formation = EnemyFormation::new();
 
-        for _ in 0..(MAX_OFFSET_X + 1) {
+        for _ in 0..(FREE_MOVING_SPACE_ON_X_AXE + 1) {
             formation.advance_enemies();
         }
 
@@ -159,11 +161,11 @@ mod tests {
     fn should_hit_left_wall_and_drop_down() {
         let mut formation = EnemyFormation::new();
 
-        for _ in 0..MAX_OFFSET_X {
+        for _ in 0..FREE_MOVING_SPACE_ON_X_AXE {
             formation.advance_enemies();
         }
         formation.advance_enemies();
-        for _ in 0..MAX_OFFSET_X {
+        for _ in 0..FREE_MOVING_SPACE_ON_X_AXE {
             formation.advance_enemies();
         }
 

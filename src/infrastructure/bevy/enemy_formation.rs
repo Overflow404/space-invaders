@@ -1,4 +1,4 @@
-use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, X_STEPS};
+use crate::domain::enemy_formation::{COLUMNS, EnemyFormation, NUMBER_OF_STEPS_ON_X_AXE};
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use bevy::prelude::*;
@@ -60,7 +60,7 @@ impl EnemyFormationView {
         let n_aliens = COLUMNS as f32;
         let n_gaps = (COLUMNS - 1) as f32;
 
-        let n_steps = (X_STEPS - COLUMNS) as f32;
+        let n_steps = (NUMBER_OF_STEPS_ON_X_AXE - COLUMNS) as f32;
 
         let block_width = (n_aliens * alien_width) + (n_gaps * gap_x);
 
@@ -108,6 +108,7 @@ impl EnemyFormationView {
                         Enemy,
                         Sprite {
                             image: asset_server.load(ENEMY_IMAGE),
+                            color: Color::WHITE,
                             custom_size: Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
                             ..default()
                         },

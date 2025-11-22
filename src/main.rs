@@ -7,7 +7,7 @@ use crate::infrastructure::{bevy::bevy_renderer::BevyRenderer, renderer::Rendere
 pub mod domain;
 pub mod infrastructure;
 
-const DEFAULT_LOG_LEVEL: &str = "INFO";
+const DEFAULT_LOG_LEVEL: &str = "DEBUG";
 
 fn setup_tracing_subscriber() {
     tracing_subscriber::registry()

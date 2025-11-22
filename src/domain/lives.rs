@@ -14,7 +14,9 @@ impl Lives {
     }
 
     pub fn decrement(&mut self) {
-        self.current -= 1;
+        if self.current > 0 {
+            self.current -= 1;
+        }
     }
 
     pub fn get_current(&self) -> u32 {
@@ -49,5 +51,16 @@ mod tests {
         lives.decrement();
         lives.reset();
         assert_eq!(lives.get_current(), 3);
+    }
+
+    #[test]
+    fn should_not_decrement_lives_when_exhausted() {
+        let mut lives = Lives::new();
+        lives.decrement();
+        lives.decrement();
+        lives.decrement();
+        lives.decrement();
+
+        assert_eq!(lives.get_current(), 0);
     }
 }

@@ -7,8 +7,8 @@ use crate::{
     infrastructure::{
         bevy::{
             enemy_formation::{
-                EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView,
-                ENEMY_FORMATION_SPEED,
+                ENEMY_FORMATION_SPEED, EnemyFormationMovementTimer, EnemyFormationResource,
+                EnemyFormationView,
             },
             game_area::GameAreaView,
             header::HeaderView,
@@ -16,28 +16,26 @@ use crate::{
             player::{PlayerResource, PlayerView},
             projectile::{PROJECTILE_DURATION, ProjectileMovementTimer},
             score::{ScoreResource, ScoreView},
-            screen::ScreenView,
             shield_formation::{ShieldFormationResource, ShieldFormationView},
         },
         renderer::Renderer,
     },
 };
 use bevy::DefaultPlugins;
-use bevy::app::{App, PluginGroup, Startup, Update};
-use bevy::asset::AssetServer;
+use bevy::app::{App, PluginGroup, PostUpdate, Startup, Update};
 use bevy::camera::{Camera2d, OrthographicProjection, Projection, ScalingMode};
 use bevy::prelude::{
-    Changed, Commands, IntoScheduleConfigs, Query, Res, ResMut, Timer, Transform, UiScale,
+    Changed, Commands, IntoScheduleConfigs, Query, ResMut, Timer, Transform, UiScale,
 };
 use bevy::time::TimerMode;
 use bevy::utils::default;
-use bevy::window::{Window, WindowPlugin, WindowResolution};
+use bevy::window::{PresentMode, Window, WindowPlugin, WindowResolution};
 
 pub struct BevyRenderer;
 
 const WINDOW_NAME: &str = "Space Invaders";
 pub(crate) const WINDOW_WIDTH: f32 = 1200.0;
-const WINDOW_HEIGHT: f32 = 700.0;
+pub(crate) const WINDOW_HEIGHT: f32 = 700.0;
 
 impl Renderer for BevyRenderer {
     fn render(&self) {
@@ -46,6 +44,7 @@ impl Renderer for BevyRenderer {
                 primary_window: Some(Window {
                     resolution: WindowResolution::new(WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32),
                     title: WINDOW_NAME.to_string(),
+                    present_mode: PresentMode::Fifo,
                     ..default()
                 }),
                 ..default()
@@ -71,8 +70,11 @@ impl Renderer for BevyRenderer {
                     PlayerView::on_fire,
                     EnemyFormationView::on_move,
                     EnemyFormationView::advance_on_tick,
-                    Self::update_ui_scale,
                 ),
+            )
+            .add_systems(
+                PostUpdate,
+                (GameAreaView::resize_game_area, Self::update_window_scale),
             )
             .run();
     }
@@ -88,16 +90,17 @@ impl BevyRenderer {
     pub fn new() -> Self {
         Self
     }
-    fn on_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    fn on_startup(mut commands: Commands) {
         commands.spawn((
             Camera2d,
             Projection::from(OrthographicProjection {
-                scaling_mode: ScalingMode::FixedHorizontal {
-                    viewport_width: WINDOW_WIDTH,
+                scaling_mode: ScalingMode::AutoMin {
+                    min_width: WINDOW_WIDTH,
+                    min_height: WINDOW_HEIGHT,
                 },
                 ..OrthographicProjection::default_2d()
             }),
-            Transform::from_xyz(0.0, HEADER_HEIGHT / 2.0, 0.0),
+            Transform::from_xyz(0.0, HEADER_HEIGHT, 0.0),
         ));
 
         commands.insert_resource(ScoreResource(Score::new()));
@@ -113,17 +116,17 @@ impl BevyRenderer {
             PROJECTILE_DURATION,
             TimerMode::Once,
         )));
-
-        ScreenView::render(&mut commands, &asset_server);
     }
 
-    fn update_ui_scale(
+    fn update_window_scale(
         window_query: Query<&Window, Changed<Window>>,
         mut ui_scale: ResMut<UiScale>,
     ) {
         if let Ok(window) = window_query.single() {
-            let scale = window.width() / WINDOW_WIDTH;
-            ui_scale.0 = scale;
+            let scale_x = window.width() / WINDOW_WIDTH;
+            let scale_y = window.height() / WINDOW_HEIGHT;
+
+            ui_scale.0 = scale_x.min(scale_y);
         }
     }
 }

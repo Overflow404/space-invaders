@@ -19,6 +19,7 @@ use crate::{
     domain::shield_formation::ShieldFormation, infrastructure::bevy::game_area::GameAreaView,
 };
 
+const SHIELD_IMAGE: &str = "shield.png";
 #[derive(Resource)]
 pub struct ShieldFormationResource(pub ShieldFormation);
 
@@ -52,7 +53,7 @@ impl ShieldFormationView {
                         for _ in 0..shields.len() {
                             shield_area.spawn((
                                 ImageNode {
-                                    image: asset_server.load("shield.png"),
+                                    image: asset_server.load(SHIELD_IMAGE),
                                     ..default()
                                 },
                                 Node {

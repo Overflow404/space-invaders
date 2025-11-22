@@ -1,4 +1,3 @@
-pub mod background;
 pub mod bevy_renderer;
 pub mod enemy_formation;
 pub mod game_area;
@@ -7,5 +6,4 @@ pub mod lives;
 pub mod player;
 pub mod projectile;
 pub mod score;
-pub mod screen;
 pub mod shield_formation;

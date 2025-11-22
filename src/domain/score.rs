@@ -28,7 +28,7 @@ impl Score {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::domain::score::Score;
 
     #[test]
     fn should_create_new_score() {
