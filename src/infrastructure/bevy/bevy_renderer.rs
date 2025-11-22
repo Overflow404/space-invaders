@@ -7,29 +7,30 @@ use crate::{
     infrastructure::{
         bevy::{
             enemy_formation::{
-                ENEMY_FORMATION_SPEED, EnemyFormationMovementTimer, EnemyFormationResource,
-                EnemyFormationView,
+                EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView,
+                ENEMY_FORMATION_SPEED,
             },
             game_area::GameAreaView,
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
-            projectile::{PROJECTILE_DURATION, ProjectileMovementTimer},
+            projectile::{ProjectileMovementTimer, PROJECTILE_DURATION},
             score::{ScoreResource, ScoreView},
             shield_formation::{ShieldFormationResource, ShieldFormationView},
         },
         renderer::Renderer,
     },
 };
-use bevy::DefaultPlugins;
 use bevy::app::{App, PluginGroup, PostUpdate, Startup, Update};
 use bevy::camera::{Camera2d, OrthographicProjection, Projection, ScalingMode};
+use bevy::log::LogPlugin;
 use bevy::prelude::{
     Changed, Commands, IntoScheduleConfigs, Query, ResMut, Timer, Transform, UiScale,
 };
 use bevy::time::TimerMode;
 use bevy::utils::default;
 use bevy::window::{PresentMode, Window, WindowPlugin, WindowResolution};
+use bevy::DefaultPlugins;
 
 pub struct BevyRenderer;
 
@@ -40,15 +41,22 @@ pub(crate) const WINDOW_HEIGHT: f32 = 700.0;
 impl Renderer for BevyRenderer {
     fn render(&self) {
         App::new()
-            .add_plugins(DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    resolution: WindowResolution::new(WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32),
-                    title: WINDOW_NAME.to_string(),
-                    present_mode: PresentMode::Fifo,
-                    ..default()
-                }),
-                ..default()
-            }))
+            .add_plugins(
+                DefaultPlugins
+                    .set(WindowPlugin {
+                        primary_window: Some(Window {
+                            resolution: WindowResolution::new(
+                                WINDOW_WIDTH as u32,
+                                WINDOW_HEIGHT as u32,
+                            ),
+                            title: WINDOW_NAME.to_string(),
+                            present_mode: PresentMode::Fifo,
+                            ..default()
+                        }),
+                        ..default()
+                    })
+                    .disable::<LogPlugin>(),
+            )
             .add_systems(
                 Startup,
                 (
