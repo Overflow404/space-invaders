@@ -27,7 +27,6 @@ impl ScreenView {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
-                padding: UiRect::all(Val::Px(15.0)),
                 ..default()
             },
         ));

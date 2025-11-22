@@ -1,4 +1,3 @@
-
 pub struct Lives {
     current: u32,
 }

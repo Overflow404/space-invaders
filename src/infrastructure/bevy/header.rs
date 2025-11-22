@@ -1,3 +1,5 @@
+use crate::infrastructure::bevy::screen::ScreenView;
+use bevy::prelude::UiRect;
 use bevy::{
     color::Color,
     ecs::{
@@ -10,8 +12,7 @@ use bevy::{
     utils::default,
 };
 
-use crate::infrastructure::bevy::screen::ScreenView;
-
+pub const HEADER_HEIGHT: f32 = 40.0;
 #[derive(Component)]
 pub struct HeaderView;
 
@@ -23,10 +24,11 @@ impl HeaderView {
                     Self,
                     Node {
                         width: Val::Percent(100.0),
-                        height: Val::Percent(5.0),
+                        height: Val::Px(HEADER_HEIGHT),
                         flex_direction: FlexDirection::Row,
                         justify_content: JustifyContent::SpaceBetween,
                         align_items: AlignItems::Center,
+                        padding: UiRect::horizontal(Val::Px(20.0)),
                         ..default()
                     },
                     BackgroundColor(Color::srgb_u8(140, 12, 12)),

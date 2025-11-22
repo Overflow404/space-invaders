@@ -1,26 +1,17 @@
-use crate::infrastructure::bevy::player::{PlayerContainerView, PlayerResource, PlayerView};
+use crate::infrastructure::bevy::player::{PlayerResource, PlayerView};
 use bevy::ecs::system::SystemParam;
-use bevy::input::ButtonInput;
-use bevy::prelude::{
-    Commands, ComputedNode, KeyCode, Query, Res, ResMut, Time, Window, With, Without,
-};
-use bevy::{
-    color::Color,
-    ecs::{component::Component, resource::Resource},
-    time::Timer,
-    ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, Val},
-    utils::default,
-};
+use bevy::prelude::*;
 
-pub const PROJECTILE_TIME_IN_SECONDS: f32 = 1.0;
+pub const PROJECTILE_TIME_IN_SECONDS: f32 = 1.5;
 
 #[derive(Resource)]
 pub struct ProjectileMovementTimer(pub Timer);
 
 #[derive(Component)]
+pub struct Projectile;
+
 pub struct ProjectileView {
-    x: f32,
-    y: f32,
+    start_pos: Vec3,
 }
 
 #[derive(SystemParam)]
@@ -30,41 +21,27 @@ pub struct FireContext<'w, 's> {
     pub keyboard: Res<'w, ButtonInput<KeyCode>>,
     pub player_res: ResMut<'w, PlayerResource>,
     pub timer: ResMut<'w, ProjectileMovementTimer>,
-    pub player_query: Query<'w, 's, &'static Node, (With<PlayerView>, Without<ProjectileView>)>,
-    pub parent_query:
-        Query<'w, 's, &'static ComputedNode, (With<PlayerContainerView>, Without<PlayerView>)>,
-    pub window_query: Query<'w, 's, &'static Window>,
+    pub player_query: Query<'w, 's, &'static Transform, (With<PlayerView>, Without<Projectile>)>,
     pub projectile_query:
-        Query<'w, 's, &'static mut Node, (With<ProjectileView>, Without<PlayerView>)>,
+        Query<'w, 's, &'static mut Transform, (With<Projectile>, Without<PlayerView>)>,
 }
 
 impl ProjectileView {
     pub fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
+        Self {
+            start_pos: Vec3::new(x, y, 0.0),
+        }
     }
 
-    pub fn increase_x(&mut self) {
-        self.x += 1.0;
-    }
-
-    pub fn increase_y(&mut self) {
-        self.y += 1.0;
-    }
-
-    pub(crate) fn spawn_projectile(&self) -> (Self, Node, BackgroundColor) {
+    pub fn spawn_projectile(&self) -> (Projectile, Sprite, Transform) {
         (
-            ProjectileView::new(0.0, 0.0),
-            Node {
-                left: Val::Px(self.x),
-                top: Val::Px(self.y),
-                width: Val::Px(10.0),
-                height: Val::Px(10.0),
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::FlexStart,
-                align_items: AlignItems::Center,
+            Projectile,
+            Sprite {
+                color: Color::srgb_u8(190, 12, 12),
+                custom_size: Some(Vec2::new(5.0, 15.0)),
                 ..default()
             },
-            BackgroundColor(Color::srgb_u8(190, 12, 12)),
+            Transform::from_translation(self.start_pos),
         )
     }
 }

@@ -1,3 +1,4 @@
+use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::{
     domain::{
         enemy_formation::EnemyFormation, lives::Lives, player::Player, score::Score,
@@ -13,7 +14,7 @@ use crate::{
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
-            projectile::{ProjectileMovementTimer, PROJECTILE_TIME_IN_SECONDS},
+            projectile::{PROJECTILE_TIME_IN_SECONDS, ProjectileMovementTimer},
             score::{ScoreResource, ScoreView},
             screen::ScreenView,
             shield_formation::{ShieldFormationResource, ShieldFormationView},
@@ -21,27 +22,29 @@ use crate::{
         renderer::Renderer,
     },
 };
+use bevy::DefaultPlugins;
 use bevy::app::{App, PluginGroup, Startup, Update};
 use bevy::asset::AssetServer;
-use bevy::camera::Camera2d;
-use bevy::prelude::{Commands, IntoScheduleConfigs, Res, Timer};
+use bevy::camera::{Camera2d, OrthographicProjection, Projection, ScalingMode};
+use bevy::prelude::{
+    Changed, Commands, IntoScheduleConfigs, Query, Res, ResMut, Timer, Transform, UiScale,
+};
 use bevy::time::TimerMode;
 use bevy::utils::default;
 use bevy::window::{Window, WindowPlugin, WindowResolution};
-use bevy::DefaultPlugins;
 
 pub struct BevyRenderer;
 
 const WINDOW_NAME: &str = "Space Invaders";
-const WINDOW_WIDTH: u32 = 1200;
-const WINDOW_HEIGHT: u32 = 700;
+pub(crate) const WINDOW_WIDTH: f32 = 1200.0;
+const WINDOW_HEIGHT: f32 = 700.0;
 
 impl Renderer for BevyRenderer {
     fn render(&self) {
         App::new()
             .add_plugins(DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    resolution: WindowResolution::new(WINDOW_WIDTH, WINDOW_HEIGHT),
+                    resolution: WindowResolution::new(WINDOW_WIDTH as u32, WINDOW_HEIGHT as u32),
                     title: WINDOW_NAME.to_string(),
                     ..default()
                 }),
@@ -68,6 +71,7 @@ impl Renderer for BevyRenderer {
                     PlayerView::on_fire,
                     EnemyFormationView::on_move,
                     EnemyFormationView::advance_on_tick,
+                    Self::update_ui_scale,
                 ),
             )
             .run();
@@ -85,7 +89,16 @@ impl BevyRenderer {
         Self
     }
     fn on_startup(mut commands: Commands, asset_server: Res<AssetServer>) {
-        commands.spawn(Camera2d);
+        commands.spawn((
+            Camera2d,
+            Projection::from(OrthographicProjection {
+                scaling_mode: ScalingMode::FixedHorizontal {
+                    viewport_width: WINDOW_WIDTH,
+                },
+                ..OrthographicProjection::default_2d()
+            }),
+            Transform::from_xyz(0.0, HEADER_HEIGHT / 2.0, 0.0),
+        ));
 
         commands.insert_resource(ScoreResource(Score::new()));
         commands.insert_resource(LivesResource(Lives::new()));
@@ -102,5 +115,15 @@ impl BevyRenderer {
         )));
 
         ScreenView::render(&mut commands, &asset_server);
+    }
+
+    fn update_ui_scale(
+        window_query: Query<&Window, Changed<Window>>,
+        mut ui_scale: ResMut<UiScale>,
+    ) {
+        if let Ok(window) = window_query.single() {
+            let scale = window.width() / WINDOW_WIDTH;
+            ui_scale.0 = scale;
+        }
     }
 }

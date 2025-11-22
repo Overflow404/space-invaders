@@ -1,66 +1,31 @@
 use crate::domain::enemy::Enemy;
-use std::fmt;
 use tracing::debug;
 
-const ROWS: usize = 15;
-const COLUMNS: usize = 41;
-
-const FIRST_ENEMY_Y: usize = 15;
-
-const LAST_ENEMY_X: usize = 4;
-const LAST_ENEMY_Y: usize = 25;
-
-const ENEMIES_PER_ROW: usize = LAST_ENEMY_Y - FIRST_ENEMY_Y + 1;
+pub const X_STEPS: usize = 41;
+pub const COLUMNS: usize = 11;
+pub const ROWS: usize = 5;
+const MAX_OFFSET_X: usize = X_STEPS - COLUMNS;
 
 pub struct EnemyFormation {
     enemies: Vec<Vec<Option<Enemy>>>,
+    position: (usize, usize),
     direction: MovingDirection,
     status: FormationStatus,
 }
 
-#[derive(PartialEq, Debug)]
-enum MovingDirection {
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub enum MovingDirection {
     ToLeft,
     ToRight,
 }
 
-#[derive(PartialEq, Debug)]
-enum FormationStatus {
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub enum FormationStatus {
     Assembled,
     Advancing,
     Breached,
 }
 
-impl fmt::Debug for EnemyFormation {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "\n     y: ")?;
-        for y in 0..COLUMNS {
-            write!(f, "{:^3}", y)?;
-        }
-        writeln!(f)?;
-
-        write!(f, "       ")?;
-        for _ in 0..COLUMNS {
-            write!(f, "---")?;
-        }
-        writeln!(f)?;
-
-        for (i, row) in self.enemies.iter().enumerate() {
-            write!(f, " x: {:<2} |", i)?;
-
-            for cell in row.iter() {
-                let symbol = match cell {
-                    Some(_) => "E",
-                    None => ".",
-                };
-                write!(f, " {:1} ", symbol)?;
-            }
-            writeln!(f)?;
-        }
-
-        Ok(())
-    }
-}
 impl Default for EnemyFormation {
     fn default() -> Self {
         Self::new()
@@ -70,311 +35,176 @@ impl Default for EnemyFormation {
 impl EnemyFormation {
     pub fn new() -> Self {
         let mut enemies = vec![vec![None; COLUMNS]; ROWS];
-
         let mut id = 1;
 
-        for (x, row) in enemies.iter_mut().enumerate() {
-            for (y, enemy) in row.iter_mut().enumerate() {
-                if (FIRST_ENEMY_Y..=LAST_ENEMY_Y).contains(&y) && x <= LAST_ENEMY_X {
-                    *enemy = Some(Enemy::new(id));
-                    id += 1;
-                }
+        for row in enemies.iter_mut() {
+            for slot in row.iter_mut() {
+                *slot = Some(Enemy::new(id));
+                id += 1;
             }
         }
 
-        let formation = EnemyFormation {
+        EnemyFormation {
             enemies,
+            position: (0, 0),
             direction: MovingDirection::ToRight,
             status: FormationStatus::Assembled,
-        };
-
-        debug!("Enemy formation created!");
-        debug!("Number of enemies per row {}", ENEMIES_PER_ROW);
-        debug!("Number of enemies {} enemies", id - 1);
-        debug!("Starting direction: {:?}", formation.direction);
-        debug!("Starting status: {:?}", formation.status);
-        debug!("\n{:?}\n", formation);
-
-        formation
+        }
     }
 
     pub fn advance_enemies(&mut self) {
         if self.status == FormationStatus::Breached {
-            debug!("Enemy formation already reached end, not advancing!");
-            debug!("{:?}", self);
             return;
         }
+
+        let current_x = self.position.0;
 
         match self.direction {
-            MovingDirection::ToRight => self.move_all_enemies_to_the_right(),
-            MovingDirection::ToLeft => self.move_all_enemies_to_the_left(),
+            MovingDirection::ToRight => {
+                if current_x < MAX_OFFSET_X {
+                    self.position.0 += 1;
+                } else {
+                    self.position.1 += 1;
+                    self.direction = MovingDirection::ToLeft;
+                }
+            }
+            MovingDirection::ToLeft => {
+                if current_x > 0 {
+                    self.position.0 -= 1;
+                } else {
+                    self.position.1 += 1;
+                    self.direction = MovingDirection::ToRight;
+                }
+            }
         }
 
-        if self.enemies_won() {
+        if self.position.1 >= 14 {
             self.status = FormationStatus::Breached;
-
-            debug!("Enemy formation just reached end, they won!");
-            debug!("{:?}", self);
-            return;
+        } else {
+            self.status = FormationStatus::Advancing;
         }
 
-        self.status = FormationStatus::Advancing;
-
-        debug!("Enemy formation advanced!");
-        debug!("\n{:?}", self);
+        debug!(
+            "Formation moved to {:?}, direction: {:?}",
+            self.position, self.direction
+        );
     }
 
     pub fn get_enemies(&self) -> &Vec<Vec<Option<Enemy>>> {
         &self.enemies
     }
 
-    fn enemies_won(&self) -> bool {
-        let bottom_rightmost: Option<(usize, usize)> = self
-            .enemies
-            .iter()
-            .enumerate()
-            .flat_map(|(x, row)| {
-                row.iter()
-                    .enumerate()
-                    .filter_map(move |(y, enemy)| enemy.as_ref().map(|_| (x, y)))
-            })
-            .max_by_key(|(x, y)| (*x, *y));
-
-        if let Some((x, y)) = bottom_rightmost
-            && x == ROWS - 1
-            && y == COLUMNS - 1
-        {
-            return true;
-        }
-
-        false
-    }
-
-    fn move_all_enemies_to_the_left(&mut self) {
-        let top_leftmost: Option<usize> = self
-            .enemies
-            .iter()
-            .filter_map(|row| {
-                row.iter()
-                    .enumerate()
-                    .find_map(|(y, enemy)| enemy.as_ref().map(|_| y))
-            })
-            .min_by_key(|y| *y);
-
-        if let Some(y) = top_leftmost {
-            if y == 0 {
-                self.direction = MovingDirection::ToRight;
-
-                let empty_row = vec![None; COLUMNS];
-
-                let mut shifted_rows: Vec<Vec<Option<Enemy>>> =
-                    self.enemies.iter().take(ROWS - 1).cloned().collect();
-
-                shifted_rows.insert(0, empty_row);
-
-                self.enemies = shifted_rows;
-            } else {
-                self.enemies = self
-                    .enemies
-                    .iter()
-                    .map(|row| {
-                        let mut new_row = row.clone();
-                        new_row.remove(0);
-                        new_row.push(None);
-                        new_row
-                    })
-                    .collect();
-            }
-        }
-    }
-
-    fn move_all_enemies_to_the_right(&mut self) {
-        let top_rightmost: Option<usize> = self
-            .enemies
-            .iter()
-            .filter_map(|row| {
-                row.iter()
-                    .enumerate()
-                    .rev()
-                    .find_map(|(y, enemy)| enemy.as_ref().map(|_| y))
-            })
-            .max_by_key(|y| *y);
-
-        if let Some(y) = top_rightmost {
-            if y == COLUMNS - 1 {
-                self.direction = MovingDirection::ToLeft;
-                self.enemies.pop();
-                self.enemies.insert(0, vec![None; COLUMNS]);
-            } else {
-                for row in self.enemies.iter_mut() {
-                    row.pop();
-                    row.insert(0, None);
-                }
-            }
-        }
+    pub fn get_position(&self) -> (usize, usize) {
+        self.position
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn should_create_starting_enemy_formation() {
+    fn should_create_formation() {
         let formation = EnemyFormation::new();
 
-        assert_eq!(formation.enemies.len(), ROWS);
-        assert_eq!(formation.enemies[0].len(), COLUMNS);
+        assert_eq!(formation.enemies.len(), 5);
+        assert_eq!(formation.enemies[0].len(), 11);
+
+        assert_eq!(formation.position, (0, 0));
+        assert_eq!(formation.direction, MovingDirection::ToRight);
         assert_eq!(formation.status, FormationStatus::Assembled);
-        assert_eq!(formation.direction, MovingDirection::ToRight);
-
-        for x in 0..(ROWS - 1) {
-            for y in 0..(COLUMNS - 1) {
-                if x > LAST_ENEMY_X {
-                    assert!(formation.enemies[x][y].is_none());
-                } else if (FIRST_ENEMY_Y..=LAST_ENEMY_Y).contains(&y) {
-                    assert!(formation.enemies[x][y].is_some());
-                } else {
-                    assert!(formation.enemies[x][y].is_none());
-                }
-            }
-        }
     }
 
     #[test]
-    fn should_advance_enemies_to_the_right_when_there_is_enough_space() {
+    fn should_advance_enemies_to_the_right_when_there_is_space() {
         let mut formation = EnemyFormation::new();
 
         formation.advance_enemies();
 
-        assert_eq!(formation.status, FormationStatus::Advancing);
+        assert_eq!(formation.position, (1, 0));
         assert_eq!(formation.direction, MovingDirection::ToRight);
-
-        for x in 0..(ROWS - 1) {
-            for y in 0..(COLUMNS - 1) {
-                if x > LAST_ENEMY_X {
-                    assert!(formation.enemies[x][y].is_none());
-                } else if y > FIRST_ENEMY_Y && y <= LAST_ENEMY_Y + 1 {
-                    assert!(formation.enemies[x][y].is_some());
-                } else {
-                    assert!(formation.enemies[x][y].is_none());
-                }
-            }
-        }
+        assert_eq!(formation.status, FormationStatus::Advancing);
     }
 
     #[test]
-    fn should_advance_enemies_to_the_next_row_when_there_is_no_right_space() {
+    fn should_hit_right_wall_and_drop_down() {
         let mut formation = EnemyFormation::new();
 
-        let row_jumps = 1;
-        let fully_traversed_rows = 0;
-        let steps_per_row = 30;
-
-        let steps_to_reach_the_beginning_of_the_second_line =
-            (fully_traversed_rows * steps_per_row) + row_jumps + FIRST_ENEMY_Y;
-
-        for _ in 0..steps_to_reach_the_beginning_of_the_second_line {
+        for _ in 0..MAX_OFFSET_X {
             formation.advance_enemies();
         }
 
-        assert_eq!(formation.status, FormationStatus::Advancing);
-        assert_eq!(formation.direction, MovingDirection::ToLeft);
+        assert_eq!(formation.position, (30, 0));
+        assert_eq!(formation.direction, MovingDirection::ToRight);
 
-        for x in 0..(ROWS - 1) {
-            for y in 0..(COLUMNS - 1) {
-                if x == 0 || x >= 6 {
-                    assert!(formation.enemies[x][y].is_none());
-                } else if ((COLUMNS - ENEMIES_PER_ROW)..COLUMNS).contains(&y) {
-                    assert!(formation.enemies[x][y].is_some());
-                } else {
-                    assert!(formation.enemies[x][y].is_none());
-                }
-            }
-        }
+        formation.advance_enemies();
+
+        assert_eq!(formation.position, (30, 1));
+        assert_eq!(formation.direction, MovingDirection::ToLeft);
     }
 
     #[test]
-    fn should_advance_enemies_to_the_left_when_there_is_enough_space() {
+    fn should_advance_enemies_to_the_left_when_there_is_space() {
         let mut formation = EnemyFormation::new();
 
-        let row_jumps = 1;
-        let fully_traversed_rows = 0;
-        let steps_per_row = 30;
-
-        let steps_to_reach_the_beginning_of_the_second_line =
-            (fully_traversed_rows * steps_per_row) + row_jumps + FIRST_ENEMY_Y;
-
-        for _ in 0..steps_to_reach_the_beginning_of_the_second_line {
+        for _ in 0..(MAX_OFFSET_X + 1) {
             formation.advance_enemies();
         }
 
         formation.advance_enemies();
 
-        assert_eq!(formation.status, FormationStatus::Advancing);
+        assert_eq!(formation.direction, MovingDirection::ToLeft);
+    }
+
+    #[test]
+    fn should_hit_left_wall_and_drop_down() {
+        let mut formation = EnemyFormation::new();
+
+        for _ in 0..MAX_OFFSET_X {
+            formation.advance_enemies();
+        }
+        formation.advance_enemies();
+        for _ in 0..MAX_OFFSET_X {
+            formation.advance_enemies();
+        }
+
+        assert_eq!(formation.position, (0, 1));
         assert_eq!(formation.direction, MovingDirection::ToLeft);
 
-        for x in 0..(ROWS - 1) {
-            for y in 0..(COLUMNS - 1) {
-                if x == 0 || x >= 6 {
-                    assert!(formation.enemies[x][y].is_none());
-                } else if ((COLUMNS - ENEMIES_PER_ROW - 1)..(COLUMNS - 1)).contains(&y) {
-                    assert!(formation.enemies[x][y].is_some());
-                } else {
-                    assert!(formation.enemies[x][y].is_none());
-                }
-            }
-        }
-    }
+        formation.advance_enemies();
 
-    #[test]
-    fn should_advance_enemies_to_the_next_row_when_there_is_no_left_space() {
-        let mut formation = EnemyFormation::new();
-
-        let row_jumps = 2;
-        let fully_traversed_rows = 1;
-        let steps_per_row = 30;
-
-        let steps_to_reach_the_beginning_of_the_third_line =
-            (fully_traversed_rows * steps_per_row) + row_jumps + FIRST_ENEMY_Y;
-
-        for _ in 0..steps_to_reach_the_beginning_of_the_third_line {
-            formation.advance_enemies();
-        }
-
-        assert_eq!(formation.status, FormationStatus::Advancing);
+        assert_eq!(formation.position, (0, 2));
         assert_eq!(formation.direction, MovingDirection::ToRight);
-
-        for x in 0..(ROWS - 1) {
-            for y in 0..(COLUMNS - 1) {
-                if x <= 1 || x >= 7 {
-                    assert!(formation.enemies[x][y].is_none());
-                } else if y < 11 {
-                    assert!(formation.enemies[x][y].is_some());
-                } else {
-                    assert!(formation.enemies[x][y].is_none());
-                }
-            }
-        }
     }
 
     #[test]
-    fn should_not_advance_anymore_when_end_is_reached() {
+    fn should_detect_breach_when_reaching_bottom() {
         let mut formation = EnemyFormation::new();
 
-        let row_jumps = 10;
-        let fully_traversed_rows = 10;
-        let steps_per_row = 30;
-
-        let steps_to_reach_the_end =
-            (fully_traversed_rows * steps_per_row) + row_jumps + FIRST_ENEMY_Y;
-
-        for _ in 0..steps_to_reach_the_end {
+        while formation.position.1 < 14 {
             formation.advance_enemies();
+            if formation.position.1 < 14 {
+                assert_eq!(formation.status, FormationStatus::Advancing);
+            }
         }
 
+        assert_eq!(formation.position.1, 14);
         assert_eq!(formation.status, FormationStatus::Breached);
+    }
+
+    #[test]
+    fn should_not_advance_anymore_when_breached() {
+        let mut formation = EnemyFormation::new();
+
+        while formation.position.1 < 14 {
+            formation.advance_enemies();
+        }
+
+        let position_at_breach = formation.position;
+        assert_eq!(formation.status, FormationStatus::Breached);
+
         formation.advance_enemies();
+
+        assert_eq!(formation.position, position_at_breach);
         assert_eq!(formation.status, FormationStatus::Breached);
     }
 }

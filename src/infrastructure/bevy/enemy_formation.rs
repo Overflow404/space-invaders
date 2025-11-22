@@ -1,27 +1,25 @@
-use crate::{
-    domain::enemy_formation::EnemyFormation, infrastructure::bevy::game_area::GameAreaView,
-};
-use bevy::{
-    asset::AssetServer,
-    color::Color,
-    ecs::{
-        change_detection::DetectChanges,
-        component::Component,
-        entity::Entity,
-        hierarchy::ChildSpawnerCommands,
-        query::With,
-        resource::Resource,
-        system::{Commands, Query, Res, ResMut},
-    },
-    time::{Time, Timer},
-    ui::{
-        widget::ImageNode, AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, UiRect,
-        Val,
-    },
-    utils::default,
-};
+use crate::domain::enemy_formation::{COLUMNS, EnemyFormation, X_STEPS};
+use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
+use crate::infrastructure::bevy::header::HEADER_HEIGHT;
+use bevy::prelude::*;
 
-pub const ONE_ERA_IN_SECONDS: f32 = 0.05;
+pub const ONE_ERA_IN_SECONDS: f32 = 0.6;
+
+struct FormationConfig {
+    enemy_width: f32,
+    enemy_height: f32,
+    space_between_enemies_x: f32,
+    space_between_enemies_y: f32,
+    vertical_drop: f32,
+}
+
+const CONFIG: FormationConfig = FormationConfig {
+    enemy_width: 60.0,
+    enemy_height: 40.0,
+    space_between_enemies_x: 15.0,
+    space_between_enemies_y: 15.0,
+    vertical_drop: 15.0,
+};
 
 #[derive(Resource)]
 pub struct EnemyFormationResource(pub EnemyFormation);
@@ -32,99 +30,29 @@ pub struct EnemyFormationMovementTimer(pub Timer);
 #[derive(Component)]
 pub struct EnemyFormationView;
 
+#[derive(Component)]
+pub struct Enemy;
+
 impl EnemyFormationView {
     pub fn spawn_enemy_formation(
-        mut commands: Commands,
+        commands: Commands,
         asset_server: Res<AssetServer>,
         enemy_formation_res: Res<EnemyFormationResource>,
-        game_area_query: Query<Entity, With<GameAreaView>>,
     ) {
-        if let Ok(game_area) = game_area_query.single() {
-            commands.entity(game_area).with_children(|parent| {
-                parent
-                    .spawn((
-                        Self,
-                        Node {
-                            width: Val::Percent(100.0),
-                            height: Val::Percent(75.0),
-                            flex_direction: FlexDirection::Column,
-                            justify_content: JustifyContent::FlexStart,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgb_u8(12, 12, 12)),
-                    ))
-                    .with_children(|formation_container| {
-                        Self::on_update(formation_container, &asset_server, &enemy_formation_res);
-                    });
-            });
-        }
-    }
-
-    pub fn on_update(
-        parent: &mut ChildSpawnerCommands,
-        asset_server: &AssetServer,
-        enemy_formation_res: &EnemyFormationResource,
-    ) {
-        let grid = enemy_formation_res.0.get_enemies();
-
-        for (x, row) in grid.iter().enumerate() {
-            parent
-                .spawn(Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0 / 15.0),
-                    flex_direction: FlexDirection::Row,
-                    justify_content: JustifyContent::SpaceAround,
-                    align_items: AlignItems::Center,
-                    margin: UiRect::axes(Val::Px(7.0), Val::Px(7.0)),
-                    ..default()
-                })
-                .with_children(|row_container| {
-                    for (y, _) in row.iter().enumerate() {
-                        if grid[x][y].is_some() {
-                            row_container.spawn((
-                                Node {
-                                    width: Val::Px(30.0),
-                                    height: Val::Percent(100.0),
-                                    margin: UiRect::axes(Val::Px(12.0), Val::Px(0.0)),
-                                    ..default()
-                                },
-                                ImageNode {
-                                    image: asset_server.load("red.png"),
-                                    ..default()
-                                },
-                            ));
-                        } else {
-                            row_container.spawn((Node {
-                                width: Val::Px(30.0),
-                                height: Val::Percent(100.0),
-                                ..default()
-                            },));
-                        }
-                    }
-                });
-        }
+        Self::spawn_enemies(commands, &asset_server, &enemy_formation_res);
     }
 
     pub fn on_move(
         mut commands: Commands,
         asset_server: Res<AssetServer>,
         enemy_formation_res: Res<EnemyFormationResource>,
-        container_query: Query<Entity, With<EnemyFormationView>>,
+        enemy_query: Query<Entity, With<Enemy>>,
     ) {
-        if enemy_formation_res.is_changed()
-            && let Ok(container) = container_query.single()
-        {
-            commands.entity(container).despawn_children();
-            commands
-                .entity(container)
-                .with_children(|formation_container| {
-                    EnemyFormationView::on_update(
-                        formation_container,
-                        &asset_server,
-                        &enemy_formation_res,
-                    );
-                });
+        if enemy_formation_res.is_changed() {
+            for entity in enemy_query.iter() {
+                commands.entity(entity).despawn();
+            }
+            Self::spawn_enemies(commands, &asset_server, &enemy_formation_res);
         }
     }
 
@@ -135,6 +63,71 @@ impl EnemyFormationView {
     ) {
         if timer.0.tick(time.delta()).just_finished() {
             enemy_formation_res.0.advance_enemies();
+        }
+    }
+
+    fn calculate_step_x(alien_width: f32, gap_x: f32) -> f32 {
+        let n_aliens = COLUMNS as f32;
+        let n_gaps = (COLUMNS - 1) as f32;
+
+        let n_steps = (X_STEPS - COLUMNS) as f32;
+
+        let block_width = (n_aliens * alien_width) + (n_gaps * gap_x);
+
+        let remaining_screen = GAME_AREA_WIDTH - block_width;
+
+        let step = remaining_screen / n_steps;
+
+        step.max(1.0)
+    }
+
+    fn spawn_enemies(
+        mut commands: Commands,
+        asset_server: &AssetServer,
+        enemy_formation: &EnemyFormationResource,
+    ) {
+        let enemies = enemy_formation.0.get_enemies();
+        let (enemy_formation_x, enemy_formation_y) = enemy_formation.0.get_position();
+
+        if enemies.is_empty() {
+            return;
+        }
+
+        let step_size_x =
+            Self::calculate_step_x(CONFIG.enemy_width, CONFIG.space_between_enemies_x);
+
+        let enemy_formation_start_x = -(GAME_AREA_WIDTH / 2.0);
+        let enemy_formation_start_y = (GAME_AREA_HEIGHT / 2.0) - HEADER_HEIGHT;
+
+        let enemy_formation_width =
+            enemy_formation_start_x + (enemy_formation_x as f32 * step_size_x);
+        let enemy_formation_height =
+            enemy_formation_start_y - (enemy_formation_y as f32 * CONFIG.vertical_drop);
+
+        for (row_index, row) in enemies.iter().enumerate() {
+            for (column_index, enemy_slot) in row.iter().enumerate() {
+                if enemy_slot.is_some() {
+                    let new_x = enemy_formation_width
+                        + (column_index as f32
+                            * (CONFIG.enemy_width + CONFIG.space_between_enemies_x))
+                        + (CONFIG.enemy_width / 2.0);
+
+                    let new_y = enemy_formation_height
+                        - (row_index as f32
+                            * (CONFIG.enemy_height + CONFIG.space_between_enemies_y))
+                        - (CONFIG.enemy_height / 2.0);
+
+                    commands.spawn((
+                        Enemy,
+                        Sprite {
+                            image: asset_server.load("red.png"),
+                            custom_size: Some(Vec2::new(CONFIG.enemy_width, CONFIG.enemy_height)),
+                            ..default()
+                        },
+                        Transform::from_xyz(new_x, new_y, 0.0),
+                    ));
+                }
+            }
         }
     }
 }

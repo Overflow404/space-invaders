@@ -1,42 +1,19 @@
-use bevy::{
-    asset::AssetServer,
-    color::Color,
-    ecs::{
-        component::Component,
-        entity::Entity,
-        query::{With, Without},
-        resource::Resource,
-        system::{Commands, Query, Res, ResMut},
-    },
-    input::{keyboard::KeyCode, ButtonInput},
-    time::Time,
-    ui::{
-        widget::ImageNode, AlignItems, BackgroundColor, ComputedNode, FlexDirection, JustifyContent, Node,
-        UiRect, Val,
-    },
-    utils::default,
-    window::Window,
-};
-use bevy::ecs::system::SystemParam;
-use tracing::info;
+use bevy::prelude::*;
 
+use crate::infrastructure::bevy::game_area::GAME_AREA_WIDTH;
 use crate::{
     domain::player::Player,
-    infrastructure::bevy::{
-        game_area::GameAreaView,
-        projectile::{ProjectileMovementTimer, ProjectileView},
-    },
+    infrastructure::bevy::projectile::{FireContext, ProjectileView},
 };
-use crate::infrastructure::bevy::projectile::FireContext;
+
+const PLAYER_WIDTH: f32 = 60.0;
+const PLAYER_HEIGHT: f32 = 30.0;
 
 #[derive(Resource)]
 pub struct PlayerResource(pub Player);
 
 #[derive(Component)]
 pub struct PlayerView;
-
-#[derive(Component)]
-pub struct PlayerContainerView;
 
 impl Default for PlayerView {
     fn default() -> Self {
@@ -49,127 +26,47 @@ impl PlayerView {
         PlayerView
     }
 
-    pub fn spawn_player(
-        mut commands: Commands,
-        asset_server: Res<AssetServer>,
-        game_area_query: Query<Entity, With<GameAreaView>>,
-    ) {
-        if let Ok(game_area) = game_area_query.single() {
-            commands.entity(game_area).with_children(|parent| {
-                parent
-                    .spawn((
-                        PlayerContainerView,
-                        Node {
-                            width: Val::Percent(100.0),
-                            height: Val::Percent(10.0),
-                            flex_direction: FlexDirection::Column,
-                            justify_content: JustifyContent::FlexEnd,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                        BackgroundColor(Color::srgb_u8(200, 200, 200)),
-                    ))
-                    .with_children(|player_container| {
-                        player_container.spawn((
-                            Self,
-                            ImageNode::new(asset_server.load("player-green.png")),
-                            Node {
-                                height: Val::Px(35.0),
-                                width: Val::Px(70.0),
-                                margin: UiRect::bottom(Val::Px(20.0)),
-                                ..default()
-                            },
-                        ));
-                    });
-            });
-        }
-    }
-
-    fn get_val_from_px(val: &Val) -> f32 {
-        match val {
-            Val::Px(px) => *px,
-            _ => 0.0,
-        }
+    pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
+        commands.spawn((
+            PlayerView,
+            Sprite {
+                image: asset_server.load("player-green.png"),
+                custom_size: Some(Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT)),
+                ..default()
+            },
+            Transform::from_xyz(0.0, -280.0, 0.0),
+        ));
     }
 
     pub fn on_move(
         keyboard: Res<ButtonInput<KeyCode>>,
-        mut player_query: Query<(&mut Node, &ComputedNode), With<PlayerView>>,
-        parent_query: Query<&ComputedNode, (With<PlayerContainerView>, Without<PlayerView>)>,
-        windows: Query<&Window>,
+        mut player_query: Query<&mut Transform, With<PlayerView>>,
         time: Res<Time>,
     ) {
-        let window = windows.single().unwrap();
-        let scale_factor = window.scale_factor();
+        let speed = 300.0;
+        let delta = speed * time.delta_secs();
 
-        let parent_computed = if let Ok(res) = parent_query.single() {
-            res
-        } else {
-            return;
-        };
-
-        let scaled_parent_width = parent_computed.size().x / scale_factor;
-
-        for (mut player, player_computed) in player_query.iter_mut() {
-            let current_left = Self::get_val_from_px(&player.left);
-
-            let speed = 300.0;
-            let delta = speed * time.delta_secs();
-
-            let mut new_left = current_left;
-
+        for mut transform in player_query.iter_mut() {
             if keyboard.pressed(KeyCode::ArrowLeft) {
-                new_left -= delta;
+                transform.translation.x -= delta;
             }
             if keyboard.pressed(KeyCode::ArrowRight) {
-                new_left += delta;
+                transform.translation.x += delta;
             }
 
-            let scaled_player_width = player_computed.size().x / scale_factor;
-            let half_container = scaled_parent_width / 2.0;
-            let half_player = scaled_player_width / 2.0;
-
-            let min_bound = -half_container + half_player;
-            let max_bound = half_container - half_player;
-
-            new_left = new_left.clamp(min_bound, max_bound);
-
-            player.left = Val::Px(new_left);
-            info!("moved to {:?}", player.left);
+            let boundary = (GAME_AREA_WIDTH / 2.0) - (PLAYER_WIDTH / 2.0);
+            transform.translation.x = transform.translation.x.clamp(-boundary, boundary);
         }
     }
 
-
-
     pub fn on_fire(mut ctx: FireContext) {
-        let window = ctx.window_query.single();
-        let scale_factor = window.expect("REASON").scale_factor();
-
-        let parent_computed = if let Ok(res) = ctx.parent_query.single() {
-            res
-        } else {
-            return;
-        };
-
-        let scaled_parent_width = parent_computed.size().x / scale_factor;
-        let half_container = scaled_parent_width / 2.0;
-
         if ctx.keyboard.pressed(KeyCode::Space) && !ctx.player_res.0.is_firing() {
-            for player_node in ctx.player_query.iter() {
-                let player_left = Self::get_val_from_px(&player_node.left);
-                let projectile_x = player_left + half_container + 10.0;
+            for player_transform in ctx.player_query.iter() {
+                let player_pos = player_transform.translation;
 
-                let player_top = Self::get_val_from_px(&player_node.bottom);
-                let projectile_y = player_top - half_container + 10.0;
-                // info!("fired by {:?}", projectile_y); //-575.0
-                // info!("player top {:?}", player_top); //0.0
-                // info!("player bottom {:?}", player_top); //0.0
+                let projectile_view = ProjectileView::new(player_pos.x, player_pos.y + 25.0);
 
-                let projectile_view = ProjectileView::new(projectile_x, 600.0);
-
-                ctx.commands.spawn((
-                    projectile_view.spawn_projectile(),
-                ));
+                ctx.commands.spawn(projectile_view.spawn_projectile());
 
                 ctx.player_res.0.toggle_fire();
             }
@@ -177,20 +74,16 @@ impl PlayerView {
 
         if ctx.player_res.0.is_firing() {
             ctx.timer.0.tick(ctx.time.delta());
-
             let speed = 500.0;
 
-            for mut node in ctx.projectile_query.iter_mut() {
-                if let Val::Px(current_top) = node.top {
-                    node.top = Val::Px(current_top - (speed * ctx.time.delta_secs()));
-                }
+            for mut transform in ctx.projectile_query.iter_mut() {
+                transform.translation.y += speed * ctx.time.delta_secs();
             }
         }
 
         if ctx.timer.0.just_finished() {
             ctx.player_res.0.toggle_fire();
             ctx.timer.0.reset();
-            info!("END PROJECTILE");
         }
     }
 }

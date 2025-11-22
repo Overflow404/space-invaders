@@ -1,3 +1,7 @@
+use crate::infrastructure::bevy::screen::ScreenView;
+use bevy::color::Color;
+use bevy::math::Vec2;
+use bevy::prelude::{Sprite, Transform};
 use bevy::{
     ecs::{
         component::Component,
@@ -10,8 +14,8 @@ use bevy::{
     utils::default,
 };
 
-use crate::infrastructure::bevy::screen::ScreenView;
-
+pub const GAME_AREA_WIDTH: f32 = 1120.0;
+pub const GAME_AREA_HEIGHT: f32 = 690.0;
 #[derive(Resource)]
 pub struct GameAreaResource;
 
@@ -19,21 +23,15 @@ pub struct GameAreaResource;
 pub struct GameAreaView;
 
 impl GameAreaView {
-    pub fn spawn_game_area(mut commands: Commands, root_query: Query<Entity, With<ScreenView>>) {
-        if let Ok(root) = root_query.single() {
-            commands.entity(root).with_children(|parent| {
-                parent.spawn((
-                    Self,
-                    Node {
-                        width: Val::Percent(100.0),
-                        height: Val::Percent(90.0),
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::FlexStart,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                ));
-            });
-        }
+    pub fn spawn_game_area(mut commands: Commands) {
+        commands.spawn((
+            GameAreaView,
+            Sprite {
+                color: Color::srgb_u8(20, 30, 20),
+                custom_size: Some(Vec2::new(GAME_AREA_WIDTH, GAME_AREA_HEIGHT)),
+                ..default()
+            },
+            Transform::from_xyz(0.0, 0.0, -1.0),
+        ));
     }
 }
