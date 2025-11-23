@@ -61,7 +61,7 @@ mod tests {
     use bevy::prelude::*;
     use bevy::window::WindowResolution;
 
-    fn setup_app() -> App {
+    fn setup() -> App {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()));
         app.init_asset::<Image>();
@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn should_spawn_background_image_at_correct_z_index() -> Result<(), Box<dyn std::error::Error>>
     {
-        let mut app = setup_app();
+        let mut app = setup();
 
         let mut query = app
             .world_mut()

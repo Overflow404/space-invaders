@@ -154,3 +154,65 @@ impl Default for BevyRenderer {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::infrastructure::bevy::enemy_formation::EnemyView;
+
+    fn setup() -> App {
+        let mut app = App::new();
+
+        app.add_plugins(MinimalPlugins)
+            .add_plugins(AssetPlugin::default())
+            .add_plugins(WindowPlugin::default())
+            .add_plugins(SpaceInvadersPlugin)
+            .init_asset::<Image>()
+            .init_asset::<Font>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<UiScale>()
+            .insert_resource(ScoreResource(Score::new()))
+            .insert_resource(LivesResource(Lives::new()))
+            .insert_resource(PlayerResource(Player::new()))
+            .insert_resource(ShieldFormationResource(ShieldFormation::new()))
+            .insert_resource(EnemyFormationResource(EnemyFormation::new()))
+            .insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
+                ENEMY_FORMATION_STEP_DURATION,
+                TimerMode::Repeating,
+            )))
+            .insert_resource(PlayerProjectileMovementTimer(Timer::from_seconds(
+                PROJECTILE_DURATION,
+                TimerMode::Once,
+            )));
+
+        app.update();
+        app
+    }
+
+    #[test]
+    fn should_spawn_all_the_elements() {
+        let mut app = setup();
+
+        let world = &mut app.world_mut();
+
+        fn assert_exists<T: Component>(world: &mut World, name: &str, expected_count: usize) {
+            let actual_count = world.query::<&T>().iter(world).count();
+            assert_eq!(
+                actual_count, expected_count,
+                "Expected {} entities with component `{}`",
+                expected_count, name
+            );
+        }
+
+        assert_exists::<HeaderView>(world, "HeaderView", 1);
+
+        assert_exists::<ScoreView>(world, "ScoreView", 1);
+        assert_exists::<LivesView>(world, "LivesView", 1);
+
+        assert_exists::<GameAreaView>(world, "GameAreaView", 1);
+
+        assert_exists::<EnemyView>(world, "EnemyView", 55);
+        assert_exists::<PlayerView>(world, "PlayerView", 1);
+        assert_exists::<FooterView>(world, "FooterView", 1);
+    }
+}
