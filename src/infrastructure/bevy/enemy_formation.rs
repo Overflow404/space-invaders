@@ -94,27 +94,25 @@ impl EnemyFormationView {
             enemy_formation_start_y - (enemy_formation_y as f32 * VERTICAL_DROP);
 
         for (row_index, row) in enemies.iter().enumerate() {
-            for (column_index, enemy_slot) in row.iter().enumerate() {
-                if enemy_slot.is_some() {
-                    let new_x = enemy_formation_width
-                        + (column_index as f32 * (ENEMY_WIDTH + SPACE_BETWEEN_ENEMIES_X))
-                        + (ENEMY_WIDTH / 2.0);
+            for (column_index, _) in row.iter().enumerate() {
+                let new_x = enemy_formation_width
+                    + (column_index as f32 * (ENEMY_WIDTH + SPACE_BETWEEN_ENEMIES_X))
+                    + (ENEMY_WIDTH / 2.0);
 
-                    let new_y = enemy_formation_height
-                        - (row_index as f32 * (ENEMY_HEIGHT + SPACE_BETWEEN_ENEMIES_Y))
-                        - (ENEMY_HEIGHT / 2.0);
+                let new_y = enemy_formation_height
+                    - (row_index as f32 * (ENEMY_HEIGHT + SPACE_BETWEEN_ENEMIES_Y))
+                    - (ENEMY_HEIGHT / 2.0);
 
-                    commands.spawn((
-                        EnemyView,
-                        Sprite {
-                            image: asset_server.load(ENEMY_IMAGE),
-                            color: Color::WHITE,
-                            custom_size: Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
-                            ..default()
-                        },
-                        Transform::from_xyz(new_x, new_y, 0.0),
-                    ));
-                }
+                commands.spawn((
+                    EnemyView,
+                    Sprite {
+                        image: asset_server.load(ENEMY_IMAGE),
+                        color: Color::WHITE,
+                        custom_size: Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
+                        ..default()
+                    },
+                    Transform::from_xyz(new_x, new_y, 0.0),
+                ));
             }
         }
     }
@@ -175,7 +173,7 @@ mod tests {
 
     #[test]
     fn enemy_formation_should_move_to_the_right_when_there_is_enough_space()
-        -> Result<(), Box<dyn Error>> {
+    -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
@@ -193,7 +191,7 @@ mod tests {
 
     #[test]
     fn enemy_formation_should_move_to_the_left_when_there_is_enough_space()
-        -> Result<(), Box<dyn Error>> {
+    -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         for _ in 0..31 {
@@ -222,7 +220,7 @@ mod tests {
 
     #[test]
     fn enemy_formation_should_drop_down_when_there_is_not_enough_right_space()
-        -> Result<(), Box<dyn Error>> {
+    -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
@@ -244,7 +242,7 @@ mod tests {
 
     #[test]
     fn enemy_formation_should_drop_down_when_there_is_not_enough_left_space()
-        -> Result<(), Box<dyn Error>> {
+    -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         for _ in 0..31 {

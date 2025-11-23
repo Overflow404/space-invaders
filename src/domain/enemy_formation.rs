@@ -7,7 +7,7 @@ pub const ROWS: usize = 5;
 const FREE_MOVING_SPACE_ON_X_AXE: usize = NUMBER_OF_STEPS_ON_X_AXE - COLUMNS;
 
 pub struct EnemyFormation {
-    enemies: Vec<Vec<Option<Enemy>>>,
+    enemies: Vec<Vec<Enemy>>,
     position: (usize, usize),
     direction: MovingDirection,
     status: FormationStatus,
@@ -34,14 +34,16 @@ impl Default for EnemyFormation {
 
 impl EnemyFormation {
     pub fn new() -> Self {
-        let mut enemies = vec![vec![None; COLUMNS]; ROWS];
+        let mut enemies: Vec<Vec<Enemy>> = vec![];
         let mut id = 1;
 
-        for row in enemies.iter_mut() {
-            for slot in row.iter_mut() {
-                *slot = Some(Enemy::new(id));
+        for _ in 0..ROWS {
+            let mut row = vec![];
+            for _ in 0..COLUMNS {
+                row.push(Enemy::new(id));
                 id += 1;
             }
+            enemies.push(row);
         }
 
         EnemyFormation {
@@ -90,7 +92,7 @@ impl EnemyFormation {
         );
     }
 
-    pub fn get_enemies(&self) -> &Vec<Vec<Option<Enemy>>> {
+    pub fn get_enemies(&self) -> &Vec<Vec<Enemy>> {
         &self.enemies
     }
 
