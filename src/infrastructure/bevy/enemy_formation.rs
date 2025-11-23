@@ -1,4 +1,5 @@
 use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
+pub(crate) use crate::infrastructure::bevy::enemy::{EnemyView, ENEMY_HEIGHT, ENEMY_WIDTH};
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::infrastructure::bevy::player::PlayerResource;
@@ -8,11 +9,8 @@ use bevy::prelude::*;
 pub const ENEMY_FORMATION_STEP_DURATION: f32 = 0.6;
 pub const SPACE_BETWEEN_ENEMIES_X: f32 = 15.0;
 
-const ENEMY_WIDTH: f32 = 60.0;
-const ENEMY_HEIGHT: f32 = 40.0;
 const SPACE_BETWEEN_ENEMIES_Y: f32 = 15.0;
 const VERTICAL_DROP: f32 = 15.0;
-const ENEMY_IMAGE: &str = "red.png";
 
 #[derive(Resource)]
 pub struct EnemyFormationResource(pub EnemyFormation);
@@ -22,17 +20,6 @@ pub struct EnemyFormationMovementTimer(pub Timer);
 
 #[derive(Component)]
 pub struct EnemyFormationView;
-
-#[derive(Component)]
-pub struct EnemyView {
-    pub id: usize,
-}
-
-impl EnemyView {
-    pub fn new(id: usize) -> Self {
-        Self { id }
-    }
-}
 
 impl EnemyFormationView {
     pub fn spawn_enemy_formation(
@@ -117,15 +104,11 @@ impl EnemyFormationView {
                         - (row_index as f32 * (ENEMY_HEIGHT + SPACE_BETWEEN_ENEMIES_Y))
                         - (ENEMY_HEIGHT / 2.0);
 
-                    commands.spawn((
-                        EnemyView::new(enemy.get_id()),
-                        Sprite {
-                            image: asset_server.load(ENEMY_IMAGE),
-                            custom_size: Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
-                            color: Color::srgb(255.0, 255.0, 255.0),
-                            ..default()
-                        },
-                        Transform::from_xyz(new_x, new_y, 0.0),
+                    commands.spawn(EnemyView::spawn_enemy(
+                        enemy.get_id(),
+                        new_x,
+                        new_y,
+                        asset_server,
                     ));
                 }
             }
@@ -195,7 +178,7 @@ mod tests {
             .query_filtered::<&Transform, With<EnemyView>>()
             .iter(app.world())
             .next()
-            .ok_or("First enemy Y at t1 not found")?
+            .ok_or("First enemy coordinates not found")?
             .translation;
         Ok((translation.x, translation.y))
     }
@@ -330,7 +313,7 @@ mod tests {
     }
 
     #[test]
-    fn should_kill_enemy_on_collision() {
+    fn should_kill_enemy_on_collision() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         app.add_systems(Update, EnemyFormationView::handle_collisions);
@@ -341,7 +324,7 @@ mod tests {
             .iter(app.world())
             .next()
             .map(|(t, v)| (t.translation, v.id))
-            .unwrap();
+            .ok_or("EnemyView not found")?;
 
         let enemy_x = enemy_info.0;
         let enemy_id = enemy_info.1;
@@ -362,6 +345,7 @@ mod tests {
             .query::<&EnemyView>()
             .iter(app.world())
             .len();
+
         assert_eq!(
             remaining_enemies, 54,
             "One enemy entity should be despawned"
@@ -382,5 +366,6 @@ mod tests {
         });
 
         assert!(!id_exists, "Enemy id should be removed from domain logic");
+        Ok(())
     }
 }
