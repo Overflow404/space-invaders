@@ -1,4 +1,4 @@
-use crate::domain::enemy_formation::{COLUMNS, EnemyFormation, NUMBER_OF_STEPS_ON_X_AXE};
+use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use bevy::prelude::*;
@@ -21,7 +21,7 @@ pub struct EnemyFormationMovementTimer(pub Timer);
 pub struct EnemyFormationView;
 
 #[derive(Component)]
-pub struct Enemy;
+pub struct EnemyView;
 
 impl EnemyFormationView {
     pub fn spawn_enemy_formation(
@@ -36,7 +36,7 @@ impl EnemyFormationView {
         mut commands: Commands,
         asset_server: Res<AssetServer>,
         enemy_formation_res: Res<EnemyFormationResource>,
-        enemy_query: Query<Entity, With<Enemy>>,
+        enemy_query: Query<Entity, With<EnemyView>>,
     ) {
         if enemy_formation_res.is_changed() {
             for entity in enemy_query.iter() {
@@ -56,13 +56,13 @@ impl EnemyFormationView {
         }
     }
 
-    fn calculate_step_x(alien_width: f32, gap_x: f32) -> f32 {
-        let n_aliens = COLUMNS as f32;
+    fn calculate_step_x(enemy_width: f32, gap_x: f32) -> f32 {
+        let n_enemies = COLUMNS as f32;
         let n_gaps = (COLUMNS - 1) as f32;
 
         let n_steps = (NUMBER_OF_STEPS_ON_X_AXE - COLUMNS) as f32;
 
-        let block_width = (n_aliens * alien_width) + (n_gaps * gap_x);
+        let block_width = (n_enemies * enemy_width) + (n_gaps * gap_x);
 
         let remaining_screen = GAME_AREA_WIDTH - block_width;
 
@@ -105,7 +105,7 @@ impl EnemyFormationView {
                         - (ENEMY_HEIGHT / 2.0);
 
                     commands.spawn((
-                        Enemy,
+                        EnemyView,
                         Sprite {
                             image: asset_server.load(ENEMY_IMAGE),
                             color: Color::WHITE,
@@ -117,5 +117,195 @@ impl EnemyFormationView {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::domain::enemy_formation::EnemyFormation;
+    use crate::infrastructure::bevy::enemy_formation::{
+        EnemyFormationResource, EnemyFormationView, EnemyView,
+    };
+    use bevy::app::{App, Startup, Update};
+    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::image::Image;
+    use bevy::prelude::{IntoScheduleConfigs, Transform, With};
+    use bevy::text::Font;
+    use bevy::MinimalPlugins;
+
+    fn setup() -> App {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()));
+
+        app.add_systems(Startup, (EnemyFormationView::spawn_enemy_formation).chain());
+        app.add_systems(Update, (EnemyFormationView::on_move).chain());
+
+        app.insert_resource(EnemyFormationResource(EnemyFormation::new()));
+
+        app.init_asset::<Image>();
+        app.init_asset::<Font>();
+
+        app.update();
+
+        app
+    }
+
+    #[test]
+    fn should_display_the_enemy_formation() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        let mut query = app.world_mut().query::<&EnemyView>();
+        let enemy_count = query.iter(app.world()).count();
+
+        assert_eq!(enemy_count, 55);
+        Ok(())
+    }
+
+    #[test]
+    fn enemy_formation_should_move_to_the_right_when_there_is_enough_space() {
+        let mut app = setup();
+
+        let first_enemy_x_t0 = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .translation
+            .x;
+
+        let mut resource = app.world_mut().resource_mut::<EnemyFormationResource>();
+        resource.0.advance_enemies();
+
+        app.update();
+
+        let first_enemy_x_t1 = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .translation
+            .x;
+
+        assert!(first_enemy_x_t1 > first_enemy_x_t0);
+    }
+
+    #[test]
+    fn enemy_formation_should_move_to_the_left_when_there_is_enough_space() {
+        let mut app = setup();
+
+        for _ in 0..31 {
+            app.world_mut()
+                .resource_mut::<EnemyFormationResource>()
+                .0
+                .advance_enemies();
+        }
+
+        app.update();
+
+        let first_enemy_x_t0 = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .translation
+            .x;
+
+        app.world_mut()
+            .resource_mut::<EnemyFormationResource>()
+            .0
+            .advance_enemies();
+
+        app.update();
+
+        let first_enemy_x_t1 = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .translation
+            .x;
+
+        assert!(first_enemy_x_t1 < first_enemy_x_t0);
+    }
+
+    #[test]
+    fn enemy_formation_should_drop_down_when_there_is_not_enough_right_space() {
+        let mut app = setup();
+
+        let first_enemy_y_t0 = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .translation
+            .y;
+
+        for _ in 0..31 {
+            app.world_mut()
+                .resource_mut::<EnemyFormationResource>()
+                .0
+                .advance_enemies();
+        }
+
+        app.update();
+
+        let first_enemy_y_t1 = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .translation
+            .y;
+
+        assert!(first_enemy_y_t1 < first_enemy_y_t0);
+    }
+
+    #[test]
+    fn enemy_formation_should_drop_down_when_there_is_not_enough_left_space() {
+        let mut app = setup();
+
+        for _ in 0..31 {
+            app.world_mut()
+                .resource_mut::<EnemyFormationResource>()
+                .0
+                .advance_enemies();
+        }
+
+        app.update();
+
+        let first_enemy_y_t0 = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .translation
+            .y;
+
+        for _ in 0..31 {
+            app.world_mut()
+                .resource_mut::<EnemyFormationResource>()
+                .0
+                .advance_enemies();
+        }
+
+        app.update();
+
+        let first_enemy_y_t1 = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .translation
+            .y;
+
+        assert!(first_enemy_y_t1 < first_enemy_y_t0);
     }
 }
