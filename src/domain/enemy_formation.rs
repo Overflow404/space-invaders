@@ -109,6 +109,10 @@ impl EnemyFormation {
     pub fn get_position(&self) -> (usize, usize) {
         self.position
     }
+
+    pub fn has_breached(&self) -> bool {
+        self.status == FormationStatus::Breached
+    }
 }
 #[cfg(test)]
 mod tests {
