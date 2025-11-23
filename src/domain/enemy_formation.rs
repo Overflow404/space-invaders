@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn should_annihilated_formation() {
+    fn should_annihilate_the_formation() {
         let mut formation = EnemyFormation::new();
 
         (1..=55).for_each(|id| formation.kill(id));
