@@ -30,6 +30,7 @@ use bevy::time::TimerMode;
 use bevy::utils::default;
 use bevy::window::{PresentMode, Window, WindowPlugin, WindowResolution};
 use bevy::DefaultPlugins;
+use crate::infrastructure::bevy::projectile::ProjectileView;
 
 pub struct BevyRenderer;
 
@@ -62,6 +63,8 @@ impl Plugin for SpaceInvadersPlugin {
                 (
                     PlayerView::on_move,
                     PlayerView::on_fire,
+                    ProjectileView::on_move,
+                    ProjectileView::on_destroy,
                     EnemyFormationView::on_move,
                     EnemyFormationView::advance_on_tick,
                 ),
