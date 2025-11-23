@@ -1,4 +1,5 @@
 # Space Invaders
+
 Work in progress - A rust implementation of the old fashioned space invaders game
 
 This project is based on the challenge from CodingChallenges.fyi:

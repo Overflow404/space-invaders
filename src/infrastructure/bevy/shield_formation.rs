@@ -9,8 +9,8 @@ use bevy::{
         system::{Commands, Query, Res},
     },
     ui::{
-        AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, UiRect, Val, ZIndex,
-        widget::ImageNode,
+        widget::ImageNode, AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, UiRect, Val,
+        ZIndex,
     },
     utils::default,
 };

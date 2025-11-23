@@ -26,7 +26,7 @@ impl ShieldFormation {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::shield_formation::{NUMBER_OF_SHIELDS, ShieldFormation};
+    use crate::domain::shield_formation::{ShieldFormation, NUMBER_OF_SHIELDS};
 
     #[test]
     fn should_create_the_shield_formation() {

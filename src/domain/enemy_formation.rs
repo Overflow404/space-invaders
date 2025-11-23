@@ -101,7 +101,7 @@ impl EnemyFormation {
 #[cfg(test)]
 mod tests {
     use crate::domain::enemy_formation::{
-        EnemyFormation, FREE_MOVING_SPACE_ON_X_AXE, FormationStatus, MovingDirection,
+        EnemyFormation, FormationStatus, MovingDirection, FREE_MOVING_SPACE_ON_X_AXE,
     };
 
     #[test]

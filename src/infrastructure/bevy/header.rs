@@ -31,10 +31,10 @@ impl HeaderView {
 
 #[cfg(test)]
 mod tests {
-    use bevy::app::{App, Startup};
-    use bevy::MinimalPlugins;
-    use bevy::ui::{BackgroundColor, Node};
     use crate::infrastructure::bevy::header::HeaderView;
+    use bevy::app::{App, Startup};
+    use bevy::ui::{BackgroundColor, Node};
+    use bevy::MinimalPlugins;
 
     fn setup() -> App {
         let mut app = App::new();
