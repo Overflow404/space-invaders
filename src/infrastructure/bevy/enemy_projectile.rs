@@ -43,9 +43,13 @@ impl EnemyProjectileView {
 #[cfg(test)]
 mod test {
     use crate::infrastructure::bevy::enemy::EnemyProjectileMovementTimer;
-    use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
+    use crate::infrastructure::bevy::enemy_projectile::{
+        EnemyProjectileView, PROJECTILE_HEIGHT, PROJECTILE_WIDTH,
+    };
     use bevy::app::App;
+    use bevy::color::Color;
     use bevy::ecs::system::RunSystemOnce;
+    use bevy::math::{Vec2, Vec3};
     use bevy::prelude::{Time, Timer, TimerMode, Transform};
     use bevy::MinimalPlugins;
     use std::time::Duration;
@@ -63,7 +67,7 @@ mod test {
         app
     }
     #[test]
-    fn should_advance_projectile_downwards() -> Result<(), Box<dyn std::error::Error>> {
+    fn should_advance_projectiles_downwards() -> Result<(), Box<dyn std::error::Error>> {
         let mut app = setup();
 
         let projectile = app
@@ -96,5 +100,26 @@ mod test {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn should_make_projectile() {
+        let start_x = 100.0;
+        let start_y = 200.0;
+        let enemy_projectile_view = EnemyProjectileView::new(start_x, start_y);
+
+        let (component, sprite, transform) = enemy_projectile_view.make_projectile();
+
+        assert_eq!(component.start_position, Vec3::new(start_x, start_y, 0.0));
+
+        assert_eq!(transform.translation.x, start_x);
+        assert_eq!(transform.translation.y, start_y);
+
+        assert_eq!(
+            sprite.custom_size,
+            Some(Vec2::new(PROJECTILE_WIDTH, PROJECTILE_HEIGHT)),
+        );
+
+        assert_eq!(sprite.color, Color::srgb(1.0, 1.0, 1.0),);
     }
 }
