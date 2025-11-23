@@ -137,8 +137,8 @@ mod tests {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()));
 
-        app.add_systems(Startup, (EnemyFormationView::spawn_enemy_formation).chain());
-        app.add_systems(Update, (EnemyFormationView::on_move).chain());
+        app.add_systems(Startup, EnemyFormationView::spawn_enemy_formation.chain());
+        app.add_systems(Update, EnemyFormationView::on_move.chain());
 
         app.insert_resource(EnemyFormationResource(EnemyFormation::new()));
 
