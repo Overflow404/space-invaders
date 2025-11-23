@@ -159,6 +159,7 @@ impl Default for BevyRenderer {
 mod tests {
     use super::*;
     use crate::infrastructure::bevy::enemy_formation::EnemyView;
+    use crate::infrastructure::bevy::shield_formation::ShieldView;
 
     fn setup() -> App {
         let mut app = App::new();
@@ -204,6 +205,7 @@ mod tests {
         assert_exists::<GameAreaView>(world, "GameAreaView", 1);
 
         assert_exists::<EnemyView>(world, "EnemyView", 55);
+        assert_exists::<ShieldView>(world, "ShieldView", 4);
         assert_exists::<PlayerView>(world, "PlayerView", 1);
         assert_exists::<FooterView>(world, "FooterView", 1);
     }
