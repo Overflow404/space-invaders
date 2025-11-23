@@ -356,11 +356,10 @@ mod tests {
         app.update();
 
 
-        let visual_count = app.world_mut().query::<&EnemyView>().iter(app.world()).len();
-        assert_eq!(visual_count, 54, "One enemy entity should be despawned");
+        let remaining_enemies = app.world_mut().query::<&EnemyView>().iter(app.world()).len();
+        assert_eq!(remaining_enemies, 54, "One enemy entity should be despawned");
 
-        let res = app.world().resource::<EnemyFormationResource>();
-        let enemies = res.0.get_enemies();
+        let enemies = app.world().resource::<EnemyFormationResource>().0.get_enemies();
 
         let id_exists = enemies.iter().flatten().any(|slot| {
             if let Some(e) = slot { e.get_id() == enemy_id } else { false }
