@@ -181,6 +181,12 @@ mod tests {
     use bevy::text::Font;
     use bevy::MinimalPlugins;
     use std::error::Error;
+    use bevy::math::Vec2;
+    use bevy::sprite::Sprite;
+    use bevy::utils::default;
+    use crate::domain::player::Player;
+    use crate::infrastructure::bevy::player::PlayerResource;
+    use crate::infrastructure::bevy::projectile::ProjectileView;
 
     fn get_first_enemy_coordinates(app: &mut App) -> Result<(f32, f32), Box<dyn Error>> {
         let translation = app
@@ -201,6 +207,7 @@ mod tests {
         app.add_systems(Update, EnemyFormationView::on_move.chain());
 
         app.insert_resource(EnemyFormationResource(EnemyFormation::new()));
+        app.insert_resource(PlayerResource(Player::new()));
 
         app.init_asset::<Image>();
         app.init_asset::<Font>();
@@ -319,5 +326,46 @@ mod tests {
 
         assert!(first_enemy_y_t1 < first_enemy_y_t0);
         Ok(())
+    }
+
+    #[test]
+    fn should_kill_enemy_on_collision() {
+        let mut app = setup();
+
+        app.add_systems(Update, EnemyFormationView::handle_collisions);
+
+        let enemy_info = app.world_mut()
+            .query::<(&Transform, &EnemyView)>()
+            .iter(app.world())
+            .next()
+            .map(|(t, v)| (t.translation, v.id))
+            .unwrap();
+
+        let enemy_x = enemy_info.0;
+        let enemy_id = enemy_info.1;
+
+        app.world_mut().spawn((
+            ProjectileView::new(0.0, 0.0),
+            Sprite {
+                custom_size: Some(Vec2::new(5.0, 15.0)),
+                ..default()
+            },
+            Transform::from_translation(enemy_x),
+        ));
+
+        app.update();
+
+
+        let visual_count = app.world_mut().query::<&EnemyView>().iter(app.world()).len();
+        assert_eq!(visual_count, 54, "One enemy entity should be despawned");
+
+        let res = app.world().resource::<EnemyFormationResource>();
+        let enemies = res.0.get_enemies();
+
+        let id_exists = enemies.iter().flatten().any(|slot| {
+            if let Some(e) = slot { e.get_id() == enemy_id } else { false }
+        });
+
+        assert!(!id_exists, "Enemy id should be removed from domain logic");
     }
 }
