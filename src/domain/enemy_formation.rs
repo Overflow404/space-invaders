@@ -11,6 +11,7 @@ pub struct EnemyFormation {
     position: (usize, usize),
     direction: MovingDirection,
     status: FormationStatus,
+    enemies_alive: usize,
 }
 
 #[derive(PartialEq, Debug, Clone, Copy)]
@@ -24,6 +25,7 @@ pub enum FormationStatus {
     Assembled,
     Advancing,
     Breached,
+    Annihilated,
 }
 
 impl Default for EnemyFormation {
@@ -51,6 +53,7 @@ impl EnemyFormation {
             position: (0, 0),
             direction: MovingDirection::ToRight,
             status: FormationStatus::Assembled,
+            enemies_alive: COLUMNS * ROWS,
         }
     }
 
@@ -114,16 +117,26 @@ impl EnemyFormation {
         self.status == FormationStatus::Breached
     }
 
+    pub fn is_annihilated(&self) -> bool {
+        self.status == FormationStatus::Annihilated
+    }
+
     pub fn kill(&mut self, id: usize) {
-        for row in self.enemies.iter_mut() {
-            for slot in row.iter_mut() {
-                if let Some(enemy) = slot
-                    && enemy.get_id() == id
-                {
-                    *slot = None;
-                    return;
-                }
-            }
+        let id_index = id - 1;
+
+        let row = id_index / COLUMNS;
+        let col = id_index % COLUMNS;
+
+        if row < ROWS
+            && let Some(enemy) = &self.enemies[row][col]
+            && enemy.get_id() == id
+        {
+            self.enemies[row][col] = None;
+            self.enemies_alive -= 1;
+        }
+
+        if self.enemies_alive == 0 {
+            self.status = FormationStatus::Annihilated;
         }
     }
 }
@@ -245,5 +258,14 @@ mod tests {
         formation.kill(3);
 
         assert!(formation.enemies[0][2].is_none());
+    }
+
+    #[test]
+    fn should_annihilated_formation() {
+        let mut formation = EnemyFormation::new();
+
+        (1..=55).for_each(|id| formation.kill(id));
+
+        assert_eq!(formation.status, FormationStatus::Annihilated);
     }
 }
