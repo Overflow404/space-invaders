@@ -7,7 +7,7 @@ pub const ROWS: usize = 5;
 const FREE_MOVING_SPACE_ON_X_AXE: usize = NUMBER_OF_STEPS_ON_X_AXE - COLUMNS;
 
 pub struct EnemyFormation {
-    enemies: Vec<Vec<Enemy>>,
+    enemies: Vec<Vec<Option<Enemy>>>,
     position: (usize, usize),
     direction: MovingDirection,
     status: FormationStatus,
@@ -34,13 +34,13 @@ impl Default for EnemyFormation {
 
 impl EnemyFormation {
     pub fn new() -> Self {
-        let mut enemies: Vec<Vec<Enemy>> = vec![];
+        let mut enemies: Vec<Vec<Option<Enemy>>> = vec![];
         let mut id = 1;
 
         for _ in 0..ROWS {
             let mut row = vec![];
             for _ in 0..COLUMNS {
-                row.push(Enemy::new(id));
+                row.push(Some(Enemy::new(id)));
                 id += 1;
             }
             enemies.push(row);
@@ -102,7 +102,7 @@ impl EnemyFormation {
         );
     }
 
-    pub fn get_enemies(&self) -> &Vec<Vec<Enemy>> {
+    pub fn get_enemies(&self) -> &Vec<Vec<Option<Enemy>>> {
         &self.enemies
     }
 
@@ -112,6 +112,19 @@ impl EnemyFormation {
 
     pub fn has_breached(&self) -> bool {
         self.status == FormationStatus::Breached
+    }
+
+    pub fn kill(&mut self, id: usize) {
+        for row in self.enemies.iter_mut() {
+            for slot in row.iter_mut() {
+                if let Some(enemy) = slot
+                    && enemy.get_id() == id
+                {
+                    *slot = None;
+                    return;
+                }
+            }
+        }
     }
 }
 #[cfg(test)]
@@ -223,5 +236,14 @@ mod tests {
 
         assert_eq!(formation.position, position_at_breach);
         assert_eq!(formation.status, FormationStatus::Breached);
+    }
+
+    #[test]
+    fn should_kill_an_enemy_by_id() {
+        let mut formation = EnemyFormation::new();
+
+        formation.kill(3);
+
+        assert!(formation.enemies[0][2].is_none());
     }
 }

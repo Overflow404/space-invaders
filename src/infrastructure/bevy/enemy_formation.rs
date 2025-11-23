@@ -1,9 +1,11 @@
 use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
+use crate::infrastructure::bevy::player::PlayerResource;
+use crate::infrastructure::bevy::projectile::ProjectileView;
 use bevy::prelude::*;
 
-pub const ENEMY_FORMATION_STEP_DURATION: f32 = 0.01;
+pub const ENEMY_FORMATION_STEP_DURATION: f32 = 0.6;
 pub const SPACE_BETWEEN_ENEMIES_X: f32 = 15.0;
 
 const ENEMY_WIDTH: f32 = 60.0;
@@ -22,7 +24,15 @@ pub struct EnemyFormationMovementTimer(pub Timer);
 pub struct EnemyFormationView;
 
 #[derive(Component)]
-pub struct EnemyView;
+pub struct EnemyView {
+    pub id: usize,
+}
+
+impl EnemyView {
+    pub fn new(id: usize) -> Self {
+        Self { id }
+    }
+}
 
 impl EnemyFormationView {
     pub fn spawn_enemy_formation(
@@ -97,25 +107,62 @@ impl EnemyFormationView {
             enemy_formation_start_y - (enemy_formation_y as f32 * VERTICAL_DROP);
 
         for (row_index, row) in enemies.iter().enumerate() {
-            for (column_index, _) in row.iter().enumerate() {
-                let new_x = enemy_formation_width
-                    + (column_index as f32 * (ENEMY_WIDTH + SPACE_BETWEEN_ENEMIES_X))
-                    + (ENEMY_WIDTH / 2.0);
+            for (column_index, enemy_slot) in row.iter().enumerate() {
+                if let Some(enemy) = enemy_slot {
+                    let new_x = enemy_formation_width
+                        + (column_index as f32 * (ENEMY_WIDTH + SPACE_BETWEEN_ENEMIES_X))
+                        + (ENEMY_WIDTH / 2.0);
 
-                let new_y = enemy_formation_height
-                    - (row_index as f32 * (ENEMY_HEIGHT + SPACE_BETWEEN_ENEMIES_Y))
-                    - (ENEMY_HEIGHT / 2.0);
+                    let new_y = enemy_formation_height
+                        - (row_index as f32 * (ENEMY_HEIGHT + SPACE_BETWEEN_ENEMIES_Y))
+                        - (ENEMY_HEIGHT / 2.0);
 
-                commands.spawn((
-                    EnemyView,
-                    Sprite {
-                        image: asset_server.load(ENEMY_IMAGE),
-                        custom_size: Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
-                        color: Color::srgb(255.0, 255.0, 255.0),
-                        ..default()
-                    },
-                    Transform::from_xyz(new_x, new_y, 0.0),
-                ));
+                    commands.spawn((
+                        EnemyView::new(enemy.get_id()),
+                        Sprite {
+                            image: asset_server.load(ENEMY_IMAGE),
+                            custom_size: Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
+                            color: Color::srgb(255.0, 255.0, 255.0),
+                            ..default()
+                        },
+                        Transform::from_xyz(new_x, new_y, 0.0),
+                    ));
+                }
+            }
+        }
+    }
+
+    pub fn handle_collisions(
+        mut commands: Commands,
+        mut enemy_formation_resource: ResMut<EnemyFormationResource>,
+        projectile_query: Query<(Entity, &Transform, &Sprite), With<ProjectileView>>,
+        enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyView), With<EnemyView>>,
+        mut player_resource: ResMut<PlayerResource>,
+    ) {
+        for (projectile_entity, projectile_transform, projectile_sprite) in projectile_query.iter()
+        {
+            let projectile_size = projectile_sprite.custom_size.unwrap_or(Vec2::ONE);
+
+            for (enemy_entity, enemy_transform, enemy_sprite, e_view) in enemy_query.iter() {
+                let enemy_size = enemy_sprite.custom_size.unwrap_or(Vec2::ONE);
+
+                let collision = projectile_transform.translation.x
+                    < enemy_transform.translation.x + enemy_size.x / 2.0
+                    && projectile_transform.translation.x + projectile_size.x
+                        > enemy_transform.translation.x - enemy_size.x / 2.0
+                    && projectile_transform.translation.y
+                        < enemy_transform.translation.y + enemy_size.y / 2.0
+                    && projectile_transform.translation.y + projectile_size.y
+                        > enemy_transform.translation.y - enemy_size.y / 2.0;
+
+                if collision {
+                    commands.entity(projectile_entity).despawn();
+                    enemy_formation_resource.0.kill(e_view.id);
+                    commands.entity(enemy_entity).despawn();
+                    player_resource.0.toggle_fire();
+
+                    break;
+                }
             }
         }
     }

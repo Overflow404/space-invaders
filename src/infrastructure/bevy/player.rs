@@ -85,3 +85,88 @@ impl PlayerView {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::enemy_formation::EnemyFormation;
+    use crate::infrastructure::bevy::enemy_formation::{
+        EnemyFormationResource, EnemyFormationView, EnemyView,
+    };
+    use crate::infrastructure::bevy::projectile::ProjectileView;
+
+    fn setup() -> App {
+        let mut app = App::new();
+
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()));
+
+        app.add_systems(Startup, EnemyFormationView::spawn_enemy_formation);
+        app.add_systems(
+            Update,
+            (
+                EnemyFormationView::on_move,
+                EnemyFormationView::handle_collisions,
+            ),
+        );
+
+        app.insert_resource(EnemyFormationResource(EnemyFormation::new()));
+        app.insert_resource(PlayerResource(Player::new()));
+        app.init_asset::<Image>();
+        app.update();
+
+        app
+    }
+
+    #[test]
+    fn should_kill_enemy_on_collision() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        app.add_systems(Update, EnemyFormationView::handle_collisions);
+
+        let first_enemy = app
+            .world_mut()
+            .query::<(&Transform, &EnemyView)>()
+            .iter(app.world())
+            .next()
+            .map(|(t, v)| (t.translation, v.id))
+            .ok_or("Cannot lookup first enemy")?;
+
+        let enemy_x = first_enemy.0;
+        let enemy_id = first_enemy.1;
+
+        app.world_mut().spawn((
+            ProjectileView::new(0.0, 0.0),
+            Sprite {
+                custom_size: Some(Vec2::new(5.0, 15.0)),
+                ..default()
+            },
+            Transform::from_translation(enemy_x),
+        ));
+
+        app.update();
+
+        let enemies_count = app
+            .world_mut()
+            .query::<&EnemyView>()
+            .iter(app.world())
+            .len();
+        assert_eq!(enemies_count, 54);
+
+        let enemies = app
+            .world()
+            .resource::<EnemyFormationResource>()
+            .0
+            .get_enemies();
+
+        let id_exists = enemies.iter().flatten().any(|slot| {
+            if let Some(e) = slot {
+                e.get_id() == enemy_id
+            } else {
+                false
+            }
+        });
+
+        assert!(!id_exists);
+        Ok(())
+    }
+}

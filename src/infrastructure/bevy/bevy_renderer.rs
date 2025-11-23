@@ -1,5 +1,6 @@
 use crate::infrastructure::bevy::footer::FooterView;
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
+use crate::infrastructure::bevy::projectile::ProjectileView;
 use crate::{
     domain::{
         enemy_formation::EnemyFormation, lives::Lives, player::Player, score::Score,
@@ -30,7 +31,6 @@ use bevy::time::TimerMode;
 use bevy::utils::default;
 use bevy::window::{PresentMode, Window, WindowPlugin, WindowResolution};
 use bevy::DefaultPlugins;
-use crate::infrastructure::bevy::projectile::ProjectileView;
 
 pub struct BevyRenderer;
 
@@ -67,6 +67,7 @@ impl Plugin for SpaceInvadersPlugin {
                     ProjectileView::on_destroy,
                     EnemyFormationView::on_move,
                     EnemyFormationView::advance_on_tick,
+                    EnemyFormationView::handle_collisions,
                 ),
             )
             .add_systems(
