@@ -76,3 +76,27 @@ impl PlayerProjectileView {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+
+    #[test]
+    fn should_create_the_player_projectile_bundle() {
+        let start_x = 100.0;
+        let start_y = 50.0;
+        let view = PlayerProjectileView::new(start_x, start_y);
+
+        let (component, sprite, transform) = view.spawn_projectile();
+
+        assert_eq!(transform.translation.x, start_x);
+        assert_eq!(transform.translation.y, start_y);
+        assert_eq!(
+            sprite.custom_size,
+            Some(Vec2::new(PROJECTILE_WIDTH, PROJECTILE_HEIGHT))
+        );
+        assert_eq!(sprite.color, Color::srgb(1.0, 1.0, 1.0));
+        assert_eq!(component.start_position, Vec3::new(start_x, start_y, 0.0));
+    }
+}

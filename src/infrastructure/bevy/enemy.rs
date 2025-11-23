@@ -36,3 +36,43 @@ impl EnemyView {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::prelude::*;
+    use bevy::asset::AssetPlugin;
+
+    #[test]
+    fn should_create_the_enemy_bundle() {
+        let mut app = App::new();
+        app.add_plugins((MinimalPlugins, AssetPlugin::default()));
+        app.init_asset::<Image>();
+        let asset_server = app.world().resource::<AssetServer>();
+
+        let expected_id = 99;
+        let expected_x = 100.0;
+        let expected_y = 200.0;
+
+        let (view, sprite, transform) = EnemyView::spawn_enemy(
+            expected_id,
+            expected_x,
+            expected_y,
+            asset_server
+        );
+
+        assert_eq!(view.id, expected_id);
+        assert_eq!(transform.translation.x, expected_x);
+        assert_eq!(transform.translation.y, expected_y);
+        assert_eq!(transform.translation.z, 0.0);
+
+        assert_eq!(
+            sprite.custom_size,
+            Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
+            "Sprite should have correct dimensions"
+        );
+
+        assert_eq!(sprite.color, Color::srgb(255.0, 255.0, 255.0));
+        assert!(matches!(sprite.image, Handle::Strong(_)));
+    }
+}
