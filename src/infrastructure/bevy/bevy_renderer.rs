@@ -45,8 +45,8 @@ impl Plugin for SpaceInvadersPlugin {
                 Startup,
                 (
                     HeaderView::spawn_header,
-                    LivesView::spawn_lives,
                     ScoreView::spawn_score,
+                    LivesView::spawn_lives,
                     GameAreaView::spawn_game_area,
                     EnemyFormationView::spawn_enemy_formation,
                     ShieldFormationView::spawn_shields,

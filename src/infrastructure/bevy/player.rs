@@ -9,7 +9,7 @@ use crate::{
 
 pub const PLAYER_IMAGE: &str = "player-green.png";
 const PLAYER_Y: f32 = -280.0;
-const PLAYER_WIDTH: f32 = 60.0;
+const PLAYER_WIDTH: f32 = 50.0;
 const PLAYER_HEIGHT: f32 = 30.0;
 const DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE: f32 = 25.0;
 

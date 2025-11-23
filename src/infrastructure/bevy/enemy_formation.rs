@@ -107,8 +107,8 @@ impl EnemyFormationView {
                     EnemyView,
                     Sprite {
                         image: asset_server.load(ENEMY_IMAGE),
-                        color: Color::WHITE,
                         custom_size: Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
+                        color: Color::srgb(255.0, 255.0, 255.0),
                         ..default()
                     },
                     Transform::from_xyz(new_x, new_y, 0.0),
