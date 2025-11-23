@@ -16,7 +16,7 @@ const SHIELD_IMAGE: &str = "shield.png";
 const SHIELD_WIDTH: f32 = 100.0;
 const SHIELD_HEIGHT: f32 = 80.0;
 const SHIELD_Y: f32 = -(GAME_AREA_HEIGHT / 2.0) * 0.58;
-const SHIELD_X: f32 = -(GAME_AREA_WIDTH / 2.0) * 0.68; //-380
+const SHIELD_X: f32 = -(GAME_AREA_WIDTH / 2.0) * 0.68;
 
 #[derive(Resource)]
 pub struct ShieldFormationResource(pub ShieldFormation);
