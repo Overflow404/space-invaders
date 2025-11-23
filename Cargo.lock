@@ -4151,6 +4151,7 @@ name = "space-invaders"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "rand",
  "tracing",
  "tracing-subscriber",
 ]

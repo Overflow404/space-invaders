@@ -1,7 +1,7 @@
 use bevy::asset::AssetServer;
 use bevy::color::Color;
 use bevy::math::Vec2;
-use bevy::prelude::{default, Component, Transform};
+use bevy::prelude::{default, Component, Resource, Timer, Transform};
 use bevy::sprite::Sprite;
 
 pub const ENEMY_WIDTH: f32 = 60.0;
@@ -12,6 +12,12 @@ const ENEMY_IMAGE: &str = "red.png";
 pub struct EnemyView {
     pub id: usize,
 }
+
+#[derive(Resource)]
+pub struct EnemyProjectileMovementTimer(pub Timer);
+
+#[derive(Resource)]
+pub struct EnemyFireProbability(pub f64);
 
 impl EnemyView {
     pub fn new(id: usize) -> Self {
@@ -43,11 +49,18 @@ mod tests {
     use bevy::asset::AssetPlugin;
     use bevy::prelude::*;
 
-    #[test]
-    fn should_create_the_enemy_bundle() {
+    fn setup() -> App {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()));
         app.init_asset::<Image>();
+
+        app
+    }
+
+    #[test]
+    fn should_create_the_enemy_bundle() {
+        let app = setup();
+
         let asset_server = app.world().resource::<AssetServer>();
 
         let expected_id = 99;

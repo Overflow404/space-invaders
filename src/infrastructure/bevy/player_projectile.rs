@@ -3,7 +3,7 @@ use crate::infrastructure::bevy::player::PlayerResource;
 use bevy::prelude::*;
 
 pub const PROJECTILE_SPEED: f32 = 500.0;
-pub const PROJECTILE_DURATION: f32 = 1.2;
+pub const PLAYER_PROJECTILE_DURATION: f32 = 1.2;
 const PROJECTILE_WIDTH: f32 = 5.0;
 const PROJECTILE_HEIGHT: f32 = 15.0;
 
@@ -48,7 +48,6 @@ impl PlayerProjectileView {
         mut player_resource: ResMut<PlayerResource>,
         query: Query<(Entity, &Transform), With<PlayerProjectileView>>,
     ) {
-        println!("On destroy time {:?}", time);
         if !player_resource.0.is_firing() {
             return;
         }
@@ -117,9 +116,12 @@ mod tests {
 
         app.world_mut()
             .run_system_once(PlayerProjectileView::on_move)
-            .map_err(|_| "Cannot run system".to_string())?;
+            .map_err(|e| format!("Cannot run system: {e}"))?;
 
-        let transform = app.world().get::<Transform>(projectile).unwrap();
+        let transform = app
+            .world()
+            .get::<Transform>(projectile)
+            .ok_or("Cannot get transform")?;
 
         assert!(
             (transform.translation.y - 50.0).abs() < 0.001,
@@ -183,7 +185,7 @@ mod tests {
 
         app.world_mut()
             .run_system_once(PlayerProjectileView::on_destroy)
-            .map_err(|_| "Cannot run system".to_string())?;
+            .map_err(|e| format!("Cannot run system: {e}"))?;
 
         let count = app
             .world_mut()

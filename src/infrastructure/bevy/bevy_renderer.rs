@@ -1,3 +1,7 @@
+use crate::infrastructure::bevy::enemy::{EnemyFireProbability, EnemyProjectileMovementTimer};
+use crate::infrastructure::bevy::enemy_projectile::{
+    EnemyProjectileView, ENEMY_PROJECTILE_DURATION,
+};
 use crate::infrastructure::bevy::footer::FooterView;
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
@@ -16,7 +20,7 @@ use crate::{
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
-            player_projectile::{PlayerProjectileMovementTimer, PROJECTILE_DURATION},
+            player_projectile::{PlayerProjectileMovementTimer, PLAYER_PROJECTILE_DURATION},
             score::{ScoreResource, ScoreView},
             shield_formation::{ShieldFormationResource, ShieldFormationView},
         },
@@ -68,6 +72,8 @@ impl Plugin for SpaceInvadersPlugin {
                     EnemyFormationView::on_move,
                     EnemyFormationView::advance_on_tick,
                     EnemyFormationView::handle_collisions,
+                    EnemyFormationView::spawn_random_projectiles,
+                    EnemyProjectileView::on_move,
                 ),
             )
             .add_systems(
@@ -98,13 +104,18 @@ impl SpaceInvadersPlugin {
         commands.insert_resource(PlayerResource(Player::new()));
         commands.insert_resource(ShieldFormationResource(ShieldFormation::new()));
         commands.insert_resource(EnemyFormationResource(EnemyFormation::new()));
+        commands.insert_resource(EnemyFireProbability(0.2));
         commands.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
             ENEMY_FORMATION_STEP_DURATION,
             TimerMode::Repeating,
         )));
         commands.insert_resource(PlayerProjectileMovementTimer(Timer::from_seconds(
-            PROJECTILE_DURATION,
+            PLAYER_PROJECTILE_DURATION,
             TimerMode::Once,
+        )));
+        commands.insert_resource(EnemyProjectileMovementTimer(Timer::from_seconds(
+            ENEMY_PROJECTILE_DURATION,
+            TimerMode::Repeating,
         )));
     }
 

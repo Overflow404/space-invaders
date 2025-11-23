@@ -1,10 +1,14 @@
 use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
+use crate::infrastructure::bevy::enemy::{EnemyFireProbability, EnemyProjectileMovementTimer};
 pub(crate) use crate::infrastructure::bevy::enemy::{EnemyView, ENEMY_HEIGHT, ENEMY_WIDTH};
+use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::infrastructure::bevy::player::PlayerResource;
 use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
 use bevy::prelude::*;
+use rand::prelude::IteratorRandom;
+use rand::Rng;
 
 pub const ENEMY_FORMATION_STEP_DURATION: f32 = 0.6;
 pub const SPACE_BETWEEN_ENEMIES_X: f32 = 15.0;
@@ -150,15 +154,50 @@ impl EnemyFormationView {
             }
         }
     }
+
+    pub fn spawn_random_projectiles(
+        mut commands: Commands,
+        time: Res<Time>,
+        mut timer: ResMut<EnemyProjectileMovementTimer>,
+        enemy_view_query: Query<&Transform, With<EnemyView>>,
+        enemy_fire_probability: ResMut<EnemyFireProbability>,
+    ) {
+        if !timer.0.tick(time.delta()).just_finished() {
+            return;
+        }
+
+        let mut rng = rand::rng();
+
+        enemy_view_query
+            .iter()
+            .choose_multiple(&mut rng, 5)
+            .iter()
+            .for_each(|chosen| {
+                let should_shoot = rng.random_bool(enemy_fire_probability.0);
+
+                if should_shoot {
+                    let start_x = chosen.translation.x;
+                    let start_y = chosen.translation.y;
+
+                    let projectile_view = EnemyProjectileView::new(start_x, start_y);
+
+                    commands.spawn(projectile_view.make_projectile());
+                }
+            })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::domain::enemy_formation::EnemyFormation;
     use crate::domain::player::Player;
-    use crate::infrastructure::bevy::enemy_formation::{EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView, EnemyView};
+    use crate::infrastructure::bevy::enemy::{EnemyFireProbability, EnemyProjectileMovementTimer};
+    use crate::infrastructure::bevy::enemy_formation::{
+        EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView, EnemyView,
+    };
+    use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
     use crate::infrastructure::bevy::player::PlayerResource;
-    use crate::infrastructure::bevy::player_projectile::{PlayerProjectileView};
+    use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::ecs::system::RunSystemOnce;
@@ -394,6 +433,35 @@ mod tests {
         });
 
         assert!(!id_exists, "Enemy id should be removed from domain logic");
+        Ok(())
+    }
+
+    #[test]
+    fn should_randomly_spawn_projectiles() -> Result<(), Box<dyn Error>> {
+        let mut app = setup();
+
+        app.init_resource::<Time>();
+        app.insert_resource(EnemyProjectileMovementTimer(Timer::from_seconds(
+            1.0,
+            TimerMode::Once,
+        )));
+        app.insert_resource(EnemyFireProbability(1.0));
+
+        let mut time = app.world_mut().resource_mut::<Time>();
+        time.advance_by(Duration::from_secs_f32(1.0));
+
+        app.world_mut()
+            .run_system_once(EnemyFormationView::spawn_random_projectiles)
+            .map_err(|e| format!("Cannot run system: {e}"))?;
+
+        let projectiles = app
+            .world_mut()
+            .query::<&EnemyProjectileView>()
+            .iter(app.world())
+            .len();
+
+        assert!(projectiles > 0);
+
         Ok(())
     }
 }
