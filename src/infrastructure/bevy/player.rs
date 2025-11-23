@@ -89,84 +89,201 @@ impl PlayerView {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::enemy_formation::EnemyFormation;
-    use crate::infrastructure::bevy::enemy_formation::{
-        EnemyFormationResource, EnemyFormationView, EnemyView,
-    };
-    use crate::infrastructure::bevy::projectile::ProjectileView;
+    use crate::infrastructure::bevy::game_area::GAME_AREA_WIDTH;
+    use crate::infrastructure::bevy::projectile::{ProjectileMovementTimer, ProjectileView};
 
     fn setup() -> App {
         let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+        app.add_plugins(AssetPlugin::default());
 
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()));
-
-        app.add_systems(Startup, EnemyFormationView::spawn_enemy_formation);
-        app.add_systems(
-            Update,
-            (
-                EnemyFormationView::on_move,
-                EnemyFormationView::handle_collisions,
-            ),
-        );
-
-        app.insert_resource(EnemyFormationResource(EnemyFormation::new()));
+        app.init_resource::<ButtonInput<KeyCode>>();
+        app.init_resource::<Time>();
         app.insert_resource(PlayerResource(Player::new()));
-        app.init_asset::<Image>();
-        app.update();
+        app.insert_resource(ProjectileMovementTimer(Timer::from_seconds(
+            1.0,
+            TimerMode::Once,
+        )));
 
+        app.init_asset::<Image>();
+
+        app.add_systems(Startup, PlayerView::spawn_player);
+        app.add_systems(Update, (PlayerView::on_move, PlayerView::on_fire));
+
+        app.update();
         app
     }
 
     #[test]
-    fn should_kill_enemy_on_collision() -> Result<(), Box<dyn std::error::Error>> {
+    fn player_should_move_right_on_input() -> Result<(), Box<dyn std::error::Error>> {
         let mut app = setup();
 
-        app.add_systems(Update, EnemyFormationView::handle_collisions);
-
-        let first_enemy = app
+        let start_x = app
             .world_mut()
-            .query::<(&Transform, &EnemyView)>()
-            .iter(app.world())
-            .next()
-            .map(|(t, v)| (t.translation, v.id))
-            .ok_or("Cannot lookup first enemy")?;
+            .query::<&Transform>()
+            .single(app.world())?
+            .translation
+            .x;
 
-        let enemy_x = first_enemy.0;
-        let enemy_id = first_enemy.1;
+        let mut input = app
+            .world_mut()
+            .get_resource_mut::<ButtonInput<KeyCode>>()
+            .ok_or("ButtonInput resource missing")?;
 
-        app.world_mut().spawn((
-            ProjectileView::new(0.0, 0.0),
-            Sprite {
-                custom_size: Some(Vec2::new(5.0, 15.0)),
-                ..default()
-            },
-            Transform::from_translation(enemy_x),
-        ));
+        input.press(KeyCode::ArrowRight);
 
         app.update();
 
-        let enemies_count = app
+        let end_x = app
             .world_mut()
-            .query::<&EnemyView>()
+            .query::<&Transform>()
+            .single(app.world())?
+            .translation
+            .x;
+
+        assert!(end_x > start_x, "Player should move right");
+
+        Ok(())
+    }
+
+    #[test]
+    fn player_should_move_left_on_input() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        let start_x = app
+            .world_mut()
+            .query::<&Transform>()
+            .single(app.world())?
+            .translation
+            .x;
+
+        app.world_mut()
+            .get_resource_mut::<ButtonInput<KeyCode>>()
+            .ok_or("ButtonInput resource missing")?
+            .press(KeyCode::ArrowLeft);
+
+        app.update();
+
+        let end_x = app
+            .world_mut()
+            .query::<&Transform>()
+            .single(app.world())?
+            .translation
+            .x;
+
+        assert!(end_x < start_x, "Player should move left");
+
+        Ok(())
+    }
+
+    #[test]
+    fn player_should_not_move_out_of_bounds() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        let boundary = (GAME_AREA_WIDTH / 2.0) - (PLAYER_WIDTH / 2.0);
+
+        let player_entity = app
+            .world_mut()
+            .query_filtered::<Entity, With<PlayerView>>()
+            .single(app.world())?;
+
+        let mut transform = app
+            .world_mut()
+            .get_mut::<Transform>(player_entity)
+            .ok_or("Player Transform missing")?;
+
+        transform.translation.x = boundary;
+
+        app.world_mut()
+            .get_resource_mut::<ButtonInput<KeyCode>>()
+            .ok_or("Input missing")?
+            .press(KeyCode::ArrowRight);
+
+        app.update();
+
+        let end_x = app
+            .world_mut()
+            .query::<&Transform>()
+            .single(app.world())?
+            .translation
+            .x;
+
+        assert!(
+            (end_x - boundary).abs() < 0.001,
+            "Player should be clamped at boundary"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn player_should_spawn_projectile_when_firing() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        let initial_count = app
+            .world_mut()
+            .query::<&ProjectileView>()
             .iter(app.world())
             .len();
-        assert_eq!(enemies_count, 54);
 
-        let enemies = app
+        assert_eq!(initial_count, 0);
+
+        app.world_mut()
+            .get_resource_mut::<ButtonInput<KeyCode>>()
+            .ok_or("ButtonInput resource missing")?
+            .press(KeyCode::Space);
+
+        app.update();
+
+        let final_count = app
+            .world_mut()
+            .query::<&ProjectileView>()
+            .iter(app.world())
+            .len();
+
+        assert_eq!(final_count, 1, "A projectile should spawn");
+
+        let player_res = app
             .world()
-            .resource::<EnemyFormationResource>()
+            .get_resource::<PlayerResource>()
+            .ok_or("PlayerResource missing")?;
+
+        assert!(
+            player_res.0.is_firing(),
+            "Player resource should be marked as firing"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn player_should_not_fire_if_cooldown_is_active() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        app.world_mut()
+            .get_resource_mut::<PlayerResource>()
+            .ok_or("PlayerResource missing")?
             .0
-            .get_enemies();
+            .toggle_fire();
 
-        let id_exists = enemies.iter().flatten().any(|slot| {
-            if let Some(e) = slot {
-                e.get_id() == enemy_id
-            } else {
-                false
-            }
-        });
+        app.world_mut()
+            .get_resource_mut::<ButtonInput<KeyCode>>()
+            .ok_or("ButtonInput resource missing")?
+            .press(KeyCode::Space);
 
-        assert!(!id_exists);
+        app.update();
+
+        let count = app
+            .world_mut()
+            .query::<&ProjectileView>()
+            .iter(app.world())
+            .len();
+
+        assert_eq!(
+            count, 0,
+            "Should not spawn projectile if cooldown is active"
+        );
+
         Ok(())
     }
 }
