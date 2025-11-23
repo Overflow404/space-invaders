@@ -175,15 +175,7 @@ mod tests {
             .insert_resource(LivesResource(Lives::new()))
             .insert_resource(PlayerResource(Player::new()))
             .insert_resource(ShieldFormationResource(ShieldFormation::new()))
-            .insert_resource(EnemyFormationResource(EnemyFormation::new()))
-            .insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
-                ENEMY_FORMATION_STEP_DURATION,
-                TimerMode::Repeating,
-            )))
-            .insert_resource(PlayerProjectileMovementTimer(Timer::from_seconds(
-                PROJECTILE_DURATION,
-                TimerMode::Once,
-            )));
+            .insert_resource(EnemyFormationResource(EnemyFormation::new()));
 
         app.update();
         app
