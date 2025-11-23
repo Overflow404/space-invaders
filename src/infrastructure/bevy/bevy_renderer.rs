@@ -1,6 +1,6 @@
 use crate::infrastructure::bevy::footer::FooterView;
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::projectile::ProjectileView;
+use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
 use crate::{
     domain::{
         enemy_formation::EnemyFormation, lives::Lives, player::Player, score::Score,
@@ -16,7 +16,7 @@ use crate::{
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
-            projectile::{ProjectileMovementTimer, PROJECTILE_DURATION},
+            player_projectile::{PlayerProjectileMovementTimer, PROJECTILE_DURATION},
             score::{ScoreResource, ScoreView},
             shield_formation::{ShieldFormationResource, ShieldFormationView},
         },
@@ -63,8 +63,8 @@ impl Plugin for SpaceInvadersPlugin {
                 (
                     PlayerView::on_move,
                     PlayerView::on_fire,
-                    ProjectileView::on_move,
-                    ProjectileView::on_destroy,
+                    PlayerProjectileView::on_move,
+                    PlayerProjectileView::on_destroy,
                     EnemyFormationView::on_move,
                     EnemyFormationView::advance_on_tick,
                     EnemyFormationView::handle_collisions,
@@ -102,7 +102,7 @@ impl SpaceInvadersPlugin {
             ENEMY_FORMATION_STEP_DURATION,
             TimerMode::Repeating,
         )));
-        commands.insert_resource(ProjectileMovementTimer(Timer::from_seconds(
+        commands.insert_resource(PlayerProjectileMovementTimer(Timer::from_seconds(
             PROJECTILE_DURATION,
             TimerMode::Once,
         )));

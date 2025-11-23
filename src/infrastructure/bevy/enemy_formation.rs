@@ -2,7 +2,7 @@ use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, NUMBER_OF_STEPS_ON
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::infrastructure::bevy::player::PlayerResource;
-use crate::infrastructure::bevy::projectile::ProjectileView;
+use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
 use bevy::prelude::*;
 
 pub const ENEMY_FORMATION_STEP_DURATION: f32 = 0.6;
@@ -135,28 +135,29 @@ impl EnemyFormationView {
     pub fn handle_collisions(
         mut commands: Commands,
         mut enemy_formation_resource: ResMut<EnemyFormationResource>,
-        projectile_query: Query<(Entity, &Transform, &Sprite), With<ProjectileView>>,
+        player_projectile_query: Query<(Entity, &Transform, &Sprite), With<PlayerProjectileView>>,
         enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyView), With<EnemyView>>,
         mut player_resource: ResMut<PlayerResource>,
     ) {
-        for (projectile_entity, projectile_transform, projectile_sprite) in projectile_query.iter()
+        for (player_projectile_entity, player_projectile_transform, player_projectile_sprite) in
+            player_projectile_query.iter()
         {
-            let projectile_size = projectile_sprite.custom_size.unwrap_or(Vec2::ONE);
+            let player_projectile_size = player_projectile_sprite.custom_size.unwrap_or(Vec2::ONE);
 
             for (enemy_entity, enemy_transform, enemy_sprite, e_view) in enemy_query.iter() {
                 let enemy_size = enemy_sprite.custom_size.unwrap_or(Vec2::ONE);
 
-                let collision = projectile_transform.translation.x
+                let collision = player_projectile_transform.translation.x
                     < enemy_transform.translation.x + enemy_size.x / 2.0
-                    && projectile_transform.translation.x + projectile_size.x
+                    && player_projectile_transform.translation.x + player_projectile_size.x
                         > enemy_transform.translation.x - enemy_size.x / 2.0
-                    && projectile_transform.translation.y
+                    && player_projectile_transform.translation.y
                         < enemy_transform.translation.y + enemy_size.y / 2.0
-                    && projectile_transform.translation.y + projectile_size.y
+                    && player_projectile_transform.translation.y + player_projectile_size.y
                         > enemy_transform.translation.y - enemy_size.y / 2.0;
 
                 if collision {
-                    commands.entity(projectile_entity).despawn();
+                    commands.entity(player_projectile_entity).despawn();
                     enemy_formation_resource.0.kill(e_view.id);
                     commands.entity(enemy_entity).despawn();
                     player_resource.0.toggle_fire();
@@ -176,7 +177,7 @@ mod tests {
         EnemyFormationResource, EnemyFormationView, EnemyView,
     };
     use crate::infrastructure::bevy::player::PlayerResource;
-    use crate::infrastructure::bevy::projectile::ProjectileView;
+    use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::image::Image;
@@ -346,7 +347,7 @@ mod tests {
         let enemy_id = enemy_info.1;
 
         app.world_mut().spawn((
-            ProjectileView::new(0.0, 0.0),
+            PlayerProjectileView::new(0.0, 0.0),
             Sprite {
                 custom_size: Some(Vec2::new(5.0, 15.0)),
                 ..default()

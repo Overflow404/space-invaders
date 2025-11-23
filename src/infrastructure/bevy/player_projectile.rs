@@ -8,22 +8,22 @@ const PROJECTILE_WIDTH: f32 = 5.0;
 const PROJECTILE_HEIGHT: f32 = 15.0;
 
 #[derive(Resource)]
-pub struct ProjectileMovementTimer(pub Timer);
+pub struct PlayerProjectileMovementTimer(pub Timer);
 
 #[derive(Component)]
-pub struct ProjectileView {
+pub struct PlayerProjectileView {
     start_position: Vec3,
 }
-impl ProjectileView {
+impl PlayerProjectileView {
     pub fn new(x: f32, y: f32) -> Self {
         Self {
             start_position: Vec3::new(x, y, 0.0),
         }
     }
 
-    pub fn spawn_projectile(&self) -> (ProjectileView, Sprite, Transform) {
+    pub fn spawn_projectile(&self) -> (PlayerProjectileView, Sprite, Transform) {
         (
-            ProjectileView {
+            PlayerProjectileView {
                 start_position: self.start_position,
             },
             Sprite {
@@ -35,7 +35,7 @@ impl ProjectileView {
         )
     }
 
-    pub fn on_move(time: Res<Time>, mut query: Query<&mut Transform, With<ProjectileView>>) {
+    pub fn on_move(time: Res<Time>, mut query: Query<&mut Transform, With<PlayerProjectileView>>) {
         for mut transform in query.iter_mut() {
             transform.translation.y += PROJECTILE_SPEED * time.delta_secs();
         }
@@ -44,9 +44,9 @@ impl ProjectileView {
     pub fn on_destroy(
         mut commands: Commands,
         time: Res<Time>,
-        mut timer: ResMut<ProjectileMovementTimer>,
+        mut timer: ResMut<PlayerProjectileMovementTimer>,
         mut player_resource: ResMut<PlayerResource>,
-        query: Query<(Entity, &Transform), With<ProjectileView>>,
+        query: Query<(Entity, &Transform), With<PlayerProjectileView>>,
     ) {
         if !player_resource.0.is_firing() {
             return;
