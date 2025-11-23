@@ -1,4 +1,4 @@
-use crate::domain::enemy_formation::{COLUMNS, EnemyFormation, NUMBER_OF_STEPS_ON_X_AXE};
+use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::infrastructure::bevy::player::PlayerResource;
@@ -177,7 +177,6 @@ mod tests {
     };
     use crate::infrastructure::bevy::player::PlayerResource;
     use crate::infrastructure::bevy::projectile::ProjectileView;
-    use bevy::MinimalPlugins;
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::image::Image;
@@ -186,6 +185,7 @@ mod tests {
     use bevy::sprite::Sprite;
     use bevy::text::Font;
     use bevy::utils::default;
+    use bevy::MinimalPlugins;
     use std::error::Error;
 
     fn get_first_enemy_coordinates(app: &mut App) -> Result<(f32, f32), Box<dyn Error>> {
