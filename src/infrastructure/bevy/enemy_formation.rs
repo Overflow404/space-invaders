@@ -132,6 +132,18 @@ mod tests {
     use bevy::prelude::{IntoScheduleConfigs, Transform, With};
     use bevy::text::Font;
     use bevy::MinimalPlugins;
+    use std::error::Error;
+
+    fn get_first_enemy_coordinates(app: &mut App) -> Result<(f32, f32), Box<dyn Error>> {
+        let translation = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .ok_or("First enemy Y at t1 not found")?
+            .translation;
+        Ok((translation.x, translation.y))
+    }
 
     fn setup() -> App {
         let mut app = App::new();
@@ -151,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    fn should_display_the_enemy_formation() -> Result<(), Box<dyn std::error::Error>> {
+    fn should_display_the_enemy_formation() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         let mut query = app.world_mut().query::<&EnemyView>();
@@ -162,37 +174,26 @@ mod tests {
     }
 
     #[test]
-    fn enemy_formation_should_move_to_the_right_when_there_is_enough_space() {
+    fn enemy_formation_should_move_to_the_right_when_there_is_enough_space()
+        -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
-        let first_enemy_x_t0 = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .unwrap()
-            .translation
-            .x;
+        let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
 
         let mut resource = app.world_mut().resource_mut::<EnemyFormationResource>();
         resource.0.advance_enemies();
 
         app.update();
 
-        let first_enemy_x_t1 = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .unwrap()
-            .translation
-            .x;
+        let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
 
         assert!(first_enemy_x_t1 > first_enemy_x_t0);
+        Ok(())
     }
 
     #[test]
-    fn enemy_formation_should_move_to_the_left_when_there_is_enough_space() {
+    fn enemy_formation_should_move_to_the_left_when_there_is_enough_space()
+        -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         for _ in 0..31 {
@@ -204,14 +205,7 @@ mod tests {
 
         app.update();
 
-        let first_enemy_x_t0 = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .unwrap()
-            .translation
-            .x;
+        let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
 
         app.world_mut()
             .resource_mut::<EnemyFormationResource>()
@@ -220,30 +214,18 @@ mod tests {
 
         app.update();
 
-        let first_enemy_x_t1 = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .unwrap()
-            .translation
-            .x;
+        let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
 
         assert!(first_enemy_x_t1 < first_enemy_x_t0);
+        Ok(())
     }
 
     #[test]
-    fn enemy_formation_should_drop_down_when_there_is_not_enough_right_space() {
+    fn enemy_formation_should_drop_down_when_there_is_not_enough_right_space()
+        -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
-        let first_enemy_y_t0 = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .unwrap()
-            .translation
-            .y;
+        let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
 
         for _ in 0..31 {
             app.world_mut()
@@ -254,20 +236,15 @@ mod tests {
 
         app.update();
 
-        let first_enemy_y_t1 = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .unwrap()
-            .translation
-            .y;
+        let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
 
         assert!(first_enemy_y_t1 < first_enemy_y_t0);
+        Ok(())
     }
 
     #[test]
-    fn enemy_formation_should_drop_down_when_there_is_not_enough_left_space() {
+    fn enemy_formation_should_drop_down_when_there_is_not_enough_left_space()
+        -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         for _ in 0..31 {
@@ -279,14 +256,7 @@ mod tests {
 
         app.update();
 
-        let first_enemy_y_t0 = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .unwrap()
-            .translation
-            .y;
+        let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
 
         for _ in 0..31 {
             app.world_mut()
@@ -297,15 +267,9 @@ mod tests {
 
         app.update();
 
-        let first_enemy_y_t1 = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .unwrap()
-            .translation
-            .y;
+        let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
 
         assert!(first_enemy_y_t1 < first_enemy_y_t0);
+        Ok(())
     }
 }
