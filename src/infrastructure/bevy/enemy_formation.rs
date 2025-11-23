@@ -62,7 +62,7 @@ impl EnemyFormationView {
         mut enemy_formation_res: ResMut<EnemyFormationResource>,
         mut timer: ResMut<EnemyFormationMovementTimer>,
     ) {
-        if enemy_formation_res.0.has_breached() {
+        if enemy_formation_res.0.has_breached() || enemy_formation_res.0.is_annihilated() {
             timer.0.finish();
         } else if timer.0.tick(time.delta()).just_finished() {
             enemy_formation_res.0.advance_enemies();
