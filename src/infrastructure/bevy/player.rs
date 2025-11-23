@@ -79,7 +79,7 @@ impl PlayerView {
                     translation.y + DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE,
                 );
 
-                commands.spawn(player_projectile_view.spawn_projectile());
+                commands.spawn(player_projectile_view.make_projectile());
 
                 player_resource.0.toggle_fire();
                 timer.0.reset();

@@ -104,7 +104,7 @@ impl EnemyFormationView {
                         - (row_index as f32 * (ENEMY_HEIGHT + SPACE_BETWEEN_ENEMIES_Y))
                         - (ENEMY_HEIGHT / 2.0);
 
-                    commands.spawn(EnemyView::spawn_enemy(
+                    commands.spawn(EnemyView::make_enemy(
                         enemy.get_id(),
                         new_x,
                         new_y,
@@ -156,21 +156,22 @@ impl EnemyFormationView {
 mod tests {
     use crate::domain::enemy_formation::EnemyFormation;
     use crate::domain::player::Player;
-    use crate::infrastructure::bevy::enemy_formation::{
-        EnemyFormationResource, EnemyFormationView, EnemyView,
-    };
+    use crate::infrastructure::bevy::enemy_formation::{EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView, EnemyView};
     use crate::infrastructure::bevy::player::PlayerResource;
-    use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+    use crate::infrastructure::bevy::player_projectile::{PlayerProjectileView};
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::ecs::system::RunSystemOnce;
     use bevy::image::Image;
     use bevy::math::Vec2;
-    use bevy::prelude::{IntoScheduleConfigs, Transform, With};
+    use bevy::prelude::{IntoScheduleConfigs, Timer, TimerMode, Transform, With};
     use bevy::sprite::Sprite;
     use bevy::text::Font;
+    use bevy::time::Time;
     use bevy::utils::default;
     use bevy::MinimalPlugins;
     use std::error::Error;
+    use std::time::Duration;
 
     fn get_first_enemy_coordinates(app: &mut App) -> Result<(f32, f32), Box<dyn Error>> {
         let translation = app
@@ -309,6 +310,33 @@ mod tests {
         let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
 
         assert!(first_enemy_y_t1 < first_enemy_y_t0);
+        Ok(())
+    }
+
+    #[test]
+    fn enemy_formation_should_advance_on_tick() -> Result<(), Box<dyn Error>> {
+        let mut app = setup();
+
+        let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
+
+        app.init_resource::<Time>();
+        app.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
+            1.0,
+            TimerMode::Once,
+        )));
+
+        let mut time = app.world_mut().resource_mut::<Time>();
+        time.advance_by(Duration::from_secs_f32(1.0));
+
+        app.world_mut()
+            .run_system_once(EnemyFormationView::advance_on_tick)
+            .map_err(|e| format!("Cannot run system: {e}"))?;
+
+        app.update();
+
+        let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
+
+        assert!(first_enemy_x_t1 > first_enemy_x_t0);
         Ok(())
     }
 

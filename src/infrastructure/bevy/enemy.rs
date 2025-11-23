@@ -18,7 +18,7 @@ impl EnemyView {
         Self { id }
     }
 
-    pub fn spawn_enemy(
+    pub fn make_enemy(
         id: usize,
         x: f32,
         y: f32,
@@ -40,8 +40,8 @@ impl EnemyView {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::prelude::*;
     use bevy::asset::AssetPlugin;
+    use bevy::prelude::*;
 
     #[test]
     fn should_create_the_enemy_bundle() {
@@ -54,12 +54,8 @@ mod tests {
         let expected_x = 100.0;
         let expected_y = 200.0;
 
-        let (view, sprite, transform) = EnemyView::spawn_enemy(
-            expected_id,
-            expected_x,
-            expected_y,
-            asset_server
-        );
+        let (view, sprite, transform) =
+            EnemyView::make_enemy(expected_id, expected_x, expected_y, asset_server);
 
         assert_eq!(view.id, expected_id);
         assert_eq!(transform.translation.x, expected_x);
@@ -68,8 +64,7 @@ mod tests {
 
         assert_eq!(
             sprite.custom_size,
-            Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)),
-            "Sprite should have correct dimensions"
+            Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT))
         );
 
         assert_eq!(sprite.color, Color::srgb(255.0, 255.0, 255.0));

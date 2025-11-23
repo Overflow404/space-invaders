@@ -21,7 +21,7 @@ impl PlayerProjectileView {
         }
     }
 
-    pub fn spawn_projectile(&self) -> (PlayerProjectileView, Sprite, Transform) {
+    pub fn make_projectile(&self) -> (PlayerProjectileView, Sprite, Transform) {
         (
             PlayerProjectileView {
                 start_position: self.start_position,
@@ -204,7 +204,7 @@ mod tests {
         let start_y = 50.0;
         let view = PlayerProjectileView::new(start_x, start_y);
 
-        let (component, sprite, transform) = view.spawn_projectile();
+        let (component, sprite, transform) = view.make_projectile();
 
         assert_eq!(transform.translation.x, start_x);
         assert_eq!(transform.translation.y, start_y);
