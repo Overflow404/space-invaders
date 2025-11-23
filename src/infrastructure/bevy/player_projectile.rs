@@ -48,6 +48,7 @@ impl PlayerProjectileView {
         mut player_resource: ResMut<PlayerResource>,
         query: Query<(Entity, &Transform), With<PlayerProjectileView>>,
     ) {
+        println!("On destroy time {:?}", time);
         if !player_resource.0.is_firing() {
             return;
         }
@@ -80,8 +81,123 @@ impl PlayerProjectileView {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::player::Player;
     use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+    use bevy::ecs::system::RunSystemOnce;
+    use std::time::Duration;
 
+    fn setup() -> App {
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins);
+
+        app.init_resource::<Time>();
+        app.insert_resource(PlayerResource(Player::new()));
+        app.insert_resource(PlayerProjectileMovementTimer(Timer::from_seconds(
+            1.0,
+            TimerMode::Once,
+        )));
+
+        app
+    }
+
+    #[test]
+    fn should_move_projectile_upwards() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        let projectile = app
+            .world_mut()
+            .spawn((
+                PlayerProjectileView::new(0.0, 0.0),
+                Transform::from_xyz(0.0, 0.0, 0.0),
+            ))
+            .id();
+
+        let mut time = app.world_mut().resource_mut::<Time>();
+        time.advance_by(Duration::from_secs_f32(0.1));
+
+        app.world_mut()
+            .run_system_once(PlayerProjectileView::on_move)
+            .map_err(|_| "Cannot run system".to_string())?;
+
+        let transform = app.world().get::<Transform>(projectile).unwrap();
+
+        assert!(
+            (transform.translation.y - 50.0).abs() < 0.001,
+            "Projectile should have moved up by 50 units"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_despawn_when_out_of_bounds() {
+        let mut app = setup();
+        app.add_systems(Update, PlayerProjectileView::on_destroy);
+
+        app.world_mut()
+            .resource_mut::<PlayerResource>()
+            .0
+            .toggle_fire();
+
+        let out_of_bounds_y = (GAME_AREA_HEIGHT / 2.0) + 10.0;
+
+        app.world_mut().spawn((
+            PlayerProjectileView::new(0.0, 0.0),
+            Transform::from_xyz(0.0, out_of_bounds_y, 0.0),
+        ));
+
+        let mut time = app.world_mut().resource_mut::<Time>();
+        time.advance_by(Duration::from_secs_f32(0.01));
+        app.update();
+
+        let count = app
+            .world_mut()
+            .query::<&PlayerProjectileView>()
+            .iter(app.world())
+            .len();
+        assert_eq!(count, 0, "Projectile should be despawned");
+
+        let player = app.world().resource::<PlayerResource>();
+        assert!(
+            !player.0.is_firing(),
+            "Player state should be reset to not firing"
+        );
+    }
+
+    #[test]
+    fn should_despawn_when_timer_finishes() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+
+        app.world_mut()
+            .resource_mut::<PlayerResource>()
+            .0
+            .toggle_fire();
+
+        app.world_mut().spawn((
+            PlayerProjectileView::new(0.0, 0.0),
+            Transform::from_xyz(0.0, 0.0, 0.0),
+        ));
+
+        let mut time = app.world_mut().resource_mut::<Time>();
+        time.advance_by(Duration::from_secs_f32(2.0));
+
+        app.world_mut()
+            .run_system_once(PlayerProjectileView::on_destroy)
+            .map_err(|_| "Cannot run system".to_string())?;
+
+        let count = app
+            .world_mut()
+            .query::<&PlayerProjectileView>()
+            .iter(app.world())
+            .len();
+
+        assert_eq!(count, 0, "Projectile should be despawned due to timeout");
+
+        let player = app.world().resource::<PlayerResource>();
+        assert!(!player.0.is_firing(), "Player state should be reset");
+
+        Ok(())
+    }
     #[test]
     fn should_create_the_player_projectile_bundle() {
         let start_x = 100.0;
