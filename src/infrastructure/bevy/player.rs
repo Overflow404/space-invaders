@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::infrastructure::bevy::game_area::GAME_AREA_WIDTH;
+use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::projectile::PROJECTILE_SPEED;
 use crate::{
     domain::player::Player,
@@ -8,9 +8,10 @@ use crate::{
 };
 
 pub const PLAYER_IMAGE: &str = "player-green.png";
-const PLAYER_Y: f32 = -280.0;
-const PLAYER_WIDTH: f32 = 50.0;
-const PLAYER_HEIGHT: f32 = 30.0;
+const PLAYER_X: f32 = 0.0;
+const PLAYER_Y: f32 = -(GAME_AREA_HEIGHT / 2.0) * 0.78;
+const PLAYER_WIDTH: f32 = GAME_AREA_WIDTH * 0.045;
+const PLAYER_HEIGHT: f32 = GAME_AREA_HEIGHT * 0.043;
 const DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE: f32 = 25.0;
 
 #[derive(Resource)]
@@ -38,7 +39,7 @@ impl PlayerView {
                 custom_size: Some(Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT)),
                 ..default()
             },
-            Transform::from_xyz(0.0, PLAYER_Y, 0.0),
+            Transform::from_xyz(PLAYER_X, PLAYER_Y, 0.0),
         ));
     }
 

@@ -1,5 +1,6 @@
 pub mod bevy_renderer;
 pub mod enemy_formation;
+mod footer;
 pub mod game_area;
 pub mod header;
 pub mod lives;

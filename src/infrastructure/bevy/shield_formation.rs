@@ -13,8 +13,8 @@ use bevy::{
 };
 
 const SHIELD_IMAGE: &str = "shield.png";
-const SHIELD_WIDTH: f32 = 100.0;
-const SHIELD_HEIGHT: f32 = 80.0;
+const SHIELD_WIDTH: f32 = GAME_AREA_WIDTH * 0.09;
+const SHIELD_HEIGHT: f32 = GAME_AREA_HEIGHT * 0.11;
 const SHIELD_Y: f32 = -(GAME_AREA_HEIGHT / 2.0) * 0.58;
 const SHIELD_X: f32 = -(GAME_AREA_WIDTH / 2.0) * 0.68;
 
@@ -43,7 +43,7 @@ impl ShieldFormationView {
         let shield_step = total_span / (shields.len() as f32 - 1.0);
 
         for (index, _) in shields.iter().enumerate() {
-            let x = SHIELD_X + (index as f32 * shield_step);
+            let x_step = SHIELD_X + (index as f32 * shield_step);
 
             commands.spawn((
                 ShieldView,
@@ -52,7 +52,7 @@ impl ShieldFormationView {
                     custom_size: Some(Vec2::new(SHIELD_WIDTH, SHIELD_HEIGHT)),
                     ..default()
                 },
-                Transform::from_xyz(x, SHIELD_Y, 0.0),
+                Transform::from_xyz(x_step, SHIELD_Y, 0.0),
             ));
         }
     }

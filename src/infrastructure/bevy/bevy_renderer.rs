@@ -1,3 +1,4 @@
+use crate::infrastructure::bevy::footer::FooterView;
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::{
     domain::{
@@ -51,6 +52,7 @@ impl Plugin for SpaceInvadersPlugin {
                     EnemyFormationView::spawn_enemy_formation,
                     ShieldFormationView::spawn_shields,
                     PlayerView::spawn_player,
+                    FooterView::spawn_footer,
                 )
                     .chain()
                     .after(Self::spawn_camera),

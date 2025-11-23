@@ -3,10 +3,11 @@ use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use bevy::prelude::*;
 
-pub const ENEMY_FORMATION_STEP_DURATION: f32 = 0.6;
+pub const ENEMY_FORMATION_STEP_DURATION: f32 = 0.01;
+pub const SPACE_BETWEEN_ENEMIES_X: f32 = 15.0;
+
 const ENEMY_WIDTH: f32 = 60.0;
 const ENEMY_HEIGHT: f32 = 40.0;
-const SPACE_BETWEEN_ENEMIES_X: f32 = 15.0;
 const SPACE_BETWEEN_ENEMIES_Y: f32 = 15.0;
 const VERTICAL_DROP: f32 = 15.0;
 const ENEMY_IMAGE: &str = "red.png";

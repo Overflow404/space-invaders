@@ -1,3 +1,5 @@
+use crate::infrastructure::bevy::bevy_renderer::{WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use bevy::asset::AssetServer;
 use bevy::camera::{Camera2d, Projection};
 use bevy::math::Vec2;
@@ -7,8 +9,8 @@ use bevy::{
     utils::default,
 };
 
-pub const GAME_AREA_WIDTH: f32 = 1120.0;
-pub const GAME_AREA_HEIGHT: f32 = 690.0;
+pub const GAME_AREA_WIDTH: f32 = WINDOW_WIDTH * 0.93;
+pub const GAME_AREA_HEIGHT: f32 = (WINDOW_HEIGHT - HEADER_HEIGHT) * 0.98;
 const BACKGROUND_IMAGE: &str = "tv.png";
 #[derive(Resource)]
 pub struct GameAreaResource;

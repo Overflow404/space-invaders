@@ -1,5 +1,5 @@
 use crate::domain::enemy::Enemy;
-use tracing::debug;
+use tracing::info;
 
 pub const NUMBER_OF_STEPS_ON_X_AXE: usize = 41;
 pub const COLUMNS: usize = 11;
@@ -56,16 +56,24 @@ impl EnemyFormation {
 
     pub fn advance_enemies(&mut self) {
         if self.status == FormationStatus::Breached {
+            info!("Enemy formation already breached");
             return;
         }
 
         let current_x = self.position.0;
+        const BREACH_Y_LIMIT: usize = 14;
 
         match self.direction {
             MovingDirection::ToRight => {
                 if current_x < FREE_MOVING_SPACE_ON_X_AXE {
                     self.position.0 += 1;
                 } else {
+                    if self.position.1 + 1 >= BREACH_Y_LIMIT {
+                        self.status = FormationStatus::Breached;
+                        info!("Enemy formation breached");
+                        return;
+                    }
+
                     self.position.1 += 1;
                     self.direction = MovingDirection::ToLeft;
                 }
@@ -74,19 +82,21 @@ impl EnemyFormation {
                 if current_x > 0 {
                     self.position.0 -= 1;
                 } else {
+                    if self.position.1 + 1 >= BREACH_Y_LIMIT {
+                        self.status = FormationStatus::Breached;
+                        info!("Enemy formation breached");
+                        return;
+                    }
+
                     self.position.1 += 1;
                     self.direction = MovingDirection::ToRight;
                 }
             }
         }
 
-        if self.position.1 >= 14 {
-            self.status = FormationStatus::Breached;
-        } else {
-            self.status = FormationStatus::Advancing;
-        }
+        self.status = FormationStatus::Advancing;
 
-        debug!(
+        info!(
             "Formation moved to {:?}, direction: {:?}",
             self.position, self.direction
         );
@@ -184,14 +194,11 @@ mod tests {
     fn should_detect_breach_when_reaching_bottom() {
         let mut formation = EnemyFormation::new();
 
-        while formation.position.1 < 14 {
+        while formation.status != FormationStatus::Breached {
             formation.advance_enemies();
-            if formation.position.1 < 14 {
-                assert_eq!(formation.status, FormationStatus::Advancing);
-            }
         }
 
-        assert_eq!(formation.position.1, 14);
+        assert_eq!(formation.position.1, 13);
         assert_eq!(formation.status, FormationStatus::Breached);
     }
 
@@ -199,11 +206,13 @@ mod tests {
     fn should_not_advance_anymore_when_breached() {
         let mut formation = EnemyFormation::new();
 
-        while formation.position.1 < 14 {
+        while formation.status != FormationStatus::Breached {
             formation.advance_enemies();
         }
 
         let position_at_breach = formation.position;
+
+        assert_eq!(position_at_breach.1, 13);
         assert_eq!(formation.status, FormationStatus::Breached);
 
         formation.advance_enemies();
