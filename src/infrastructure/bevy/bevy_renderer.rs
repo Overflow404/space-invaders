@@ -21,7 +21,7 @@ use crate::{
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
             player_projectile::{PlayerProjectileMovementTimer, PLAYER_PROJECTILE_DURATION},
-            score::{ScoreResource, ScoreView},
+            score::{ScoreResource, ScoreViewValue},
             shield_formation::{ShieldFormationResource, ShieldFormationView},
         },
         renderer::Renderer,
@@ -51,7 +51,7 @@ impl Plugin for SpaceInvadersPlugin {
                 Startup,
                 (
                     HeaderView::spawn_header,
-                    ScoreView::spawn_score,
+                    ScoreViewValue::spawn_score,
                     LivesView::spawn_lives,
                     GameAreaView::spawn_game_area,
                     EnemyFormationView::spawn_enemy_formation,
@@ -74,6 +74,7 @@ impl Plugin for SpaceInvadersPlugin {
                     EnemyFormationView::handle_collisions,
                     EnemyFormationView::spawn_random_projectiles,
                     EnemyProjectileView::on_move,
+                    ScoreViewValue::on_change,
                 ),
             )
             .add_systems(
@@ -210,7 +211,7 @@ mod tests {
 
         assert_exists::<HeaderView>(world, "HeaderView", 1);
 
-        assert_exists::<ScoreView>(world, "ScoreView", 1);
+        assert_exists::<ScoreViewValue>(world, "ScoreView", 1);
         assert_exists::<LivesView>(world, "LivesView", 1);
 
         assert_exists::<GameAreaView>(world, "GameAreaView", 1);

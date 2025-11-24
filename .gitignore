@@ -26,3 +26,4 @@ github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 
 /target
 /.idea
+/out

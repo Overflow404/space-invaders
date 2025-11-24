@@ -6,6 +6,7 @@ use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::infrastructure::bevy::player::PlayerResource;
 use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+use crate::infrastructure::bevy::score::ScoreResource;
 use bevy::prelude::*;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
@@ -125,6 +126,7 @@ impl EnemyFormationView {
         player_projectile_query: Query<(Entity, &Transform, &Sprite), With<PlayerProjectileView>>,
         enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyView), With<EnemyView>>,
         mut player_resource: ResMut<PlayerResource>,
+        mut score_resource: ResMut<ScoreResource>,
     ) {
         for (player_projectile_entity, player_projectile_transform, player_projectile_sprite) in
             player_projectile_query.iter()
@@ -148,7 +150,7 @@ impl EnemyFormationView {
                     enemy_formation_resource.0.kill(e_view.id);
                     commands.entity(enemy_entity).despawn();
                     player_resource.0.toggle_fire();
-
+                    score_resource.0.increment(10);
                     break;
                 }
             }
@@ -191,6 +193,7 @@ impl EnemyFormationView {
 mod tests {
     use crate::domain::enemy_formation::EnemyFormation;
     use crate::domain::player::Player;
+    use crate::domain::score::Score;
     use crate::infrastructure::bevy::enemy::{EnemyFireProbability, EnemyProjectileMovementTimer};
     use crate::infrastructure::bevy::enemy_formation::{
         EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView, EnemyView,
@@ -198,6 +201,7 @@ mod tests {
     use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
     use crate::infrastructure::bevy::player::PlayerResource;
     use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+    use crate::infrastructure::bevy::score::ScoreResource;
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::ecs::system::RunSystemOnce;
@@ -384,6 +388,7 @@ mod tests {
         let mut app = setup();
 
         app.add_systems(Update, EnemyFormationView::handle_collisions);
+        app.insert_resource(ScoreResource(Score::new()));
 
         let enemy_info = app
             .world_mut()
@@ -433,6 +438,10 @@ mod tests {
         });
 
         assert!(!id_exists, "Enemy id should be removed from domain logic");
+
+        let score = app.world().resource::<ScoreResource>().0.get_current();
+
+        assert_eq!(score, 10, "Score should have increased");
         Ok(())
     }
 

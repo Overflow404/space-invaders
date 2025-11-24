@@ -1,3 +1,6 @@
+use crate::infrastructure::bevy::header::FONT;
+use crate::{domain::score::Score, infrastructure::bevy::header::HeaderView};
+use bevy::prelude::DetectChanges;
 use bevy::{
     asset::AssetServer,
     color::Color,
@@ -13,16 +16,16 @@ use bevy::{
     utils::default,
 };
 
-use crate::infrastructure::bevy::header::FONT;
-use crate::{domain::score::Score, infrastructure::bevy::header::HeaderView};
-
 #[derive(Resource)]
 pub struct ScoreResource(pub Score);
 
 #[derive(Component)]
-pub struct ScoreView;
+pub struct ScoreViewValue;
 
-impl ScoreView {
+#[derive(Component)]
+pub struct ScoreViewLabel;
+
+impl ScoreViewValue {
     pub fn spawn_score(
         mut commands: Commands,
         asset_server: Res<AssetServer>,
@@ -34,19 +37,17 @@ impl ScoreView {
 
             commands.entity(header).with_children(|parent| {
                 parent
-                    .spawn((
-                        ScoreView,
-                        Node {
-                            width: Val::Percent(50.0),
-                            height: Val::Px(50.0),
-                            flex_direction: FlexDirection::Row,
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..default()
-                        },
-                    ))
+                    .spawn((Node {
+                        width: Val::Percent(50.0),
+                        height: Val::Px(50.0),
+                        flex_direction: FlexDirection::Row,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },))
                     .with_children(|score_section| {
                         score_section.spawn((
+                            ScoreViewLabel,
                             Node {
                                 height: Val::Percent(50.0),
                                 margin: UiRect::right(Val::Px(20.0)),
@@ -61,6 +62,7 @@ impl ScoreView {
                             TextColor(Color::WHITE),
                         ));
                         score_section.spawn((
+                            ScoreViewValue,
                             Node {
                                 height: Val::Percent(50.0),
                                 ..default()
@@ -77,19 +79,31 @@ impl ScoreView {
             });
         }
     }
+
+    pub fn on_change(
+        score_resource: Res<ScoreResource>,
+        mut score_query: Query<&mut Text, With<ScoreViewValue>>,
+    ) {
+        if score_resource.is_changed() {
+            for mut text in &mut score_query {
+                text.0 = score_resource.0.get_current().to_string();
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::domain::score::Score;
     use crate::infrastructure::bevy::header::HeaderView;
-    use crate::infrastructure::bevy::score::{ScoreResource, ScoreView};
-    use bevy::app::{App, Startup};
+    use crate::infrastructure::bevy::score::{ScoreResource, ScoreViewLabel, ScoreViewValue};
+    use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::image::Image;
-    use bevy::prelude::{Children, Entity, IntoScheduleConfigs, Text};
+    use bevy::prelude::{IntoScheduleConfigs, Text, With};
     use bevy::text::Font;
     use bevy::MinimalPlugins;
+    use std::error::Error;
 
     fn setup() -> App {
         let mut app = App::new();
@@ -97,8 +111,10 @@ mod tests {
 
         app.add_systems(
             Startup,
-            (HeaderView::spawn_header, ScoreView::spawn_score).chain(),
+            (HeaderView::spawn_header, ScoreViewValue::spawn_score).chain(),
         );
+
+        app.add_systems(Update, (ScoreViewValue::on_change,).chain());
 
         app.insert_resource(ScoreResource(Score::new()));
 
@@ -111,38 +127,46 @@ mod tests {
     }
 
     #[test]
-    fn should_display_the_score() -> Result<(), Box<dyn std::error::Error>> {
+    fn should_display_the_score() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
-        let mut query = app.world_mut().query::<(&ScoreView, &Children)>();
-        let (_, children) = query.single(app.world())?;
+        let mut score_view_label_query = app
+            .world_mut()
+            .query_filtered::<&Text, With<ScoreViewLabel>>();
 
-        let label = children
-            .iter()
-            .filter(|child| {
-                if let Some(text) = app.world().get::<Text>(**child)
-                    && text.0 == "Score: "
-                {
-                    return true;
-                }
-                false
-            })
-            .collect::<Vec<&Entity>>();
+        let mut score_view_value_query = app
+            .world_mut()
+            .query_filtered::<&Text, With<ScoreViewValue>>();
 
-        let score = children
-            .iter()
-            .filter(|child| {
-                if let Some(text) = app.world().get::<Text>(**child)
-                    && text.0 == "0"
-                {
-                    return true;
-                }
-                false
-            })
-            .collect::<Vec<&Entity>>();
+        let score_label = score_view_label_query.single(app.world())?;
+        let score_value = score_view_value_query.single(app.world())?;
 
-        assert!(!label.is_empty());
-        assert!(!score.is_empty());
+        assert_eq!(score_label.0, String::from("Score: "));
+        assert_eq!(score_value.0, String::from("0"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_update_score() -> Result<(), Box<dyn Error>> {
+        let mut app = setup();
+
+        let mut score_resource = app.world_mut().resource_mut::<ScoreResource>();
+        score_resource.0.increment(50);
+
+        app.update();
+
+        let mut score_view_value_query = app
+            .world_mut()
+            .query_filtered::<&Text, With<ScoreViewValue>>();
+
+        let score_value = score_view_value_query.single(app.world())?;
+
+        assert_eq!(
+            score_value.0,
+            String::from("50"),
+            "Score should have increased"
+        );
 
         Ok(())
     }
