@@ -92,8 +92,6 @@ mod test {
             .get::<Transform>(projectile)
             .ok_or("Cannot get transform")?;
 
-        println!("transform {:?}", transform);
-
         assert!(
             (transform.translation.y.abs() - 50.0).abs() < 0.001,
             "Projectile should have moved up by 50 units"
@@ -103,7 +101,7 @@ mod test {
     }
 
     #[test]
-    fn should_make_projectile() {
+    fn should_make_projectile_bundle() {
         let start_x = 100.0;
         let start_y = 200.0;
         let enemy_projectile_view = EnemyProjectileView::new(start_x, start_y);
