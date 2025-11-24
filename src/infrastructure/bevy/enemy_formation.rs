@@ -146,11 +146,11 @@ impl EnemyFormationView {
                         > enemy_transform.translation.y - enemy_size.y / 2.0;
 
                 if collision {
-                    commands.entity(player_projectile_entity).despawn();
-                    enemy_formation_resource.0.kill(e_view.id);
                     commands.entity(enemy_entity).despawn();
+                    commands.entity(player_projectile_entity).despawn();
                     player_resource.0.toggle_fire();
                     score_resource.0.increment(10);
+                    enemy_formation_resource.0.kill(e_view.id);
                     break;
                 }
             }
