@@ -26,11 +26,11 @@ impl ShieldFormation {
 
 #[cfg(test)]
 mod test {
-    use crate::domain::shield_formation::{ShieldFormation, NUMBER_OF_SHIELDS};
+    use crate::domain::shield_formation::ShieldFormation;
 
     #[test]
-    fn should_create_the_shield_formation() {
+    fn should_create_shield_formation() {
         let formation = ShieldFormation::new();
-        assert_eq!(formation.get_shields().len(), NUMBER_OF_SHIELDS);
+        assert_eq!(formation.get_shields().len(), 4);
     }
 }

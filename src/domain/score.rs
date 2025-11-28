@@ -31,7 +31,7 @@ mod tests {
     use crate::domain::score::Score;
 
     #[test]
-    fn should_create_new_score() {
+    fn should_create_score() {
         let score = Score::new();
         assert_eq!(score.current, 0);
     }

@@ -33,7 +33,7 @@ mod tests {
     use crate::domain::lives::Lives;
 
     #[test]
-    fn should_create_new_lives() {
+    fn should_create_lives() {
         let lives = Lives::new();
         assert_eq!(lives.get_current(), 3);
     }

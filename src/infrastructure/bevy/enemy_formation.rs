@@ -59,7 +59,7 @@ impl EnemyFormationView {
         if enemy_formation_res.0.has_breached() || enemy_formation_res.0.is_annihilated() {
             timer.0.finish();
         } else if timer.0.tick(time.delta()).just_finished() {
-            enemy_formation_res.0.advance_enemies();
+            enemy_formation_res.0.advance();
         }
     }
 
@@ -289,7 +289,7 @@ mod tests {
             let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
 
             let mut resource = app.world_mut().resource_mut::<EnemyFormationResource>();
-            resource.0.advance_enemies();
+            resource.0.advance();
 
             app.update();
 
@@ -307,7 +307,7 @@ mod tests {
                 app.world_mut()
                     .resource_mut::<EnemyFormationResource>()
                     .0
-                    .advance_enemies();
+                    .advance();
             }
 
             app.update();
@@ -317,7 +317,7 @@ mod tests {
             app.world_mut()
                 .resource_mut::<EnemyFormationResource>()
                 .0
-                .advance_enemies();
+                .advance();
 
             app.update();
 
@@ -337,7 +337,7 @@ mod tests {
                 app.world_mut()
                     .resource_mut::<EnemyFormationResource>()
                     .0
-                    .advance_enemies();
+                    .advance();
             }
 
             app.update();
@@ -356,7 +356,7 @@ mod tests {
                 app.world_mut()
                     .resource_mut::<EnemyFormationResource>()
                     .0
-                    .advance_enemies();
+                    .advance();
             }
 
             app.update();
@@ -367,7 +367,7 @@ mod tests {
                 app.world_mut()
                     .resource_mut::<EnemyFormationResource>()
                     .0
-                    .advance_enemies();
+                    .advance();
             }
 
             app.update();

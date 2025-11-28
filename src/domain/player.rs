@@ -29,22 +29,19 @@ mod tests {
     #[test]
     fn should_create_player() {
         let player = Player::new();
-        assert!(!player.is_firing, "Initial state should be false");
+        assert!(!player.is_firing, "Initial firing state should be false");
     }
 
     #[test]
     fn toggle_fire_switches_state() {
         let mut player = Player::new();
 
-        assert!(!player.is_firing(), "Initial state should be false");
+        assert!(!player.is_firing(), "Initial firing state should be false");
 
         player.toggle_fire();
-        assert!(player.is_firing(), "Player should fire after first toggle");
+        assert!(player.is_firing(), "Player should start firing");
 
         player.toggle_fire();
-        assert!(
-            !player.is_firing(),
-            "Player should stop firing after second toggle"
-        );
+        assert!(!player.is_firing(), "Player should stop firing");
     }
 }
