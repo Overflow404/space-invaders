@@ -6,7 +6,8 @@ use crate::infrastructure::bevy::enemy_projectile::{
 };
 use crate::infrastructure::bevy::footer::FooterView;
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::player_projectile::DespawnPlayerProjectileMessage;
+use crate::infrastructure::bevy::player_projectile::components::DespawnPlayerProjectileMessage;
+use crate::infrastructure::bevy::player_projectile::plugin::PlayerProjectilePlugin;
 use crate::{
     domain::{
         enemy_formation::EnemyFormation, lives::Lives, player::Player, score::Score,
@@ -22,9 +23,6 @@ use crate::{
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
-            player_projectile::{
-                PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_DURATION,
-            },
             score::{ScoreResource, ScoreValueComponent},
             shield_formation::{ShieldFormationComponent, ShieldFormationResource},
         },
@@ -72,8 +70,6 @@ impl Plugin for SpaceInvadersPlugin {
                     PlayerView::on_move,
                     PlayerView::on_fire,
                     PlayerView::sync_domain,
-                    PlayerResource::on_move,
-                    PlayerResource::on_despawn_player_projectile_message,
                     EnemyFormationView::advance_on_tick,
                     EnemyFormationView::handle_collisions,
                     EnemyFormationView::on_move,
@@ -119,10 +115,7 @@ impl SpaceInvadersPlugin {
             ENEMY_FORMATION_STEP_DURATION,
             TimerMode::Repeating,
         )));
-        commands.insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
-            PLAYER_PROJECTILE_DURATION,
-            TimerMode::Once,
-        )));
+
         commands.insert_resource(EnemyProjectileMovementTimer(Timer::from_seconds(
             ENEMY_PROJECTILE_DURATION,
             TimerMode::Repeating,
@@ -146,6 +139,7 @@ impl Renderer for BevyRenderer {
         App::new()
             .add_plugins(Self::window_plugin_config())
             .add_plugins(SpaceInvadersPlugin)
+            .add_plugins(PlayerProjectilePlugin)
             .run();
     }
 }
@@ -189,6 +183,7 @@ mod tests {
             .add_plugins(AssetPlugin::default())
             .add_plugins(WindowPlugin::default())
             .add_plugins(SpaceInvadersPlugin)
+            .add_plugins(PlayerProjectilePlugin)
             .init_asset::<Image>()
             .init_asset::<Font>()
             .init_resource::<ButtonInput<KeyCode>>()

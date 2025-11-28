@@ -6,7 +6,7 @@ pub(crate) use crate::infrastructure::bevy::enemy::{EnemyView, ENEMY_HEIGHT, ENE
 use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::player_projectile::{
+use crate::infrastructure::bevy::player_projectile::components::{
     DespawnPlayerProjectileMessage, PlayerProjectileComponent,
 };
 use bevy::prelude::*;
@@ -123,7 +123,10 @@ impl EnemyFormationView {
     }
 
     pub fn handle_collisions(
-        player_projectile_query: Query<(Entity, &Transform, &Sprite), With<PlayerProjectileComponent>>,
+        player_projectile_query: Query<
+            (Entity, &Transform, &Sprite),
+            With<PlayerProjectileComponent>,
+        >,
         enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyView), With<EnemyView>>,
         mut despawn_enemy_message_writer: MessageWriter<EnemyKilledMessage>,
         mut despawn_player_projectile_message_writer: MessageWriter<DespawnPlayerProjectileMessage>,
@@ -210,20 +213,17 @@ mod tests {
     };
     use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
     use crate::infrastructure::bevy::player::PlayerResource;
-    use crate::infrastructure::bevy::player_projectile::{
-        DespawnPlayerProjectileMessage, PlayerProjectileComponent,
+    use crate::infrastructure::bevy::player_projectile::components::{
+        DespawnPlayerProjectileMessage, PlayerProjectileBundle,
     };
     use crate::infrastructure::bevy::score::ScoreResource;
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::ecs::system::RunSystemOnce;
     use bevy::image::Image;
-    use bevy::math::Vec2;
     use bevy::prelude::{IntoScheduleConfigs, MessageReader, Timer, TimerMode, Transform, With};
-    use bevy::sprite::Sprite;
     use bevy::text::Font;
     use bevy::time::Time;
-    use bevy::utils::default;
     use bevy::MinimalPlugins;
     use std::error::Error;
     use std::time::Duration;
@@ -421,17 +421,12 @@ mod tests {
             .map(|(t, v)| (t.translation, v.id))
             .ok_or("EnemyView not found")?;
 
-        let enemy_x = enemy_info.0;
+        let enemy_x = enemy_info.0.x;
+        let enemy_y = enemy_info.0.y;
         let enemy_id = enemy_info.1;
 
-        app.world_mut().spawn((
-            PlayerProjectileComponent::new(0.0, 0.0),
-            Sprite {
-                custom_size: Some(Vec2::new(5.0, 15.0)),
-                ..default()
-            },
-            Transform::from_translation(enemy_x),
-        ));
+        app.world_mut()
+            .spawn(PlayerProjectileBundle::new(enemy_x, enemy_y));
 
         app.update();
 

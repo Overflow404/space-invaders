@@ -1,11 +1,10 @@
 use bevy::prelude::*;
 
+use crate::domain::player::Player;
 use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
-use crate::infrastructure::bevy::player_projectile::PlayerProjectileMovementTimerResource;
-use crate::{
-    domain::player::Player, infrastructure::bevy::player_projectile::PlayerProjectileComponent,
-};
+use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileBundle;
+use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
 
 pub const PLAYER_IMAGE: &str = "player-green.png";
 const PLAYER_X: f32 = 0.0;
@@ -75,12 +74,10 @@ impl PlayerView {
             for transform in player_query.iter() {
                 let translation = transform.translation;
 
-                let player_projectile_view = PlayerProjectileComponent::new(
+                commands.spawn(PlayerProjectileBundle::new(
                     translation.x,
                     translation.y + DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE,
-                );
-
-                commands.spawn(player_projectile_view.make_player_projectile());
+                ));
 
                 player_resource.0.toggle_fire();
                 timer.0.reset();
@@ -103,9 +100,7 @@ mod tests {
     use super::*;
     use crate::domain::enemy_formation::MovingDirection;
     use crate::infrastructure::bevy::game_area::GAME_AREA_WIDTH;
-    use crate::infrastructure::bevy::player_projectile::{
-        PlayerProjectileMovementTimerResource, PlayerProjectileComponent,
-    };
+    use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileComponent;
 
     fn setup() -> App {
         let mut app = App::new();

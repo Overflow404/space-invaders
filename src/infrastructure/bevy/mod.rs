@@ -9,5 +9,5 @@ pub mod lives;
 pub mod player;
 pub mod player_projectile;
 pub mod score;
-pub mod shield_formation;
 pub mod shield;
+pub mod shield_formation;
