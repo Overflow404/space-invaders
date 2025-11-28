@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::infrastructure::{bevy::bevy_renderer::BevyRenderer, renderer::Renderer};
@@ -22,6 +20,5 @@ fn setup_tracing_subscriber() {
 fn main() {
     setup_tracing_subscriber();
 
-    let renderer = Arc::new(BevyRenderer::new());
-    renderer.render();
+    BevyRenderer::new().render();
 }
