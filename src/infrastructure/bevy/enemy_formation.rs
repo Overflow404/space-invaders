@@ -7,7 +7,7 @@ use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
 use crate::infrastructure::bevy::player_projectile::{
-    DespawnPlayerProjectileMessage, PlayerProjectileView,
+    DespawnPlayerProjectileMessage, PlayerProjectileComponent,
 };
 use bevy::prelude::*;
 use rand::prelude::IteratorRandom;
@@ -123,7 +123,7 @@ impl EnemyFormationView {
     }
 
     pub fn handle_collisions(
-        player_projectile_query: Query<(Entity, &Transform, &Sprite), With<PlayerProjectileView>>,
+        player_projectile_query: Query<(Entity, &Transform, &Sprite), With<PlayerProjectileComponent>>,
         enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyView), With<EnemyView>>,
         mut despawn_enemy_message_writer: MessageWriter<EnemyKilledMessage>,
         mut despawn_player_projectile_message_writer: MessageWriter<DespawnPlayerProjectileMessage>,
@@ -211,7 +211,7 @@ mod tests {
     use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
     use crate::infrastructure::bevy::player::PlayerResource;
     use crate::infrastructure::bevy::player_projectile::{
-        DespawnPlayerProjectileMessage, PlayerProjectileView,
+        DespawnPlayerProjectileMessage, PlayerProjectileComponent,
     };
     use crate::infrastructure::bevy::score::ScoreResource;
     use bevy::app::{App, Startup, Update};
@@ -425,7 +425,7 @@ mod tests {
         let enemy_id = enemy_info.1;
 
         app.world_mut().spawn((
-            PlayerProjectileView::new(0.0, 0.0),
+            PlayerProjectileComponent::new(0.0, 0.0),
             Sprite {
                 custom_size: Some(Vec2::new(5.0, 15.0)),
                 ..default()

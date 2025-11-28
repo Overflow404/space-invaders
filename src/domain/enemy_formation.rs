@@ -66,7 +66,7 @@ impl EnemyFormation {
         let current_x = self.position.0;
         const BREACH_Y_LIMIT: usize = 14;
 
-        let is_breaching = || {
+        let mut is_breaching = || {
             return if self.position.1 + 1 >= BREACH_Y_LIMIT {
                 self.status = FormationStatus::Breached;
                 info!("Enemy formation breached!");

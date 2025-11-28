@@ -21,12 +21,34 @@ use bevy::{
 pub struct ScoreResource(pub Score);
 
 #[derive(Component)]
-pub struct ScoreViewValue;
+pub struct ScoreValueComponent;
 
 #[derive(Component)]
-pub struct ScoreViewLabel;
+pub struct ScoreLabelComponent;
 
-impl ScoreViewValue {
+impl ScoreResource {
+    pub fn on_change(
+        score_resource: Res<ScoreResource>,
+        mut score_query: Query<&mut Text, With<ScoreValueComponent>>,
+    ) {
+        if score_resource.is_changed() {
+            for mut text in &mut score_query {
+                text.0 = score_resource.0.get_current().to_string();
+            }
+        }
+    }
+
+    pub fn on_enemy_killed_message(
+        mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
+        mut score_resource: ResMut<ScoreResource>,
+    ) {
+        for _ in enemy_killed_message.read() {
+            score_resource.0.increment(10);
+        }
+    }
+}
+
+impl ScoreValueComponent {
     pub fn spawn_score(
         mut commands: Commands,
         asset_server: Res<AssetServer>,
@@ -48,7 +70,7 @@ impl ScoreViewValue {
                     },))
                     .with_children(|score_section| {
                         score_section.spawn((
-                            ScoreViewLabel,
+                            ScoreLabelComponent,
                             Node {
                                 height: Val::Percent(50.0),
                                 margin: UiRect::right(Val::Px(20.0)),
@@ -63,7 +85,7 @@ impl ScoreViewValue {
                             TextColor(Color::WHITE),
                         ));
                         score_section.spawn((
-                            ScoreViewValue,
+                            ScoreValueComponent,
                             Node {
                                 height: Val::Percent(50.0),
                                 ..default()
@@ -80,26 +102,6 @@ impl ScoreViewValue {
             });
         }
     }
-
-    pub fn on_change(
-        score_resource: Res<ScoreResource>,
-        mut score_query: Query<&mut Text, With<ScoreViewValue>>,
-    ) {
-        if score_resource.is_changed() {
-            for mut text in &mut score_query {
-                text.0 = score_resource.0.get_current().to_string();
-            }
-        }
-    }
-
-    pub fn sync_domain(
-        mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
-        mut score_resource: ResMut<ScoreResource>,
-    ) {
-        for _ in enemy_killed_message.read() {
-            score_resource.0.increment(10);
-        }
-    }
 }
 
 #[cfg(test)]
@@ -107,7 +109,9 @@ mod tests {
     use crate::domain::score::Score;
     use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
     use crate::infrastructure::bevy::header::HeaderView;
-    use crate::infrastructure::bevy::score::{ScoreResource, ScoreViewLabel, ScoreViewValue};
+    use crate::infrastructure::bevy::score::{
+        ScoreLabelComponent, ScoreResource, ScoreValueComponent,
+    };
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::image::Image;
@@ -122,10 +126,10 @@ mod tests {
 
         app.add_systems(
             Startup,
-            (HeaderView::spawn_header, ScoreViewValue::spawn_score).chain(),
+            (HeaderView::spawn_header, ScoreValueComponent::spawn_score).chain(),
         );
 
-        app.add_systems(Update, (ScoreViewValue::on_change,).chain());
+        app.add_systems(Update, (ScoreResource::on_change,).chain());
 
         app.insert_resource(ScoreResource(Score::new()));
 
@@ -138,16 +142,16 @@ mod tests {
     }
 
     #[test]
-    fn should_display_the_score() -> Result<(), Box<dyn Error>> {
+    fn should_render_initial_score() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         let mut score_view_label_query = app
             .world_mut()
-            .query_filtered::<&Text, With<ScoreViewLabel>>();
+            .query_filtered::<&Text, With<ScoreLabelComponent>>();
 
         let mut score_view_value_query = app
             .world_mut()
-            .query_filtered::<&Text, With<ScoreViewValue>>();
+            .query_filtered::<&Text, With<ScoreValueComponent>>();
 
         let score_label = score_view_label_query.single(app.world())?;
         let score_value = score_view_value_query.single(app.world())?;
@@ -159,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    fn should_update_score() -> Result<(), Box<dyn Error>> {
+    fn should_render_when_score_changes() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         let mut score_resource = app.world_mut().resource_mut::<ScoreResource>();
@@ -169,24 +173,20 @@ mod tests {
 
         let mut score_view_value_query = app
             .world_mut()
-            .query_filtered::<&Text, With<ScoreViewValue>>();
+            .query_filtered::<&Text, With<ScoreValueComponent>>();
 
         let score_value = score_view_value_query.single(app.world())?;
 
-        assert_eq!(
-            score_value.0,
-            String::from("50"),
-            "Score should have increased"
-        );
+        assert_eq!(score_value.0, String::from("50"));
 
         Ok(())
     }
 
     #[test]
-    fn should_sync_domain() {
+    fn should_increase_score_when_enemy_is_killed() {
         let mut app = setup();
         app.add_message::<EnemyKilledMessage>();
-        app.add_systems(Update, ScoreViewValue::sync_domain);
+        app.add_systems(Update, ScoreResource::on_enemy_killed_message);
 
         let dummy_entity = app.world_mut().spawn_empty().id();
 

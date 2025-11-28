@@ -1,33 +1,22 @@
 use crate::domain::shield_formation::ShieldFormation;
-use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
-use bevy::math::Vec2;
-use bevy::prelude::{Sprite, Transform};
+use crate::infrastructure::bevy::shield::{ShieldComponent, SHIELD_X};
 use bevy::{
     asset::AssetServer,
     ecs::{
         component::Component,
         resource::Resource,
         system::{Commands, Res},
-    },
-    utils::default,
+    }
+    ,
 };
-
-const SHIELD_IMAGE: &str = "shield.png";
-const SHIELD_WIDTH: f32 = GAME_AREA_WIDTH * 0.09;
-const SHIELD_HEIGHT: f32 = GAME_AREA_HEIGHT * 0.11;
-const SHIELD_Y: f32 = -(GAME_AREA_HEIGHT / 2.0) * 0.58;
-const SHIELD_X: f32 = -(GAME_AREA_WIDTH / 2.0) * 0.68;
 
 #[derive(Resource)]
 pub struct ShieldFormationResource(pub ShieldFormation);
 
 #[derive(Component)]
-pub struct ShieldFormationView;
+pub struct ShieldFormationComponent;
 
-#[derive(Component)]
-pub struct ShieldView;
-
-impl ShieldFormationView {
+impl ShieldFormationComponent {
     pub fn spawn_shields(
         mut commands: Commands,
         asset_server: Res<AssetServer>,
@@ -45,15 +34,7 @@ impl ShieldFormationView {
         for (index, _) in shields.iter().enumerate() {
             let x_step = SHIELD_X + (index as f32 * shield_step);
 
-            commands.spawn((
-                ShieldView,
-                Sprite {
-                    image: asset_server.load(SHIELD_IMAGE),
-                    custom_size: Some(Vec2::new(SHIELD_WIDTH, SHIELD_HEIGHT)),
-                    ..default()
-                },
-                Transform::from_xyz(x_step, SHIELD_Y, 0.0),
-            ));
+            commands.spawn(ShieldComponent::make_shield(&asset_server, x_step));
         }
     }
 }
@@ -62,7 +43,7 @@ impl ShieldFormationView {
 mod tests {
     use crate::domain::shield_formation::ShieldFormation;
     use crate::infrastructure::bevy::shield_formation::{
-        ShieldFormationResource, ShieldFormationView, ShieldView,
+        ShieldComponent, ShieldFormationComponent, ShieldFormationResource,
     };
     use bevy::app::{App, Startup};
     use bevy::asset::{AssetApp, AssetPlugin};
@@ -75,7 +56,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()));
 
-        app.add_systems(Startup, ShieldFormationView::spawn_shields.chain());
+        app.add_systems(Startup, ShieldFormationComponent::spawn_shields.chain());
 
         app.insert_resource(ShieldFormationResource(ShieldFormation::new()));
 
@@ -89,7 +70,7 @@ mod tests {
     #[test]
     fn should_display_the_shields() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
-        let mut query = app.world_mut().query::<&ShieldView>();
+        let mut query = app.world_mut().query::<&ShieldComponent>();
 
         let shields_count = query.iter(app.world()).count();
 

@@ -6,9 +6,7 @@ use crate::infrastructure::bevy::enemy_projectile::{
 };
 use crate::infrastructure::bevy::footer::FooterView;
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::player_projectile::{
-    DespawnPlayerProjectileMessage, PlayerProjectileView,
-};
+use crate::infrastructure::bevy::player_projectile::DespawnPlayerProjectileMessage;
 use crate::{
     domain::{
         enemy_formation::EnemyFormation, lives::Lives, player::Player, score::Score,
@@ -24,9 +22,11 @@ use crate::{
             header::HeaderView,
             lives::{LivesResource, LivesView},
             player::{PlayerResource, PlayerView},
-            player_projectile::{PlayerProjectileMovementTimer, PLAYER_PROJECTILE_DURATION},
-            score::{ScoreResource, ScoreViewValue},
-            shield_formation::{ShieldFormationResource, ShieldFormationView},
+            player_projectile::{
+                PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_DURATION,
+            },
+            score::{ScoreResource, ScoreValueComponent},
+            shield_formation::{ShieldFormationComponent, ShieldFormationResource},
         },
         renderer::Renderer,
     },
@@ -55,11 +55,11 @@ impl Plugin for SpaceInvadersPlugin {
                 Startup,
                 (
                     HeaderView::spawn_header,
-                    ScoreViewValue::spawn_score,
+                    ScoreValueComponent::spawn_score,
                     LivesView::spawn_lives,
                     GameAreaView::spawn_game_area,
                     EnemyFormationView::spawn_enemy_formation,
-                    ShieldFormationView::spawn_shields,
+                    ShieldFormationComponent::spawn_shields,
                     PlayerView::spawn_player,
                     FooterView::spawn_footer,
                 )
@@ -72,17 +72,16 @@ impl Plugin for SpaceInvadersPlugin {
                     PlayerView::on_move,
                     PlayerView::on_fire,
                     PlayerView::sync_domain,
-                    PlayerProjectileView::on_move,
-                    PlayerProjectileView::on_destroy,
-                    PlayerProjectileView::on_despawn_player_projectile_message,
+                    PlayerResource::on_move,
+                    PlayerResource::on_despawn_player_projectile_message,
                     EnemyFormationView::advance_on_tick,
                     EnemyFormationView::handle_collisions,
                     EnemyFormationView::on_move,
                     EnemyFormationView::spawn_random_projectiles,
                     EnemyFormationView::sync_domain,
                     EnemyProjectileView::on_move,
-                    ScoreViewValue::on_change,
-                    ScoreViewValue::sync_domain,
+                    ScoreResource::on_change,
+                    ScoreResource::on_enemy_killed_message,
                 ),
             )
             .add_systems(
@@ -120,7 +119,7 @@ impl SpaceInvadersPlugin {
             ENEMY_FORMATION_STEP_DURATION,
             TimerMode::Repeating,
         )));
-        commands.insert_resource(PlayerProjectileMovementTimer(Timer::from_seconds(
+        commands.insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
             PLAYER_PROJECTILE_DURATION,
             TimerMode::Once,
         )));
@@ -181,7 +180,7 @@ impl Default for BevyRenderer {
 mod tests {
     use super::*;
     use crate::infrastructure::bevy::enemy_formation::EnemyView;
-    use crate::infrastructure::bevy::shield_formation::ShieldView;
+    use crate::infrastructure::bevy::shield::ShieldComponent;
 
     fn setup() -> App {
         let mut app = App::new();
@@ -221,13 +220,13 @@ mod tests {
 
         assert_exists::<HeaderView>(world, "HeaderView", 1);
 
-        assert_exists::<ScoreViewValue>(world, "ScoreView", 1);
+        assert_exists::<ScoreValueComponent>(world, "ScoreView", 1);
         assert_exists::<LivesView>(world, "LivesView", 1);
 
         assert_exists::<GameAreaView>(world, "GameAreaView", 1);
 
         assert_exists::<EnemyView>(world, "EnemyView", 55);
-        assert_exists::<ShieldView>(world, "ShieldView", 4);
+        assert_exists::<ShieldComponent>(world, "ShieldView", 4);
         assert_exists::<PlayerView>(world, "PlayerView", 1);
         assert_exists::<FooterView>(world, "FooterView", 1);
     }

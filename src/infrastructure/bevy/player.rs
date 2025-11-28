@@ -2,9 +2,9 @@ use bevy::prelude::*;
 
 use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
-use crate::infrastructure::bevy::player_projectile::PlayerProjectileMovementTimer;
+use crate::infrastructure::bevy::player_projectile::PlayerProjectileMovementTimerResource;
 use crate::{
-    domain::player::Player, infrastructure::bevy::player_projectile::PlayerProjectileView,
+    domain::player::Player, infrastructure::bevy::player_projectile::PlayerProjectileComponent,
 };
 
 pub const PLAYER_IMAGE: &str = "player-green.png";
@@ -69,18 +69,18 @@ impl PlayerView {
         keyboard: Res<ButtonInput<KeyCode>>,
         mut player_resource: ResMut<PlayerResource>,
         player_query: Query<&Transform, With<PlayerView>>,
-        mut timer: ResMut<PlayerProjectileMovementTimer>,
+        mut timer: ResMut<PlayerProjectileMovementTimerResource>,
     ) {
         if keyboard.pressed(KeyCode::Space) && !player_resource.0.is_firing() {
             for transform in player_query.iter() {
                 let translation = transform.translation;
 
-                let player_projectile_view = PlayerProjectileView::new(
+                let player_projectile_view = PlayerProjectileComponent::new(
                     translation.x,
                     translation.y + DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE,
                 );
 
-                commands.spawn(player_projectile_view.make_projectile());
+                commands.spawn(player_projectile_view.make_player_projectile());
 
                 player_resource.0.toggle_fire();
                 timer.0.reset();
@@ -104,7 +104,7 @@ mod tests {
     use crate::domain::enemy_formation::MovingDirection;
     use crate::infrastructure::bevy::game_area::GAME_AREA_WIDTH;
     use crate::infrastructure::bevy::player_projectile::{
-        PlayerProjectileMovementTimer, PlayerProjectileView,
+        PlayerProjectileMovementTimerResource, PlayerProjectileComponent,
     };
 
     fn setup() -> App {
@@ -115,7 +115,7 @@ mod tests {
         app.init_resource::<ButtonInput<KeyCode>>();
         app.init_resource::<Time>();
         app.insert_resource(PlayerResource(Player::new()));
-        app.insert_resource(PlayerProjectileMovementTimer(Timer::from_seconds(
+        app.insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
             1.0,
             TimerMode::Once,
         )));
@@ -228,7 +228,7 @@ mod tests {
 
         let initial_count = app
             .world_mut()
-            .query::<&PlayerProjectileView>()
+            .query::<&PlayerProjectileComponent>()
             .iter(app.world())
             .len();
 
@@ -243,7 +243,7 @@ mod tests {
 
         let final_count = app
             .world_mut()
-            .query::<&PlayerProjectileView>()
+            .query::<&PlayerProjectileComponent>()
             .iter(app.world())
             .len();
 
@@ -281,7 +281,7 @@ mod tests {
 
         let count = app
             .world_mut()
-            .query::<&PlayerProjectileView>()
+            .query::<&PlayerProjectileComponent>()
             .iter(app.world())
             .len();
 

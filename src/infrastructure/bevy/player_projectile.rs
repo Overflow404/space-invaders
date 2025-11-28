@@ -8,49 +8,28 @@ const PROJECTILE_WIDTH: f32 = 5.0;
 const PROJECTILE_HEIGHT: f32 = 15.0;
 
 #[derive(Resource)]
-pub struct PlayerProjectileMovementTimer(pub Timer);
+pub struct PlayerProjectileMovementTimerResource(pub Timer);
 
 #[derive(Message)]
 pub struct DespawnPlayerProjectileMessage(pub Entity);
 
 #[derive(Component)]
-pub struct PlayerProjectileView {
+pub struct PlayerProjectileComponent {
     start_position: Vec3,
 }
-impl PlayerProjectileView {
-    pub fn new(x: f32, y: f32) -> Self {
-        Self {
-            start_position: Vec3::new(x, y, 0.0),
-        }
-    }
 
-    pub fn make_projectile(&self) -> (PlayerProjectileView, Sprite, Transform) {
-        (
-            PlayerProjectileView {
-                start_position: self.start_position,
-            },
-            Sprite {
-                color: Color::srgb(1.0, 1.0, 1.0),
-                custom_size: Some(Vec2::new(PROJECTILE_WIDTH, PROJECTILE_HEIGHT)),
-                ..default()
-            },
-            Transform::from_translation(self.start_position),
-        )
-    }
-
-    pub fn on_move(time: Res<Time>, mut query: Query<&mut Transform, With<PlayerProjectileView>>) {
-        for mut transform in query.iter_mut() {
-            transform.translation.y += PROJECTILE_SPEED * time.delta_secs();
-        }
-    }
-
-    pub fn on_destroy(
+impl PlayerResource {
+    pub fn on_move(
         mut commands: Commands,
         time: Res<Time>,
-        mut timer: ResMut<PlayerProjectileMovementTimer>,
+        mut timer: ResMut<PlayerProjectileMovementTimerResource>,
         mut player_resource: ResMut<PlayerResource>,
-        query: Query<(Entity, &Transform), With<PlayerProjectileView>>,
+        mut query: Query<(Entity, &mut Transform), With<PlayerProjectileComponent>>,
     ) {
+        for (_, mut transform) in query.iter_mut() {
+            transform.translation.y += PROJECTILE_SPEED * time.delta_secs();
+        }
+
         if !player_resource.0.is_firing() {
             return;
         }
@@ -91,12 +70,34 @@ impl PlayerProjectileView {
         }
     }
 }
+impl PlayerProjectileComponent {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self {
+            start_position: Vec3::new(x, y, 0.0),
+        }
+    }
+
+    pub fn make_player_projectile(&self) -> (PlayerProjectileComponent, Sprite, Transform) {
+        (
+            PlayerProjectileComponent {
+                start_position: self.start_position,
+            },
+            Sprite {
+                color: Color::srgb(1.0, 1.0, 1.0),
+                custom_size: Some(Vec2::new(PROJECTILE_WIDTH, PROJECTILE_HEIGHT)),
+                ..default()
+            },
+            Transform::from_translation(self.start_position),
+        )
+    }
+
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::domain::player::Player;
-    use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+    use crate::infrastructure::bevy::player_projectile::PlayerProjectileComponent;
     use bevy::ecs::system::RunSystemOnce;
     use std::time::Duration;
 
@@ -106,7 +107,7 @@ mod tests {
 
         app.init_resource::<Time>();
         app.insert_resource(PlayerResource(Player::new()));
-        app.insert_resource(PlayerProjectileMovementTimer(Timer::from_seconds(
+        app.insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
             1.0,
             TimerMode::Once,
         )));
@@ -121,7 +122,7 @@ mod tests {
         let projectile = app
             .world_mut()
             .spawn((
-                PlayerProjectileView::new(0.0, 0.0),
+                PlayerProjectileComponent::new(0.0, 0.0),
                 Transform::from_xyz(0.0, 0.0, 0.0),
             ))
             .id();
@@ -130,7 +131,7 @@ mod tests {
         time.advance_by(Duration::from_secs_f32(0.1));
 
         app.world_mut()
-            .run_system_once(PlayerProjectileView::on_move)
+            .run_system_once(PlayerResource::on_move)
             .map_err(|e| format!("Cannot run system: {e}"))?;
 
         let transform = app
@@ -149,7 +150,7 @@ mod tests {
     #[test]
     fn should_despawn_when_out_of_bounds() {
         let mut app = setup();
-        app.add_systems(Update, PlayerProjectileView::on_destroy);
+        app.add_systems(Update, PlayerResource::on_move);
 
         app.world_mut()
             .resource_mut::<PlayerResource>()
@@ -159,7 +160,7 @@ mod tests {
         let out_of_bounds_y = (GAME_AREA_HEIGHT / 2.0) + 10.0;
 
         app.world_mut().spawn((
-            PlayerProjectileView::new(0.0, 0.0),
+            PlayerProjectileComponent::new(0.0, 0.0),
             Transform::from_xyz(0.0, out_of_bounds_y, 0.0),
         ));
 
@@ -169,7 +170,7 @@ mod tests {
 
         let count = app
             .world_mut()
-            .query::<&PlayerProjectileView>()
+            .query::<&PlayerProjectileComponent>()
             .iter(app.world())
             .len();
         assert_eq!(count, 0, "Projectile should be despawned");
@@ -191,7 +192,7 @@ mod tests {
             .toggle_fire();
 
         app.world_mut().spawn((
-            PlayerProjectileView::new(0.0, 0.0),
+            PlayerProjectileComponent::new(0.0, 0.0),
             Transform::from_xyz(0.0, 0.0, 0.0),
         ));
 
@@ -199,12 +200,12 @@ mod tests {
         time.advance_by(Duration::from_secs_f32(2.0));
 
         app.world_mut()
-            .run_system_once(PlayerProjectileView::on_destroy)
+            .run_system_once(PlayerResource::on_move)
             .map_err(|e| format!("Cannot run system: {e}"))?;
 
         let count = app
             .world_mut()
-            .query::<&PlayerProjectileView>()
+            .query::<&PlayerProjectileComponent>()
             .iter(app.world())
             .len();
 
@@ -219,9 +220,9 @@ mod tests {
     fn should_create_the_player_projectile_bundle() {
         let start_x = 100.0;
         let start_y = 50.0;
-        let view = PlayerProjectileView::new(start_x, start_y);
+        let view = PlayerProjectileComponent::new(start_x, start_y);
 
-        let (component, sprite, transform) = view.make_projectile();
+        let (component, sprite, transform) = view.make_player_projectile();
 
         assert_eq!(transform.translation.x, start_x);
         assert_eq!(transform.translation.y, start_y);
@@ -239,7 +240,7 @@ mod tests {
         app.add_message::<DespawnPlayerProjectileMessage>();
         app.add_systems(
             Update,
-            PlayerProjectileView::on_despawn_player_projectile_message,
+            PlayerResource::on_despawn_player_projectile_message,
         );
 
         let dummy_entity = app.world_mut().spawn_empty().id();
