@@ -6,7 +6,9 @@ pub(crate) use crate::infrastructure::bevy::enemy::{EnemyView, ENEMY_HEIGHT, ENE
 use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+use crate::infrastructure::bevy::player_projectile::{
+    DespawnPlayerProjectileMessage, PlayerProjectileView,
+};
 use bevy::prelude::*;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
@@ -121,11 +123,12 @@ impl EnemyFormationView {
     }
 
     pub fn handle_collisions(
-        player_projectile_query: Query<(&Transform, &Sprite), With<PlayerProjectileView>>,
+        player_projectile_query: Query<(Entity, &Transform, &Sprite), With<PlayerProjectileView>>,
         enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyView), With<EnemyView>>,
         mut despawn_enemy_message_writer: MessageWriter<EnemyKilledMessage>,
+        mut despawn_player_projectile_message_writer: MessageWriter<DespawnPlayerProjectileMessage>,
     ) {
-        for (player_projectile_transform, player_projectile_sprite) in
+        for (player_projectile_entity, player_projectile_transform, player_projectile_sprite) in
             player_projectile_query.iter()
         {
             let player_projectile_size = player_projectile_sprite.custom_size.unwrap_or(Vec2::ONE);
@@ -145,6 +148,8 @@ impl EnemyFormationView {
                 if collision {
                     despawn_enemy_message_writer
                         .write(EnemyKilledMessage(enemy_entity, enemy_view.id));
+                    despawn_player_projectile_message_writer
+                        .write(DespawnPlayerProjectileMessage(player_projectile_entity));
                     break;
                 }
             }
@@ -182,7 +187,7 @@ impl EnemyFormationView {
             })
     }
 
-    pub fn on_enemy_killed_message(
+    pub fn sync_domain(
         mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
         mut enemy_formation_resource: ResMut<EnemyFormationResource>,
     ) {
@@ -205,7 +210,9 @@ mod tests {
     };
     use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
     use crate::infrastructure::bevy::player::PlayerResource;
-    use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+    use crate::infrastructure::bevy::player_projectile::{
+        DespawnPlayerProjectileMessage, PlayerProjectileView,
+    };
     use crate::infrastructure::bevy::score::ScoreResource;
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
@@ -234,6 +241,7 @@ mod tests {
         app.init_asset::<Image>();
         app.init_asset::<Font>();
         app.add_message::<EnemyKilledMessage>();
+        app.add_message::<DespawnPlayerProjectileMessage>();
 
         app.update();
 
@@ -433,10 +441,22 @@ mod tests {
 
                 let despawn_enemy_message = iterator
                     .next()
-                    .unwrap_or_else(|| panic!("Enemy killed message did not arrive!"));
+                    .unwrap_or_else(|| panic!("Despawn enemy message did not arrive!"));
 
                 assert_eq!(despawn_enemy_message.1, enemy_id);
             })
+            .map_err(|e| format!("Cannot run system: {e}"))?;
+
+        app.world_mut()
+            .run_system_once(
+                move |mut reader: MessageReader<DespawnPlayerProjectileMessage>| {
+                    let mut iterator = reader.read();
+
+                    iterator.next().unwrap_or_else(|| {
+                        panic!("Despawn player projectile message did not arrive!")
+                    });
+                },
+            )
             .map_err(|e| format!("Cannot run system: {e}"))?;
 
         Ok(())
@@ -475,7 +495,7 @@ mod tests {
     fn should_sync_domain() {
         let mut app = setup();
         app.add_message::<EnemyKilledMessage>();
-        app.add_systems(Update, EnemyFormationView::on_enemy_killed_message);
+        app.add_systems(Update, EnemyFormationView::sync_domain);
 
         let killed_enemy_id = 2;
 

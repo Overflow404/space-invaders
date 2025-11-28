@@ -1,4 +1,3 @@
-use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
 use crate::infrastructure::bevy::game_area::GAME_AREA_HEIGHT;
 use crate::infrastructure::bevy::player::PlayerResource;
 use bevy::prelude::*;
@@ -10,6 +9,9 @@ const PROJECTILE_HEIGHT: f32 = 15.0;
 
 #[derive(Resource)]
 pub struct PlayerProjectileMovementTimer(pub Timer);
+
+#[derive(Message)]
+pub struct DespawnPlayerProjectileMessage(pub Entity);
 
 #[derive(Component)]
 pub struct PlayerProjectileView {
@@ -79,11 +81,11 @@ impl PlayerProjectileView {
         }
     }
 
-    pub fn on_enemy_killed_message(
+    pub fn on_despawn_player_projectile_message(
         mut commands: Commands,
-        mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
+        mut despawn_player_projectile_message: MessageReader<DespawnPlayerProjectileMessage>,
     ) {
-        for message in enemy_killed_message.read() {
+        for message in despawn_player_projectile_message.read() {
             let player_projectile_entity = message.0;
             commands.entity(player_projectile_entity).despawn();
         }
@@ -234,15 +236,17 @@ mod tests {
     #[test]
     fn should_despawn_after_hitting_the_enemy() {
         let mut app = setup();
-        app.add_message::<EnemyKilledMessage>();
-
-        app.add_systems(Update, PlayerProjectileView::on_enemy_killed_message);
+        app.add_message::<DespawnPlayerProjectileMessage>();
+        app.add_systems(
+            Update,
+            PlayerProjectileView::on_despawn_player_projectile_message,
+        );
 
         let dummy_entity = app.world_mut().spawn_empty().id();
         assert!(app.world().get_entity(dummy_entity).is_ok());
 
         app.world_mut()
-            .write_message(EnemyKilledMessage(dummy_entity, 1));
+            .write_message(DespawnPlayerProjectileMessage(dummy_entity));
 
         app.update();
 

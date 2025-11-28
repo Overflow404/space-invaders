@@ -6,7 +6,9 @@ use crate::infrastructure::bevy::enemy_projectile::{
 };
 use crate::infrastructure::bevy::footer::FooterView;
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
+use crate::infrastructure::bevy::player_projectile::{
+    DespawnPlayerProjectileMessage, PlayerProjectileView,
+};
 use crate::{
     domain::{
         enemy_formation::EnemyFormation, lives::Lives, player::Player, score::Score,
@@ -69,25 +71,26 @@ impl Plugin for SpaceInvadersPlugin {
                 (
                     PlayerView::on_move,
                     PlayerView::on_fire,
-                    PlayerView::on_enemy_killed_message,
+                    PlayerView::sync_domain,
                     PlayerProjectileView::on_move,
                     PlayerProjectileView::on_destroy,
-                    PlayerProjectileView::on_enemy_killed_message,
+                    PlayerProjectileView::on_despawn_player_projectile_message,
                     EnemyFormationView::advance_on_tick,
                     EnemyFormationView::handle_collisions,
                     EnemyFormationView::on_move,
                     EnemyFormationView::spawn_random_projectiles,
-                    EnemyFormationView::on_enemy_killed_message,
+                    EnemyFormationView::sync_domain,
                     EnemyProjectileView::on_move,
                     ScoreViewValue::on_change,
-                    ScoreViewValue::on_enemy_killed_message,
+                    ScoreViewValue::sync_domain,
                 ),
             )
             .add_systems(
                 PostUpdate,
                 (GameAreaView::resize_game_area, Self::update_window_scale),
             )
-            .add_message::<EnemyKilledMessage>();
+            .add_message::<EnemyKilledMessage>()
+            .add_message::<DespawnPlayerProjectileMessage>();
     }
 }
 

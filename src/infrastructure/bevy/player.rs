@@ -88,7 +88,7 @@ impl PlayerView {
         }
     }
 
-    pub fn on_enemy_killed_message(
+    pub fn sync_domain(
         mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
         mut player_resource: ResMut<PlayerResource>,
     ) {
@@ -297,7 +297,7 @@ mod tests {
     fn should_sync_domain() -> Result<(), Box<dyn std::error::Error>> {
         let mut app = setup();
         app.add_message::<EnemyKilledMessage>();
-        app.add_systems(Update, PlayerView::on_enemy_killed_message);
+        app.add_systems(Update, PlayerView::sync_domain);
 
         let pre_update_player_resource = app
             .world_mut()

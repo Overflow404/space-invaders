@@ -92,7 +92,7 @@ impl ScoreViewValue {
         }
     }
 
-    pub fn on_enemy_killed_message(
+    pub fn sync_domain(
         mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
         mut score_resource: ResMut<ScoreResource>,
     ) {
@@ -186,7 +186,7 @@ mod tests {
     fn should_sync_domain() {
         let mut app = setup();
         app.add_message::<EnemyKilledMessage>();
-        app.add_systems(Update, ScoreViewValue::on_enemy_killed_message);
+        app.add_systems(Update, ScoreViewValue::sync_domain);
 
         let dummy_entity = app.world_mut().spawn_empty().id();
 
