@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::player_projectile::PlayerProjectileMovementTimer;
 use crate::{
@@ -84,6 +85,15 @@ impl PlayerView {
                 player_resource.0.toggle_fire();
                 timer.0.reset();
             }
+        }
+    }
+
+    pub fn on_enemy_killed_message(
+        mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
+        mut player_resource: ResMut<PlayerResource>,
+    ) {
+        for _ in enemy_killed_message.read() {
+            player_resource.0.toggle_fire();
         }
     }
 }
@@ -279,6 +289,36 @@ mod tests {
             count, 0,
             "Should not spawn projectile if cooldown is active"
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_sync_domain() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+        app.add_message::<EnemyKilledMessage>();
+        app.add_systems(Update, PlayerView::on_enemy_killed_message);
+
+        let pre_update_player_resource = app
+            .world_mut()
+            .get_resource::<PlayerResource>()
+            .unwrap_or_else(|| panic!("PlayerResource missing"));
+
+        assert!(!pre_update_player_resource.0.is_firing());
+
+        let dummy_entity = app.world_mut().spawn_empty().id();
+
+        app.world_mut()
+            .write_message(EnemyKilledMessage(dummy_entity, 1));
+
+        app.update();
+
+        let post_update_player_resource = app
+            .world_mut()
+            .get_resource::<PlayerResource>()
+            .unwrap_or_else(|| panic!("PlayerResource missing"));
+
+        assert!(post_update_player_resource.0.is_firing());
 
         Ok(())
     }

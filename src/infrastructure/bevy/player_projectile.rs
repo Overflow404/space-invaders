@@ -1,3 +1,4 @@
+use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
 use crate::infrastructure::bevy::game_area::GAME_AREA_HEIGHT;
 use crate::infrastructure::bevy::player::PlayerResource;
 use bevy::prelude::*;
@@ -65,14 +66,26 @@ impl PlayerProjectileView {
 
         if timer.0.just_finished() {
             for (entity, _) in query.iter() {
-                commands.entity(entity).despawn();
+                if !reset_needed {
+                    commands.entity(entity).despawn();
+                    reset_needed = true;
+                }
             }
-            reset_needed = true;
         }
 
         if reset_needed {
             player_resource.0.toggle_fire();
             timer.0.reset();
+        }
+    }
+
+    pub fn on_enemy_killed_message(
+        mut commands: Commands,
+        mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
+    ) {
+        for message in enemy_killed_message.read() {
+            let player_projectile_entity = message.0;
+            commands.entity(player_projectile_entity).despawn();
         }
     }
 }
@@ -216,5 +229,23 @@ mod tests {
         );
         assert_eq!(sprite.color, Color::srgb(1.0, 1.0, 1.0));
         assert_eq!(component.start_position, Vec3::new(start_x, start_y, 0.0));
+    }
+
+    #[test]
+    fn should_despawn_after_hitting_the_enemy() {
+        let mut app = setup();
+        app.add_message::<EnemyKilledMessage>();
+
+        app.add_systems(Update, PlayerProjectileView::on_enemy_killed_message);
+
+        let dummy_entity = app.world_mut().spawn_empty().id();
+        assert!(app.world().get_entity(dummy_entity).is_ok());
+
+        app.world_mut()
+            .write_message(EnemyKilledMessage(dummy_entity, 1));
+
+        app.update();
+
+        assert!(app.world().get_entity(dummy_entity).is_err());
     }
 }

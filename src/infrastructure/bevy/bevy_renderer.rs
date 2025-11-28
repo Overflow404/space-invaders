@@ -1,5 +1,5 @@
 use crate::infrastructure::bevy::enemy::{
-    DespawnEnemyMessage, EnemyFireProbability, EnemyProjectileMovementTimer,
+    EnemyFireProbability, EnemyKilledMessage, EnemyProjectileMovementTimer,
 };
 use crate::infrastructure::bevy::enemy_projectile::{
     EnemyProjectileView, ENEMY_PROJECTILE_DURATION,
@@ -69,21 +69,25 @@ impl Plugin for SpaceInvadersPlugin {
                 (
                     PlayerView::on_move,
                     PlayerView::on_fire,
+                    PlayerView::on_enemy_killed_message,
                     PlayerProjectileView::on_move,
                     PlayerProjectileView::on_destroy,
+                    PlayerProjectileView::on_enemy_killed_message,
                     EnemyFormationView::advance_on_tick,
                     EnemyFormationView::handle_collisions,
-                    EnemyFormationView::on_move.after(EnemyFormationView::handle_collisions),
+                    EnemyFormationView::on_move,
                     EnemyFormationView::spawn_random_projectiles,
+                    EnemyFormationView::on_enemy_killed_message,
                     EnemyProjectileView::on_move,
                     ScoreViewValue::on_change,
+                    ScoreViewValue::on_enemy_killed_message,
                 ),
             )
             .add_systems(
                 PostUpdate,
                 (GameAreaView::resize_game_area, Self::update_window_scale),
             )
-            .add_message::<DespawnEnemyMessage>();
+            .add_message::<EnemyKilledMessage>();
     }
 }
 

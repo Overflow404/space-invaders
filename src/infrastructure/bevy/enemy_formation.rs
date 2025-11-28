@@ -1,14 +1,12 @@
 use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
 use crate::infrastructure::bevy::enemy::{
-    DespawnEnemyMessage, EnemyFireProbability, EnemyProjectileMovementTimer,
+    EnemyFireProbability, EnemyKilledMessage, EnemyProjectileMovementTimer,
 };
 pub(crate) use crate::infrastructure::bevy::enemy::{EnemyView, ENEMY_HEIGHT, ENEMY_WIDTH};
 use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::player::PlayerResource;
 use crate::infrastructure::bevy::player_projectile::PlayerProjectileView;
-use crate::infrastructure::bevy::score::ScoreResource;
 use bevy::prelude::*;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
@@ -123,14 +121,11 @@ impl EnemyFormationView {
     }
 
     pub fn handle_collisions(
-        mut commands: Commands,
-        mut enemy_formation_resource: ResMut<EnemyFormationResource>,
-        player_projectile_query: Query<(Entity, &Transform, &Sprite), With<PlayerProjectileView>>,
+        player_projectile_query: Query<(&Transform, &Sprite), With<PlayerProjectileView>>,
         enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyView), With<EnemyView>>,
-        mut player_resource: ResMut<PlayerResource>,
-        mut score_resource: ResMut<ScoreResource>,
+        mut despawn_enemy_message_writer: MessageWriter<EnemyKilledMessage>,
     ) {
-        for (player_projectile_entity, player_projectile_transform, player_projectile_sprite) in
+        for (player_projectile_transform, player_projectile_sprite) in
             player_projectile_query.iter()
         {
             let player_projectile_size = player_projectile_sprite.custom_size.unwrap_or(Vec2::ONE);
@@ -148,11 +143,8 @@ impl EnemyFormationView {
                         > enemy_transform.translation.y - enemy_size.y / 2.0;
 
                 if collision {
-                    commands.write_message(DespawnEnemyMessage(enemy_entity, enemy_view.clone()));
-                    commands.entity(player_projectile_entity).despawn();
-                    player_resource.0.toggle_fire();
-                    score_resource.0.increment(10);
-                    enemy_formation_resource.0.kill(enemy_view.id);
+                    despawn_enemy_message_writer
+                        .write(EnemyKilledMessage(enemy_entity, enemy_view.id));
                     break;
                 }
             }
@@ -189,6 +181,15 @@ impl EnemyFormationView {
                 }
             })
     }
+
+    pub fn on_enemy_killed_message(
+        mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
+        mut enemy_formation_resource: ResMut<EnemyFormationResource>,
+    ) {
+        for enemy in enemy_killed_message.read() {
+            enemy_formation_resource.0.kill(enemy.1);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -197,10 +198,10 @@ mod tests {
     use crate::domain::player::Player;
     use crate::domain::score::Score;
     use crate::infrastructure::bevy::enemy::{
-        DespawnEnemyMessage, EnemyFireProbability, EnemyProjectileMovementTimer,
+        EnemyFireProbability, EnemyKilledMessage, EnemyProjectileMovementTimer,
     };
     use crate::infrastructure::bevy::enemy_formation::{
-        EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView, EnemyView,
+        EnemyFormationResource, EnemyFormationView, EnemyView,
     };
     use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
     use crate::infrastructure::bevy::player::PlayerResource;
@@ -220,17 +221,6 @@ mod tests {
     use std::error::Error;
     use std::time::Duration;
 
-    fn get_first_enemy_coordinates(app: &mut App) -> Result<(f32, f32), Box<dyn Error>> {
-        let translation = app
-            .world_mut()
-            .query_filtered::<&Transform, With<EnemyView>>()
-            .iter(app.world())
-            .next()
-            .ok_or("First enemy coordinates not found")?
-            .translation;
-        Ok((translation.x, translation.y))
-    }
-
     fn setup() -> App {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()));
@@ -243,11 +233,22 @@ mod tests {
 
         app.init_asset::<Image>();
         app.init_asset::<Font>();
-        app.add_message::<DespawnEnemyMessage>();
+        app.add_message::<EnemyKilledMessage>();
 
         app.update();
 
         app
+    }
+
+    fn get_first_enemy_coordinates(app: &mut App) -> Result<(f32, f32), Box<dyn Error>> {
+        let translation = app
+            .world_mut()
+            .query_filtered::<&Transform, With<EnemyView>>()
+            .iter(app.world())
+            .next()
+            .ok_or("First enemy coordinates not found")?
+            .translation;
+        Ok((translation.x, translation.y))
     }
 
     #[test]
@@ -261,135 +262,144 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn enemy_formation_should_move_to_the_right_when_there_is_enough_space()
-    -> Result<(), Box<dyn Error>> {
-        let mut app = setup();
+    mod enemy_formation_should_move {
+        use crate::infrastructure::bevy::enemy_formation::tests::{
+            get_first_enemy_coordinates, setup,
+        };
+        use crate::infrastructure::bevy::enemy_formation::{
+            EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView,
+        };
+        use bevy::ecs::system::RunSystemOnce;
+        use bevy::prelude::{Time, Timer, TimerMode};
+        use std::error::Error;
+        use std::time::Duration;
 
-        let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
+        #[test]
+        fn should_move_to_the_right_when_there_is_enough_space() -> Result<(), Box<dyn Error>> {
+            let mut app = setup();
 
-        let mut resource = app.world_mut().resource_mut::<EnemyFormationResource>();
-        resource.0.advance_enemies();
+            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
 
-        app.update();
+            let mut resource = app.world_mut().resource_mut::<EnemyFormationResource>();
+            resource.0.advance_enemies();
 
-        let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
+            app.update();
 
-        assert!(first_enemy_x_t1 > first_enemy_x_t0);
-        Ok(())
-    }
+            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
 
-    #[test]
-    fn enemy_formation_should_move_to_the_left_when_there_is_enough_space()
-    -> Result<(), Box<dyn Error>> {
-        let mut app = setup();
+            assert!(first_enemy_x_t1 > first_enemy_x_t0);
+            Ok(())
+        }
 
-        for _ in 0..31 {
+        #[test]
+        fn should_move_to_the_left_when_there_is_enough_space() -> Result<(), Box<dyn Error>> {
+            let mut app = setup();
+
+            for _ in 0..31 {
+                app.world_mut()
+                    .resource_mut::<EnemyFormationResource>()
+                    .0
+                    .advance_enemies();
+            }
+
+            app.update();
+
+            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
+
             app.world_mut()
                 .resource_mut::<EnemyFormationResource>()
                 .0
                 .advance_enemies();
+
+            app.update();
+
+            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
+
+            assert!(first_enemy_x_t1 < first_enemy_x_t0);
+            Ok(())
         }
 
-        app.update();
+        #[test]
+        fn should_drop_down_when_there_is_not_enough_right_space() -> Result<(), Box<dyn Error>> {
+            let mut app = setup();
 
-        let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
+            let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
 
-        app.world_mut()
-            .resource_mut::<EnemyFormationResource>()
-            .0
-            .advance_enemies();
+            for _ in 0..31 {
+                app.world_mut()
+                    .resource_mut::<EnemyFormationResource>()
+                    .0
+                    .advance_enemies();
+            }
 
-        app.update();
+            app.update();
 
-        let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
+            let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
 
-        assert!(first_enemy_x_t1 < first_enemy_x_t0);
-        Ok(())
-    }
+            assert!(first_enemy_y_t1 < first_enemy_y_t0);
+            Ok(())
+        }
 
-    #[test]
-    fn enemy_formation_should_drop_down_when_there_is_not_enough_right_space()
-    -> Result<(), Box<dyn Error>> {
-        let mut app = setup();
+        #[test]
+        fn should_drop_down_when_there_is_not_enough_left_space() -> Result<(), Box<dyn Error>> {
+            let mut app = setup();
 
-        let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
+            for _ in 0..31 {
+                app.world_mut()
+                    .resource_mut::<EnemyFormationResource>()
+                    .0
+                    .advance_enemies();
+            }
 
-        for _ in 0..31 {
+            app.update();
+
+            let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
+
+            for _ in 0..31 {
+                app.world_mut()
+                    .resource_mut::<EnemyFormationResource>()
+                    .0
+                    .advance_enemies();
+            }
+
+            app.update();
+
+            let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
+
+            assert!(first_enemy_y_t1 < first_enemy_y_t0);
+            Ok(())
+        }
+
+        #[test]
+        fn should_advance_on_tick() -> Result<(), Box<dyn Error>> {
+            let mut app = setup();
+
+            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
+
+            app.init_resource::<Time>();
+            app.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
+                1.0,
+                TimerMode::Once,
+            )));
+
+            let mut time = app.world_mut().resource_mut::<Time>();
+            time.advance_by(Duration::from_secs_f32(1.0));
+
             app.world_mut()
-                .resource_mut::<EnemyFormationResource>()
-                .0
-                .advance_enemies();
+                .run_system_once(EnemyFormationView::advance_on_tick)
+                .map_err(|e| format!("Cannot run system: {e}"))?;
+
+            app.update();
+
+            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
+
+            assert!(first_enemy_x_t1 > first_enemy_x_t0);
+            Ok(())
         }
-
-        app.update();
-
-        let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
-
-        assert!(first_enemy_y_t1 < first_enemy_y_t0);
-        Ok(())
     }
 
     #[test]
-    fn enemy_formation_should_drop_down_when_there_is_not_enough_left_space()
-    -> Result<(), Box<dyn Error>> {
-        let mut app = setup();
-
-        for _ in 0..31 {
-            app.world_mut()
-                .resource_mut::<EnemyFormationResource>()
-                .0
-                .advance_enemies();
-        }
-
-        app.update();
-
-        let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
-
-        for _ in 0..31 {
-            app.world_mut()
-                .resource_mut::<EnemyFormationResource>()
-                .0
-                .advance_enemies();
-        }
-
-        app.update();
-
-        let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
-
-        assert!(first_enemy_y_t1 < first_enemy_y_t0);
-        Ok(())
-    }
-
-    #[test]
-    fn enemy_formation_should_advance_on_tick() -> Result<(), Box<dyn Error>> {
-        let mut app = setup();
-
-        let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
-
-        app.init_resource::<Time>();
-        app.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
-            1.0,
-            TimerMode::Once,
-        )));
-
-        let mut time = app.world_mut().resource_mut::<Time>();
-        time.advance_by(Duration::from_secs_f32(1.0));
-
-        app.world_mut()
-            .run_system_once(EnemyFormationView::advance_on_tick)
-            .map_err(|e| format!("Cannot run system: {e}"))?;
-
-        app.update();
-
-        let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
-
-        assert!(first_enemy_x_t1 > first_enemy_x_t0);
-        Ok(())
-    }
-
-    #[test]
-    fn should_fire_despawn_event_on_collision() -> Result<(), Box<dyn Error>> {
+    fn should_trigger_a_despawn_event_when_killing_an_enemy() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         app.add_systems(Update, EnemyFormationView::handle_collisions);
@@ -418,12 +428,14 @@ mod tests {
         app.update();
 
         app.world_mut()
-            .run_system_once(move |mut reader: MessageReader<DespawnEnemyMessage>| {
-                let message = reader
-                    .read()
+            .run_system_once(move |mut reader: MessageReader<EnemyKilledMessage>| {
+                let mut iterator = reader.read();
+
+                let despawn_enemy_message = iterator
                     .next()
-                    .unwrap_or_else(|| panic!("Despawn enemy message did not arrive!"));
-                assert_eq!(message.1.id, enemy_id);
+                    .unwrap_or_else(|| panic!("Enemy killed message did not arrive!"));
+
+                assert_eq!(despawn_enemy_message.1, enemy_id);
             })
             .map_err(|e| format!("Cannot run system: {e}"))?;
 
@@ -431,7 +443,7 @@ mod tests {
     }
 
     #[test]
-    fn should_randomly_spawn_projectiles() -> Result<(), Box<dyn Error>> {
+    fn enemy_formation_should_randomly_spawn_projectiles() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         app.init_resource::<Time>();
@@ -457,5 +469,37 @@ mod tests {
         assert!(projectiles > 0);
 
         Ok(())
+    }
+
+    #[test]
+    fn should_sync_domain() {
+        let mut app = setup();
+        app.add_message::<EnemyKilledMessage>();
+        app.add_systems(Update, EnemyFormationView::on_enemy_killed_message);
+
+        let killed_enemy_id = 2;
+
+        let dummy_entity = app.world_mut().spawn_empty().id();
+
+        app.world_mut()
+            .write_message(EnemyKilledMessage(dummy_entity, killed_enemy_id));
+
+        app.update();
+
+        let post_update_enemy_formation_resource = app
+            .world_mut()
+            .get_resource::<EnemyFormationResource>()
+            .unwrap_or_else(|| panic!("EnemyFormationResource missing"));
+
+        assert!(
+            post_update_enemy_formation_resource
+                .0
+                .get_enemies()
+                .get(0)
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .is_none()
+        );
     }
 }

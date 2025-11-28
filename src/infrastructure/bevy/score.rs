@@ -1,6 +1,7 @@
+use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
 use crate::infrastructure::bevy::header::FONT;
 use crate::{domain::score::Score, infrastructure::bevy::header::HeaderView};
-use bevy::prelude::DetectChanges;
+use bevy::prelude::{DetectChanges, MessageReader, ResMut};
 use bevy::{
     asset::AssetServer,
     color::Color,
@@ -90,11 +91,21 @@ impl ScoreViewValue {
             }
         }
     }
+
+    pub fn on_enemy_killed_message(
+        mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
+        mut score_resource: ResMut<ScoreResource>,
+    ) {
+        for _ in enemy_killed_message.read() {
+            score_resource.0.increment(10);
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::domain::score::Score;
+    use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
     use crate::infrastructure::bevy::header::HeaderView;
     use crate::infrastructure::bevy::score::{ScoreResource, ScoreViewLabel, ScoreViewValue};
     use bevy::app::{App, Startup, Update};
@@ -169,5 +180,26 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn should_sync_domain() {
+        let mut app = setup();
+        app.add_message::<EnemyKilledMessage>();
+        app.add_systems(Update, ScoreViewValue::on_enemy_killed_message);
+
+        let dummy_entity = app.world_mut().spawn_empty().id();
+
+        app.world_mut()
+            .write_message(EnemyKilledMessage(dummy_entity, 1));
+
+        app.update();
+
+        let post_update_score_resource = app
+            .world_mut()
+            .get_resource::<ScoreResource>()
+            .unwrap_or_else(|| panic!("ScoreResource missing"));
+
+        assert_eq!(post_update_score_resource.0.get_current(), 10);
     }
 }
