@@ -51,10 +51,10 @@ impl PlayerView {
         let delta = speed * time.delta_secs();
 
         for mut transform in player_query.iter_mut() {
-            if keyboard.pressed(KeyCode::ArrowLeft) {
+            if keyboard.pressed(KeyCode::ArrowLeft) || keyboard.pressed(KeyCode::KeyA) {
                 transform.translation.x -= delta;
             }
-            if keyboard.pressed(KeyCode::ArrowRight) {
+            if keyboard.pressed(KeyCode::ArrowRight) || keyboard.pressed(KeyCode::KeyD) {
                 transform.translation.x += delta;
             }
 
@@ -91,6 +91,7 @@ impl PlayerView {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::enemy_formation::MovingDirection;
     use crate::infrastructure::bevy::game_area::GAME_AREA_WIDTH;
     use crate::infrastructure::bevy::player_projectile::{
         PlayerProjectileMovementTimer, PlayerProjectileView,
@@ -118,40 +119,10 @@ mod tests {
         app
     }
 
-    #[test]
-    fn player_should_move_right_on_input() -> Result<(), Box<dyn std::error::Error>> {
-        let mut app = setup();
-
-        let start_x = app
-            .world_mut()
-            .query::<&Transform>()
-            .single(app.world())?
-            .translation
-            .x;
-
-        let mut input = app
-            .world_mut()
-            .get_resource_mut::<ButtonInput<KeyCode>>()
-            .ok_or("ButtonInput resource missing")?;
-
-        input.press(KeyCode::ArrowRight);
-
-        app.update();
-
-        let end_x = app
-            .world_mut()
-            .query::<&Transform>()
-            .single(app.world())?
-            .translation
-            .x;
-
-        assert!(end_x > start_x, "Player should move right");
-
-        Ok(())
-    }
-
-    #[test]
-    fn player_should_move_left_on_input() -> Result<(), Box<dyn std::error::Error>> {
+    fn player_should_move_on_input(
+        key_code: KeyCode,
+        moving_direction: MovingDirection,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut app = setup();
 
         let start_x = app
@@ -164,7 +135,7 @@ mod tests {
         app.world_mut()
             .get_resource_mut::<ButtonInput<KeyCode>>()
             .ok_or("ButtonInput resource missing")?
-            .press(KeyCode::ArrowLeft);
+            .press(key_code);
 
         app.update();
 
@@ -175,9 +146,30 @@ mod tests {
             .translation
             .x;
 
-        assert!(end_x < start_x, "Player should move left");
+        match moving_direction {
+            MovingDirection::ToLeft => assert!(end_x < start_x, "Player should move left"),
+            MovingDirection::ToRight => assert!(end_x > start_x, "Player should move right"),
+        }
 
         Ok(())
+    }
+    #[test]
+    fn player_should_move_right_on_right_key_press() -> Result<(), Box<dyn std::error::Error>> {
+        player_should_move_on_input(KeyCode::ArrowRight, MovingDirection::ToRight)
+    }
+    #[test]
+    fn player_should_move_right_on_key_d_press() -> Result<(), Box<dyn std::error::Error>> {
+        player_should_move_on_input(KeyCode::KeyD, MovingDirection::ToRight)
+    }
+
+    #[test]
+    fn player_should_move_left_on_left_key_press() -> Result<(), Box<dyn std::error::Error>> {
+        player_should_move_on_input(KeyCode::ArrowLeft, MovingDirection::ToLeft)
+    }
+
+    #[test]
+    fn player_should_move_left_on_key_a_press() -> Result<(), Box<dyn std::error::Error>> {
+        player_should_move_on_input(KeyCode::KeyA, MovingDirection::ToLeft)
     }
 
     #[test]
