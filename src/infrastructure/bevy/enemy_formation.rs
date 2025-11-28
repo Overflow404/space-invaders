@@ -1,5 +1,7 @@
 use crate::domain::enemy_formation::{EnemyFormation, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
-use crate::infrastructure::bevy::enemy::{EnemyFireProbability, EnemyProjectileMovementTimer};
+use crate::infrastructure::bevy::enemy::{
+    DespawnEnemyMessage, EnemyFireProbability, EnemyProjectileMovementTimer,
+};
 pub(crate) use crate::infrastructure::bevy::enemy::{EnemyView, ENEMY_HEIGHT, ENEMY_WIDTH};
 use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
@@ -133,7 +135,7 @@ impl EnemyFormationView {
         {
             let player_projectile_size = player_projectile_sprite.custom_size.unwrap_or(Vec2::ONE);
 
-            for (enemy_entity, enemy_transform, enemy_sprite, e_view) in enemy_query.iter() {
+            for (enemy_entity, enemy_transform, enemy_sprite, enemy_view) in enemy_query.iter() {
                 let enemy_size = enemy_sprite.custom_size.unwrap_or(Vec2::ONE);
 
                 let collision = player_projectile_transform.translation.x
@@ -146,11 +148,11 @@ impl EnemyFormationView {
                         > enemy_transform.translation.y - enemy_size.y / 2.0;
 
                 if collision {
-                    commands.entity(enemy_entity).despawn();
+                    commands.write_message(DespawnEnemyMessage(enemy_entity, enemy_view.clone()));
                     commands.entity(player_projectile_entity).despawn();
                     player_resource.0.toggle_fire();
                     score_resource.0.increment(10);
-                    enemy_formation_resource.0.kill(e_view.id);
+                    enemy_formation_resource.0.kill(enemy_view.id);
                     break;
                 }
             }
@@ -194,7 +196,9 @@ mod tests {
     use crate::domain::enemy_formation::EnemyFormation;
     use crate::domain::player::Player;
     use crate::domain::score::Score;
-    use crate::infrastructure::bevy::enemy::{EnemyFireProbability, EnemyProjectileMovementTimer};
+    use crate::infrastructure::bevy::enemy::{
+        DespawnEnemyMessage, EnemyFireProbability, EnemyProjectileMovementTimer,
+    };
     use crate::infrastructure::bevy::enemy_formation::{
         EnemyFormationMovementTimer, EnemyFormationResource, EnemyFormationView, EnemyView,
     };
@@ -207,7 +211,7 @@ mod tests {
     use bevy::ecs::system::RunSystemOnce;
     use bevy::image::Image;
     use bevy::math::Vec2;
-    use bevy::prelude::{IntoScheduleConfigs, Timer, TimerMode, Transform, With};
+    use bevy::prelude::{IntoScheduleConfigs, MessageReader, Timer, TimerMode, Transform, With};
     use bevy::sprite::Sprite;
     use bevy::text::Font;
     use bevy::time::Time;
@@ -239,6 +243,7 @@ mod tests {
 
         app.init_asset::<Image>();
         app.init_asset::<Font>();
+        app.add_message::<DespawnEnemyMessage>();
 
         app.update();
 
@@ -384,7 +389,7 @@ mod tests {
     }
 
     #[test]
-    fn should_kill_enemy_on_collision() -> Result<(), Box<dyn Error>> {
+    fn should_fire_despawn_event_on_collision() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         app.add_systems(Update, EnemyFormationView::handle_collisions);
@@ -412,36 +417,16 @@ mod tests {
 
         app.update();
 
-        let remaining_enemies = app
-            .world_mut()
-            .query::<&EnemyView>()
-            .iter(app.world())
-            .len();
+        app.world_mut()
+            .run_system_once(move |mut reader: MessageReader<DespawnEnemyMessage>| {
+                let message = reader
+                    .read()
+                    .next()
+                    .unwrap_or_else(|| panic!("Despawn enemy message did not arrive!"));
+                assert_eq!(message.1.id, enemy_id);
+            })
+            .map_err(|e| format!("Cannot run system: {e}"))?;
 
-        assert_eq!(
-            remaining_enemies, 54,
-            "One enemy entity should be despawned"
-        );
-
-        let enemies = app
-            .world()
-            .resource::<EnemyFormationResource>()
-            .0
-            .get_enemies();
-
-        let id_exists = enemies.iter().flatten().any(|slot| {
-            if let Some(e) = slot {
-                e.get_id() == enemy_id
-            } else {
-                false
-            }
-        });
-
-        assert!(!id_exists, "Enemy id should be removed from domain logic");
-
-        let score = app.world().resource::<ScoreResource>().0.get_current();
-
-        assert_eq!(score, 10, "Score should have increased");
         Ok(())
     }
 

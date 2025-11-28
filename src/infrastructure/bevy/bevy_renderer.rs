@@ -1,4 +1,6 @@
-use crate::infrastructure::bevy::enemy::{EnemyFireProbability, EnemyProjectileMovementTimer};
+use crate::infrastructure::bevy::enemy::{
+    DespawnEnemyMessage, EnemyFireProbability, EnemyProjectileMovementTimer,
+};
 use crate::infrastructure::bevy::enemy_projectile::{
     EnemyProjectileView, ENEMY_PROJECTILE_DURATION,
 };
@@ -80,7 +82,8 @@ impl Plugin for SpaceInvadersPlugin {
             .add_systems(
                 PostUpdate,
                 (GameAreaView::resize_game_area, Self::update_window_scale),
-            );
+            )
+            .add_message::<DespawnEnemyMessage>();
     }
 }
 

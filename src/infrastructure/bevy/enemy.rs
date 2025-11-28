@@ -1,14 +1,16 @@
 use bevy::asset::AssetServer;
 use bevy::color::Color;
 use bevy::math::Vec2;
-use bevy::prelude::{default, Component, Resource, Timer, Transform};
+use bevy::prelude::{
+    default, Commands, Component, Entity, Message, MessageReader, Resource, Timer, Transform,
+};
 use bevy::sprite::Sprite;
 
 pub const ENEMY_WIDTH: f32 = 60.0;
 pub const ENEMY_HEIGHT: f32 = 40.0;
 
 const ENEMY_IMAGE: &str = "red.png";
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct EnemyView {
     pub id: usize,
 }
@@ -18,6 +20,9 @@ pub struct EnemyProjectileMovementTimer(pub Timer);
 
 #[derive(Resource)]
 pub struct EnemyFireProbability(pub f64);
+
+#[derive(Message)]
+pub struct DespawnEnemyMessage(pub Entity, pub EnemyView);
 
 impl EnemyView {
     pub fn new(id: usize) -> Self {
@@ -40,6 +45,16 @@ impl EnemyView {
             },
             Transform::from_xyz(x, y, 0.0),
         )
+    }
+
+    pub fn despawn_enemy(
+        commands: &mut Commands,
+        mut despawn_enemy_message: MessageReader<DespawnEnemyMessage>,
+    ) {
+        for message in despawn_enemy_message.read() {
+            let enemy_entity = message.0;
+            commands.entity(enemy_entity).despawn();
+        }
     }
 }
 
