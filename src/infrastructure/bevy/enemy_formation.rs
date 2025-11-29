@@ -6,9 +6,7 @@ pub(crate) use crate::infrastructure::bevy::enemy::{EnemyView, ENEMY_HEIGHT, ENE
 use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::player_projectile::components::{
-    DespawnPlayerProjectileMessage, PlayerProjectileComponent,
-};
+use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileComponent;
 use bevy::prelude::*;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
@@ -129,7 +127,6 @@ impl EnemyFormationView {
         >,
         enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyView), With<EnemyView>>,
         mut despawn_enemy_message_writer: MessageWriter<EnemyKilledMessage>,
-        mut despawn_player_projectile_message_writer: MessageWriter<DespawnPlayerProjectileMessage>,
     ) {
         for (player_projectile_entity, player_projectile_transform, player_projectile_sprite) in
             player_projectile_query.iter()
@@ -149,10 +146,11 @@ impl EnemyFormationView {
                         > enemy_transform.translation.y - enemy_size.y / 2.0;
 
                 if collision {
-                    despawn_enemy_message_writer
-                        .write(EnemyKilledMessage(enemy_entity, enemy_view.id));
-                    despawn_player_projectile_message_writer
-                        .write(DespawnPlayerProjectileMessage(player_projectile_entity));
+                    despawn_enemy_message_writer.write(EnemyKilledMessage::new(
+                        enemy_entity,
+                        enemy_view.id,
+                        player_projectile_entity,
+                    ));
                     break;
                 }
             }
@@ -195,7 +193,7 @@ impl EnemyFormationView {
         mut enemy_formation_resource: ResMut<EnemyFormationResource>,
     ) {
         for enemy in enemy_killed_message.read() {
-            enemy_formation_resource.0.kill(enemy.1);
+            enemy_formation_resource.0.kill(enemy.enemy_id);
         }
     }
 }
@@ -213,9 +211,7 @@ mod tests {
     };
     use crate::infrastructure::bevy::enemy_projectile::EnemyProjectileView;
     use crate::infrastructure::bevy::player::PlayerResource;
-    use crate::infrastructure::bevy::player_projectile::components::{
-        DespawnPlayerProjectileMessage, PlayerProjectileBundle,
-    };
+    use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileBundle;
     use crate::infrastructure::bevy::score::ScoreResource;
     use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
@@ -241,7 +237,6 @@ mod tests {
         app.init_asset::<Image>();
         app.init_asset::<Font>();
         app.add_message::<EnemyKilledMessage>();
-        app.add_message::<DespawnPlayerProjectileMessage>();
 
         app.update();
 
@@ -407,7 +402,7 @@ mod tests {
     }
 
     #[test]
-    fn should_trigger_a_despawn_event_when_killing_an_enemy() -> Result<(), Box<dyn Error>> {
+    fn should_trigger_an_event_when_killing_an_enemy() -> Result<(), Box<dyn Error>> {
         let mut app = setup();
 
         app.add_systems(Update, EnemyFormationView::handle_collisions);
@@ -438,20 +433,8 @@ mod tests {
                     .next()
                     .unwrap_or_else(|| panic!("Despawn enemy message did not arrive!"));
 
-                assert_eq!(despawn_enemy_message.1, enemy_id);
+                assert_eq!(despawn_enemy_message.enemy_id, enemy_id);
             })
-            .map_err(|e| format!("Cannot run system: {e}"))?;
-
-        app.world_mut()
-            .run_system_once(
-                move |mut reader: MessageReader<DespawnPlayerProjectileMessage>| {
-                    let mut iterator = reader.read();
-
-                    iterator.next().unwrap_or_else(|| {
-                        panic!("Despawn player projectile message did not arrive!")
-                    });
-                },
-            )
             .map_err(|e| format!("Cannot run system: {e}"))?;
 
         Ok(())
@@ -494,10 +477,14 @@ mod tests {
 
         let killed_enemy_id = 2;
 
-        let dummy_entity = app.world_mut().spawn_empty().id();
+        let enemy_entity = app.world_mut().spawn_empty().id();
+        let player_projectile_entity = app.world_mut().spawn_empty().id();
 
-        app.world_mut()
-            .write_message(EnemyKilledMessage(dummy_entity, killed_enemy_id));
+        app.world_mut().write_message(EnemyKilledMessage::new(
+            enemy_entity,
+            killed_enemy_id,
+            player_projectile_entity,
+        ));
 
         app.update();
 

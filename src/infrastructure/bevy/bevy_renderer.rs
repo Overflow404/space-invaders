@@ -6,7 +6,6 @@ use crate::infrastructure::bevy::enemy_projectile::{
 };
 use crate::infrastructure::bevy::footer::FooterView;
 use crate::infrastructure::bevy::header::HEADER_HEIGHT;
-use crate::infrastructure::bevy::player_projectile::components::DespawnPlayerProjectileMessage;
 use crate::infrastructure::bevy::player_projectile::plugin::PlayerProjectilePlugin;
 use crate::{
     domain::{
@@ -84,8 +83,7 @@ impl Plugin for SpaceInvadersPlugin {
                 PostUpdate,
                 (GameAreaView::resize_game_area, Self::update_window_scale),
             )
-            .add_message::<EnemyKilledMessage>()
-            .add_message::<DespawnPlayerProjectileMessage>();
+            .add_message::<EnemyKilledMessage>();
     }
 }
 

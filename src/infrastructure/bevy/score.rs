@@ -188,10 +188,14 @@ mod tests {
         app.add_message::<EnemyKilledMessage>();
         app.add_systems(Update, ScoreResource::on_enemy_killed_message);
 
-        let dummy_entity = app.world_mut().spawn_empty().id();
+        let enemy_entity = app.world_mut().spawn_empty().id();
+        let player_projectile_entity = app.world_mut().spawn_empty().id();
 
-        app.world_mut()
-            .write_message(EnemyKilledMessage(dummy_entity, 1));
+        app.world_mut().write_message(EnemyKilledMessage::new(
+            enemy_entity,
+            1,
+            player_projectile_entity,
+        ));
 
         app.update();
 

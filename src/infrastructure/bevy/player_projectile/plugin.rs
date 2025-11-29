@@ -1,4 +1,4 @@
-use crate::infrastructure::bevy::player_projectile::components::DespawnPlayerProjectileMessage;
+use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
 use crate::infrastructure::bevy::player_projectile::resources::{
     PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_DURATION,
 };
@@ -17,7 +17,7 @@ impl Plugin for PlayerProjectilePlugin {
             PLAYER_PROJECTILE_DURATION,
             TimerMode::Once,
         )))
-        .add_message::<DespawnPlayerProjectileMessage>()
+        .add_message::<PlayerProjectileExpiredMessage>()
         .add_systems(
             Update,
             (

@@ -1,11 +1,10 @@
 use crate::infrastructure::bevy::player_projectile::resources::PLAYER_PROJECTILE_COLOR;
 use bevy::math::Vec2;
-use bevy::prelude::Component;
 use bevy::prelude::{default, Bundle, Sprite, Transform};
-use bevy::prelude::{Entity, Message};
+use bevy::prelude::{Component, Message};
 
 #[derive(Message)]
-pub struct DespawnPlayerProjectileMessage(pub Entity);
+pub struct PlayerProjectileExpiredMessage;
 
 #[derive(Bundle)]
 pub struct PlayerProjectileBundle {

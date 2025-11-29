@@ -3,7 +3,9 @@ use bevy::prelude::*;
 use crate::domain::player::Player;
 use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
 use crate::infrastructure::bevy::game_area::{GAME_AREA_HEIGHT, GAME_AREA_WIDTH};
-use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileBundle;
+use crate::infrastructure::bevy::player_projectile::components::{
+    PlayerProjectileBundle, PlayerProjectileExpiredMessage,
+};
 use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
 
 pub const PLAYER_IMAGE: &str = "player-green.png";
@@ -87,9 +89,20 @@ impl PlayerView {
 
     pub fn sync_domain(
         mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
+        mut projectile_expired_message: MessageReader<PlayerProjectileExpiredMessage>,
         mut player_resource: ResMut<PlayerResource>,
     ) {
+        let mut should_reset_player = false;
+
         for _ in enemy_killed_message.read() {
+            should_reset_player = true;
+        }
+
+        for _ in projectile_expired_message.read() {
+            should_reset_player = true;
+        }
+
+        if should_reset_player {
             player_resource.0.toggle_fire();
         }
     }
@@ -289,9 +302,10 @@ mod tests {
     }
 
     #[test]
-    fn should_sync_domain() -> Result<(), Box<dyn std::error::Error>> {
+    fn should_toggle_firing_when_hitting_enemy() -> Result<(), Box<dyn std::error::Error>> {
         let mut app = setup();
         app.add_message::<EnemyKilledMessage>();
+        app.add_message::<PlayerProjectileExpiredMessage>();
         app.add_systems(Update, PlayerView::sync_domain);
 
         let pre_update_player_resource = app
@@ -301,10 +315,43 @@ mod tests {
 
         assert!(!pre_update_player_resource.0.is_firing());
 
-        let dummy_entity = app.world_mut().spawn_empty().id();
+        let enemy_entity = app.world_mut().spawn_empty().id();
+        let player_projectile_entity = app.world_mut().spawn_empty().id();
+
+        app.world_mut().write_message(EnemyKilledMessage::new(
+            enemy_entity,
+            1,
+            player_projectile_entity,
+        ));
+
+        app.update();
+
+        let post_update_player_resource = app
+            .world_mut()
+            .get_resource::<PlayerResource>()
+            .unwrap_or_else(|| panic!("PlayerResource missing"));
+
+        assert!(post_update_player_resource.0.is_firing());
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_toggle_firing_when_projectile_expires() -> Result<(), Box<dyn std::error::Error>> {
+        let mut app = setup();
+        app.add_message::<EnemyKilledMessage>();
+        app.add_message::<PlayerProjectileExpiredMessage>();
+        app.add_systems(Update, PlayerView::sync_domain);
+
+        let pre_update_player_resource = app
+            .world_mut()
+            .get_resource::<PlayerResource>()
+            .unwrap_or_else(|| panic!("PlayerResource missing"));
+
+        assert!(!pre_update_player_resource.0.is_firing());
 
         app.world_mut()
-            .write_message(EnemyKilledMessage(dummy_entity, 1));
+            .write_message(PlayerProjectileExpiredMessage);
 
         app.update();
 

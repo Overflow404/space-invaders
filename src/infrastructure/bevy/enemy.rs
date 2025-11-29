@@ -20,7 +20,21 @@ pub struct EnemyProjectileMovementTimer(pub Timer);
 pub struct EnemyFireProbability(pub f64);
 
 #[derive(Message)]
-pub struct EnemyKilledMessage(pub Entity, pub usize);
+pub struct EnemyKilledMessage {
+    pub enemy_entity: Entity,
+    pub enemy_id: usize,
+    pub projectile_entity: Entity,
+}
+
+impl EnemyKilledMessage {
+    pub fn new(enemy_entity: Entity, enemy_id: usize, projectile_entity: Entity) -> Self {
+        EnemyKilledMessage {
+            enemy_entity,
+            enemy_id,
+            projectile_entity,
+        }
+    }
+}
 
 impl EnemyView {
     pub fn new(id: usize) -> Self {

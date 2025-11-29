@@ -1,12 +1,14 @@
+use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
 use crate::infrastructure::bevy::game_area::GAME_AREA_HEIGHT;
-use crate::infrastructure::bevy::player::PlayerResource;
 use crate::infrastructure::bevy::player_projectile::components::{
-    DespawnPlayerProjectileMessage, PlayerProjectileComponent,
+    PlayerProjectileComponent, PlayerProjectileExpiredMessage,
 };
 use crate::infrastructure::bevy::player_projectile::resources::{
     PlayerProjectileMovementTimerResource, PROJECTILE_SPEED,
 };
-use bevy::prelude::{Commands, Entity, MessageReader, Query, Res, ResMut, Time, Transform, With};
+use bevy::prelude::{
+    Commands, Entity, MessageReader, MessageWriter, Query, Res, ResMut, Time, Transform, With,
+};
 
 pub fn player_projectile_movement_system(
     time: Res<Time>,
@@ -21,13 +23,9 @@ pub fn player_projectile_lifecycle_system(
     mut commands: Commands,
     time: Res<Time>,
     mut timer: ResMut<PlayerProjectileMovementTimerResource>,
-    mut player_resource: ResMut<PlayerResource>,
     query: Query<(Entity, &mut Transform), With<PlayerProjectileComponent>>,
+    mut message_writer: MessageWriter<PlayerProjectileExpiredMessage>,
 ) {
-    if !player_resource.0.is_firing() {
-        return;
-    }
-
     timer.0.tick(time.delta());
     let top_bound = GAME_AREA_HEIGHT / 2.0;
     let mut reset_needed = false;
@@ -49,27 +47,25 @@ pub fn player_projectile_lifecycle_system(
     }
 
     if reset_needed {
-        player_resource.0.toggle_fire();
+        message_writer.write(PlayerProjectileExpiredMessage);
         timer.0.reset();
     }
 }
 pub fn player_projectile_despawn_system(
     mut commands: Commands,
-    mut despawn_player_projectile_message: MessageReader<DespawnPlayerProjectileMessage>,
+    mut despawn_player_projectile_message: MessageReader<EnemyKilledMessage>,
 ) {
     for message in despawn_player_projectile_message.read() {
-        let player_projectile_entity = message.0;
-        commands.entity(player_projectile_entity).despawn();
+        commands.entity(message.projectile_entity).despawn();
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::player::Player;
+    use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
     use crate::infrastructure::bevy::game_area::GAME_AREA_HEIGHT;
-    use crate::infrastructure::bevy::player::PlayerResource;
     use crate::infrastructure::bevy::player_projectile::components::{
-        DespawnPlayerProjectileMessage, PlayerProjectileComponent,
+        PlayerProjectileComponent, PlayerProjectileExpiredMessage,
     };
     use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
     use crate::infrastructure::bevy::player_projectile::systems::{
@@ -78,7 +74,7 @@ mod tests {
     };
     use bevy::app::{App, Update};
     use bevy::ecs::system::RunSystemOnce;
-    use bevy::prelude::{Time, Timer, TimerMode, Transform};
+    use bevy::prelude::{MessageReader, Time, Timer, TimerMode, Transform};
     use bevy::MinimalPlugins;
     use std::time::Duration;
 
@@ -87,7 +83,7 @@ mod tests {
         app.add_plugins(MinimalPlugins);
 
         app.init_resource::<Time>();
-        app.insert_resource(PlayerResource(Player::new()));
+        app.add_message::<PlayerProjectileExpiredMessage>();
         app.insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
             1.0,
             TimerMode::Once,
@@ -99,18 +95,22 @@ mod tests {
     #[test]
     fn should_despawn_after_hitting_the_enemy() {
         let mut app = setup();
-        app.add_message::<DespawnPlayerProjectileMessage>();
+        app.add_message::<EnemyKilledMessage>();
         app.add_systems(Update, player_projectile_despawn_system);
 
-        let dummy_entity = app.world_mut().spawn_empty().id();
-        assert!(app.world().get_entity(dummy_entity).is_ok());
+        let enemy_entity = app.world_mut().spawn_empty().id();
+        let player_projectile_entity = app.world_mut().spawn_empty().id();
+        assert!(app.world().get_entity(player_projectile_entity).is_ok());
 
-        app.world_mut()
-            .write_message(DespawnPlayerProjectileMessage(dummy_entity));
+        app.world_mut().write_message(EnemyKilledMessage::new(
+            enemy_entity,
+            1,
+            player_projectile_entity,
+        ));
 
         app.update();
 
-        assert!(app.world().get_entity(dummy_entity).is_err());
+        assert!(app.world().get_entity(player_projectile_entity).is_err());
     }
 
     #[test]
@@ -146,14 +146,10 @@ mod tests {
     }
 
     #[test]
-    fn should_despawn_when_out_of_bounds() {
+    fn should_despawn_when_out_of_bounds() -> bevy::prelude::Result<(), Box<dyn std::error::Error>>
+    {
         let mut app = setup();
         app.add_systems(Update, player_projectile_lifecycle_system);
-
-        app.world_mut()
-            .resource_mut::<PlayerResource>()
-            .0
-            .toggle_fire();
 
         let out_of_bounds_y = (GAME_AREA_HEIGHT / 2.0) + 10.0;
 
@@ -164,6 +160,7 @@ mod tests {
 
         let mut time = app.world_mut().resource_mut::<Time>();
         time.advance_by(Duration::from_secs_f32(0.01));
+
         app.update();
 
         let count = app
@@ -173,22 +170,25 @@ mod tests {
             .len();
         assert_eq!(count, 0, "Projectile should be despawned");
 
-        let player = app.world().resource::<PlayerResource>();
-        assert!(
-            !player.0.is_firing(),
-            "Player state should be reset to not firing"
-        );
+        app.world_mut()
+            .run_system_once(
+                move |mut reader: MessageReader<PlayerProjectileExpiredMessage>| {
+                    let mut iterator = reader.read();
+
+                    iterator.next().unwrap_or_else(|| {
+                        panic!("Player projectile expired message did not arrive!")
+                    });
+                },
+            )
+            .map_err(|e| format!("Cannot run system: {e}"))?;
+
+        Ok(())
     }
 
     #[test]
     fn should_despawn_when_timer_finishes() -> bevy::prelude::Result<(), Box<dyn std::error::Error>>
     {
         let mut app = setup();
-
-        app.world_mut()
-            .resource_mut::<PlayerResource>()
-            .0
-            .toggle_fire();
 
         app.world_mut().spawn((
             PlayerProjectileComponent,
@@ -210,8 +210,17 @@ mod tests {
 
         assert_eq!(count, 0, "Projectile should be despawned due to timeout");
 
-        let player = app.world().resource::<PlayerResource>();
-        assert!(!player.0.is_firing(), "Player state should be reset");
+        app.world_mut()
+            .run_system_once(
+                move |mut reader: MessageReader<PlayerProjectileExpiredMessage>| {
+                    let mut iterator = reader.read();
+
+                    iterator.next().unwrap_or_else(|| {
+                        panic!("Player projectile expired message did not arrive!")
+                    });
+                },
+            )
+            .map_err(|e| format!("Cannot run system: {e}"))?;
 
         Ok(())
     }
