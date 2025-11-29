@@ -41,6 +41,10 @@ pub fn component_despawned<T: Component>(app: &mut App) -> bool {
     app.world_mut().query::<&T>().iter(app.world()).len() == 0
 }
 
+pub fn count_components<T: Component>(app: &mut App) -> usize {
+    app.world_mut().query::<&T>().iter(app.world()).count()
+}
+
 pub fn verify_message_fired<T: Message>(app: &mut App) -> Result<(), Box<dyn Error>> {
     app.world_mut()
         .run_system_once(move |mut reader: MessageReader<T>| {

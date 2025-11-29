@@ -1,5 +1,5 @@
-use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
-use crate::infrastructure::bevy::game_area::GAME_AREA_HEIGHT;
+use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
+use crate::infrastructure::bevy::game_area::resources::GAME_AREA_HEIGHT;
 use crate::infrastructure::bevy::player_projectile::components::{
     PlayerProjectileComponent, PlayerProjectileExpiredMessage,
 };
@@ -61,7 +61,7 @@ pub fn player_projectile_lifecycle_system(
 
 #[cfg(test)]
 mod tests {
-    use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
+    use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
     use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
     use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
     use crate::infrastructure::bevy::player_projectile::systems::player_projectile_lifecycle_system;
@@ -86,8 +86,8 @@ mod tests {
 
     #[cfg(test)]
     mod lifecycle_system {
-        use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
-        use crate::infrastructure::bevy::game_area::GAME_AREA_HEIGHT;
+        use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
+        use crate::infrastructure::bevy::game_area::resources::GAME_AREA_HEIGHT;
         use crate::infrastructure::bevy::player_projectile::components::{
             PlayerProjectileComponent, PlayerProjectileExpiredMessage,
         };

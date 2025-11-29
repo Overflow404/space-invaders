@@ -1,8 +1,8 @@
 pub mod bevy_renderer;
-mod enemy;
+pub mod enemy;
 pub mod enemy_formation;
-mod enemy_projectile;
-mod footer;
+pub mod enemy_projectile;
+pub mod footer;
 pub mod game_area;
 pub mod header;
 pub mod lives;

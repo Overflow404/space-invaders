@@ -1,4 +1,4 @@
-use crate::infrastructure::bevy::enemy_formation::EnemyFormationView;
+use crate::infrastructure::bevy::enemy_formation::systems::collisions_system;
 use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
 use crate::infrastructure::bevy::player_projectile::resources::{
     PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_DURATION,
@@ -21,8 +21,8 @@ impl Plugin for PlayerProjectilePlugin {
         .add_systems(
             Update,
             (
-                player_projectile_movement_system.after(EnemyFormationView::handle_collisions),
-                player_projectile_lifecycle_system.after(EnemyFormationView::handle_collisions),
+                player_projectile_movement_system.after(collisions_system),
+                player_projectile_lifecycle_system.after(collisions_system),
             ),
         );
     }
@@ -31,7 +31,7 @@ impl Plugin for PlayerProjectilePlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
+    use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
     use bevy::MinimalPlugins;
     use bevy_test::{contains_message, get_resource, get_update_systems};
 
