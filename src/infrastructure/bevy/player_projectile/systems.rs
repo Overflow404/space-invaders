@@ -9,16 +9,21 @@ use crate::infrastructure::bevy::player_projectile::resources::{
 use bevy::prelude::{Commands, Entity, MessageReader, Query, Res, ResMut, Time, Transform, With};
 
 pub fn player_projectile_movement_system(
+    time: Res<Time>,
+    mut query: Query<&mut Transform, With<PlayerProjectileComponent>>,
+) {
+    for mut transform in query.iter_mut() {
+        transform.translation.y += PROJECTILE_SPEED * time.delta_secs();
+    }
+}
+
+pub fn player_projectile_lifecycle_system(
     mut commands: Commands,
     time: Res<Time>,
     mut timer: ResMut<PlayerProjectileMovementTimerResource>,
     mut player_resource: ResMut<PlayerResource>,
-    mut query: Query<(Entity, &mut Transform), With<PlayerProjectileComponent>>,
+    query: Query<(Entity, &mut Transform), With<PlayerProjectileComponent>>,
 ) {
-    for (_, mut transform) in query.iter_mut() {
-        transform.translation.y += PROJECTILE_SPEED * time.delta_secs();
-    }
-
     if !player_resource.0.is_firing() {
         return;
     }
@@ -68,7 +73,8 @@ mod tests {
     };
     use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
     use crate::infrastructure::bevy::player_projectile::systems::{
-        player_projectile_despawn_system, player_projectile_movement_system,
+        player_projectile_despawn_system, player_projectile_lifecycle_system,
+        player_projectile_movement_system,
     };
     use bevy::app::{App, Update};
     use bevy::ecs::system::RunSystemOnce;
@@ -142,7 +148,7 @@ mod tests {
     #[test]
     fn should_despawn_when_out_of_bounds() {
         let mut app = setup();
-        app.add_systems(Update, player_projectile_movement_system);
+        app.add_systems(Update, player_projectile_lifecycle_system);
 
         app.world_mut()
             .resource_mut::<PlayerResource>()
@@ -193,7 +199,7 @@ mod tests {
         time.advance_by(Duration::from_secs_f32(2.0));
 
         app.world_mut()
-            .run_system_once(player_projectile_movement_system)
+            .run_system_once(player_projectile_lifecycle_system)
             .map_err(|e| format!("Cannot run system: {e}"))?;
 
         let count = app

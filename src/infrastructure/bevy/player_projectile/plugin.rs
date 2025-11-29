@@ -3,7 +3,8 @@ use crate::infrastructure::bevy::player_projectile::resources::{
     PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_DURATION,
 };
 use crate::infrastructure::bevy::player_projectile::systems::{
-    player_projectile_despawn_system, player_projectile_movement_system,
+    player_projectile_despawn_system, player_projectile_lifecycle_system,
+    player_projectile_movement_system,
 };
 use bevy::app::{App, Plugin};
 use bevy::prelude::{Timer, TimerMode, Update};
@@ -21,6 +22,7 @@ impl Plugin for PlayerProjectilePlugin {
             Update,
             (
                 player_projectile_movement_system,
+                player_projectile_lifecycle_system,
                 player_projectile_despawn_system,
             ),
         );
