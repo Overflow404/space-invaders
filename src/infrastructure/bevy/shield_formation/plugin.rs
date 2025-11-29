@@ -33,12 +33,12 @@ mod tests {
     }
 
     #[test]
-    fn should_initialize_the_shield_formation_plugin() {
+    fn should_initialize_the_plugin() {
         let mut app = setup();
 
         let shield_formation_resource = get_resource::<ShieldFormationResource>(&mut app);
-
         assert_eq!(shield_formation_resource.0.get_shields().len(), 4);
+
         assert_eq!(count_components::<ShieldComponent>(&mut app), 4);
     }
 }

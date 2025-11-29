@@ -30,16 +30,15 @@ mod tests {
     use super::*;
     use crate::domain::shield_formation::ShieldFormation;
     use crate::infrastructure::bevy::shield_formation::resources::ShieldFormationResource;
-    use bevy::app::{App, Update};
+    use bevy::app::App;
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::image::Image;
     use bevy::MinimalPlugins;
-    use bevy_test::count_components;
+    use bevy_test::{count_components, run_system};
 
     fn setup() -> App {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-            .add_systems(Update, spawn_shields_system)
             .insert_resource(ShieldFormationResource(ShieldFormation::new()))
             .init_asset::<Image>();
         app
@@ -48,7 +47,8 @@ mod tests {
     #[test]
     fn should_display_the_shields() {
         let mut app = setup();
-        app.update();
+
+        run_system(&mut app, spawn_shields_system).expect("System should run");
 
         let shields_count = count_components::<ShieldComponent>(&mut app);
 
