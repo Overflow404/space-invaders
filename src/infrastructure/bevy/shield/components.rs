@@ -39,7 +39,7 @@ mod tests {
     use bevy::MinimalPlugins;
 
     #[test]
-    fn should_create_the_shield_bundle() {
+    fn should_create_the_bundle() {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
             .init_asset::<Image>();
