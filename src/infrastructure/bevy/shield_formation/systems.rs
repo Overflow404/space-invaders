@@ -39,19 +39,27 @@ mod tests {
     fn setup() -> App {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-            .insert_resource(ShieldFormationResource(ShieldFormation::new()))
             .init_asset::<Image>();
         app
     }
 
     #[test]
-    fn should_display_the_shields() {
+    fn should_spawn_the_configured_number_of_shields() -> Result<(), Box<dyn std::error::Error>> {
         let mut app = setup();
+        app.insert_resource(ShieldFormationResource(ShieldFormation::new()));
 
-        run_system(&mut app, spawn_shields_system).expect("System should run");
+        run_system(&mut app, spawn_shields_system)?;
 
         let shields_count = count_components::<ShieldComponent>(&mut app);
 
         assert_eq!(shields_count, 4);
+
+        Ok(())
+    }
+
+    #[test]
+    fn should_not_spawn_the_shields_if_no_shields_available() -> Result<(), Box<dyn std::error::Error>> {
+        //TODO when shields will be destroyable this would make sense
+        Ok(())
     }
 }

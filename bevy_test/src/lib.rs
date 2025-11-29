@@ -1,4 +1,4 @@
-use bevy::app::{App, Update};
+use bevy::app::{App, Update, Startup};
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::{
     Component, Entity, IntoSystem, Message, MessageReader, Messages, Resource, Time,
@@ -12,6 +12,14 @@ pub fn get_update_systems(app: &App) -> impl Iterator {
         .systems()
         .expect("No systems found")
 }
+
+pub fn get_startup_systems(app: &App) -> impl Iterator {
+    app.get_schedule(Startup)
+        .expect("Startup schedule not found")
+        .systems()
+        .expect("No systems found")
+}
+
 
 pub fn get_resource<T: Resource>(app: &mut App) -> &T {
     app.world()
