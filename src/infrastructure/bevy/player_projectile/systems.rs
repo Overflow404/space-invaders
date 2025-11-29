@@ -25,11 +25,11 @@ pub fn player_projectile_lifecycle_system(
     mut timer: ResMut<PlayerProjectileMovementTimerResource>,
     query: Query<(Entity, &mut Transform), With<PlayerProjectileComponent>>,
     mut message_writer: MessageWriter<PlayerProjectileExpiredMessage>,
-    mut despawn_player_projectile_message: MessageReader<EnemyKilledMessage>,
+    mut message_reader: MessageReader<EnemyKilledMessage>,
 ) {
     timer.0.tick(time.delta());
 
-    for message in despawn_player_projectile_message.read() {
+    for message in message_reader.read() {
         commands.entity(message.projectile_entity).despawn();
         return;
     }
