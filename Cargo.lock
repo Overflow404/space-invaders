@@ -1325,6 +1325,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_test"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_text"
 version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4063,6 +4070,7 @@ name = "space-invaders"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_test",
  "rand",
  "tracing",
  "tracing-subscriber",

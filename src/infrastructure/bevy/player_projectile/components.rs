@@ -1,4 +1,6 @@
-use crate::infrastructure::bevy::player_projectile::resources::PLAYER_PROJECTILE_COLOR;
+use crate::infrastructure::bevy::player_projectile::resources::{
+    PLAYER_PROJECTILE_COLOR, PROJECTILE_HEIGHT, PROJECTILE_WIDTH,
+};
 use bevy::math::Vec2;
 use bevy::prelude::{default, Bundle, Sprite, Transform};
 use bevy::prelude::{Component, Message};
@@ -13,7 +15,7 @@ pub struct PlayerProjectileBundle {
     pub transform: Transform,
 }
 
-#[derive(Component)]
+#[derive(Component, PartialEq, Debug)]
 pub struct PlayerProjectileComponent;
 
 impl PlayerProjectileBundle {
@@ -22,7 +24,7 @@ impl PlayerProjectileBundle {
             projectile: PlayerProjectileComponent,
             sprite: Sprite {
                 color: PLAYER_PROJECTILE_COLOR,
-                custom_size: Some(Vec2::new(5.0, 15.0)),
+                custom_size: Some(Vec2::new(PROJECTILE_WIDTH, PROJECTILE_HEIGHT)),
                 ..default()
             },
             transform: Transform::from_xyz(x, y, 0.0),
@@ -32,26 +34,26 @@ impl PlayerProjectileBundle {
 
 #[cfg(test)]
 mod tests {
-    use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileBundle;
-    use crate::infrastructure::bevy::player_projectile::resources::{
-        PROJECTILE_HEIGHT, PROJECTILE_WIDTH,
+    use crate::infrastructure::bevy::player_projectile::components::{
+        PlayerProjectileBundle, PlayerProjectileComponent,
     };
     use bevy::color::Color;
     use bevy::math::Vec2;
 
     #[test]
-    fn should_create_the_player_projectile_bundle() {
+    fn should_create_the_bundle() {
         let start_x = 100.0;
         let start_y = 50.0;
 
         let bundle = PlayerProjectileBundle::new(start_x, start_y);
 
+        assert_eq!(bundle.projectile, PlayerProjectileComponent);
+
         assert_eq!(bundle.transform.translation.x, start_x);
         assert_eq!(bundle.transform.translation.y, start_y);
-        assert_eq!(
-            bundle.sprite.custom_size,
-            Some(Vec2::new(PROJECTILE_WIDTH, PROJECTILE_HEIGHT))
-        );
+        assert_eq!(bundle.transform.translation.z, 0f32);
+
         assert_eq!(bundle.sprite.color, Color::srgb(1.0, 1.0, 1.0));
+        assert_eq!(bundle.sprite.custom_size, Some(Vec2::new(5.0, 15.0)),);
     }
 }
