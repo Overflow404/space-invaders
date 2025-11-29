@@ -4,7 +4,7 @@ use crate::infrastructure::bevy::player_projectile::components::{
     PlayerProjectileComponent, PlayerProjectileExpiredMessage,
 };
 use crate::infrastructure::bevy::player_projectile::resources::{
-    PlayerProjectileMovementTimerResource, PROJECTILE_SPEED,
+    PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_SPEED,
 };
 use bevy::prelude::{
     Commands, Entity, MessageReader, MessageWriter, Query, Res, ResMut, Time, Transform, With,
@@ -15,7 +15,7 @@ pub fn player_projectile_movement_system(
     mut query: Query<&mut Transform, With<PlayerProjectileComponent>>,
 ) {
     for mut transform in query.iter_mut() {
-        transform.translation.y += PROJECTILE_SPEED * time.delta_secs();
+        transform.translation.y += PLAYER_PROJECTILE_SPEED * time.delta_secs();
     }
 }
 
@@ -64,21 +64,22 @@ mod tests {
     use crate::infrastructure::bevy::enemy::EnemyKilledMessage;
     use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
     use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
-    use bevy::app::App;
+    use crate::infrastructure::bevy::player_projectile::systems::player_projectile_lifecycle_system;
+    use bevy::app::{App, Update};
     use bevy::prelude::{Time, Timer, TimerMode};
     use bevy::MinimalPlugins;
 
     fn setup() -> App {
         let mut app = App::new();
-        app.add_plugins(MinimalPlugins);
-
-        app.init_resource::<Time>();
-        app.add_message::<PlayerProjectileExpiredMessage>();
-        app.add_message::<EnemyKilledMessage>();
-        app.insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
-            1.0,
-            TimerMode::Once,
-        )));
+        app.add_plugins(MinimalPlugins)
+            .init_resource::<Time>()
+            .add_message::<PlayerProjectileExpiredMessage>()
+            .add_message::<EnemyKilledMessage>()
+            .insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
+                1.0,
+                TimerMode::Once,
+            )))
+            .add_systems(Update, player_projectile_lifecycle_system);
 
         app
     }
@@ -92,30 +93,26 @@ mod tests {
         };
         use crate::infrastructure::bevy::player_projectile::systems::player_projectile_lifecycle_system;
         use crate::infrastructure::bevy::player_projectile::systems::tests::setup;
-        use bevy::app::Update;
-        use bevy::ecs::system::RunSystemOnce;
-        use bevy::prelude::{Time, Transform};
-        use bevy_test::{component_despawned, contains_entity, verify_message_fired};
+        use bevy::prelude::Transform;
+        use bevy_test::{
+            advance_time_by_seconds, component_despawned, contains_entity, run_system,
+            send_message, spawn_dummy_entity, verify_message_fired,
+        };
         use std::error::Error;
-        use std::time::Duration;
 
         #[test]
         fn should_despawn_when_enemy_is_killed() {
             let mut app = setup();
 
-            app.add_message::<EnemyKilledMessage>();
-            app.add_systems(Update, player_projectile_lifecycle_system);
-
-            let enemy_entity = app.world_mut().spawn_empty().id();
-            let player_projectile_entity = app.world_mut().spawn_empty().id();
+            let enemy_entity = spawn_dummy_entity(&mut app);
+            let player_projectile_entity = spawn_dummy_entity(&mut app);
 
             assert!(contains_entity(&app, player_projectile_entity));
 
-            app.world_mut().write_message(EnemyKilledMessage::new(
-                enemy_entity,
-                1,
-                player_projectile_entity,
-            ));
+            send_message(
+                &mut app,
+                EnemyKilledMessage::new(enemy_entity, 1, player_projectile_entity),
+            );
 
             app.update();
 
@@ -123,9 +120,8 @@ mod tests {
         }
 
         #[test]
-        fn should_despawn_when_out_of_bounds() -> Result<(), Box<dyn Error>> {
+        fn should_notify_and_despawn_when_out_of_bounds() -> Result<(), Box<dyn Error>> {
             let mut app = setup();
-            app.add_systems(Update, player_projectile_lifecycle_system);
 
             let out_of_bounds_y = (GAME_AREA_HEIGHT / 2.0) + 10.0;
 
@@ -134,8 +130,7 @@ mod tests {
                 Transform::from_xyz(0.0, out_of_bounds_y, 0.0),
             ));
 
-            let mut time = app.world_mut().resource_mut::<Time>();
-            time.advance_by(Duration::from_secs_f32(0.01));
+            advance_time_by_seconds(&mut app, 0.01);
 
             app.update();
 
@@ -146,7 +141,7 @@ mod tests {
         }
 
         #[test]
-        fn should_despawn_when_timer_finishes() -> Result<(), Box<dyn Error>> {
+        fn should_notify_and_despawn_when_timer_finishes() -> Result<(), Box<dyn Error>> {
             let mut app = setup();
 
             app.world_mut().spawn((
@@ -154,12 +149,9 @@ mod tests {
                 Transform::from_xyz(0.0, 0.0, 0.0),
             ));
 
-            let mut time = app.world_mut().resource_mut::<Time>();
-            time.advance_by(Duration::from_secs_f32(2.0));
+            advance_time_by_seconds(&mut app, 2f32);
 
-            app.world_mut()
-                .run_system_once(player_projectile_lifecycle_system)
-                .map_err(|e| format!("Cannot run system: {e}"))?;
+            run_system(&mut app, player_projectile_lifecycle_system)?;
 
             assert!(component_despawned::<PlayerProjectileComponent>(&mut app));
             verify_message_fired::<PlayerProjectileExpiredMessage>(&mut app)?;
@@ -173,11 +165,9 @@ mod tests {
         use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileComponent;
         use crate::infrastructure::bevy::player_projectile::systems::player_projectile_movement_system;
         use crate::infrastructure::bevy::player_projectile::systems::tests::setup;
-        use bevy::ecs::system::RunSystemOnce;
-        use bevy::prelude::{Time, Transform};
-        use bevy_test::get_component;
+        use bevy::prelude::Transform;
+        use bevy_test::{advance_time_by_seconds, get_component, run_system};
         use std::error::Error;
-        use std::time::Duration;
 
         #[test]
         fn should_move_projectile_upwards() -> Result<(), Box<dyn Error>> {
@@ -191,12 +181,9 @@ mod tests {
                 ))
                 .id();
 
-            let mut time = app.world_mut().resource_mut::<Time>();
-            time.advance_by(Duration::from_secs_f32(0.1));
+            advance_time_by_seconds(&mut app, 0.1);
 
-            app.world_mut()
-                .run_system_once(player_projectile_movement_system)
-                .map_err(|e| format!("Cannot run system: {e}"))?;
+            run_system(&mut app, player_projectile_movement_system)?;
 
             let transform = get_component::<Transform>(&mut app, projectile);
 

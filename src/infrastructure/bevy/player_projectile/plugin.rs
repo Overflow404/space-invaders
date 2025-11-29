@@ -41,13 +41,13 @@ mod tests {
         app.add_plugins((MinimalPlugins, PlayerProjectilePlugin))
             .add_message::<EnemyKilledMessage>();
 
+        app.update();
+
         app
     }
     #[test]
     fn should_initialize_the_plugin() {
         let mut app = setup();
-
-        app.update();
 
         let timer = get_resource::<PlayerProjectileMovementTimerResource>(&mut app);
 

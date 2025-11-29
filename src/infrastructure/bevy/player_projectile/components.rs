@@ -1,5 +1,5 @@
 use crate::infrastructure::bevy::player_projectile::resources::{
-    PLAYER_PROJECTILE_COLOR, PROJECTILE_HEIGHT, PROJECTILE_WIDTH,
+    PLAYER_PROJECTILE_COLOR, PLAYER_PROJECTILE_HEIGHT, PLAYER_PROJECTILE_WIDTH,
 };
 use bevy::math::Vec2;
 use bevy::prelude::{default, Bundle, Sprite, Transform};
@@ -24,7 +24,7 @@ impl PlayerProjectileBundle {
             projectile: PlayerProjectileComponent,
             sprite: Sprite {
                 color: PLAYER_PROJECTILE_COLOR,
-                custom_size: Some(Vec2::new(PROJECTILE_WIDTH, PROJECTILE_HEIGHT)),
+                custom_size: Some(Vec2::new(PLAYER_PROJECTILE_WIDTH, PLAYER_PROJECTILE_HEIGHT)),
                 ..default()
             },
             transform: Transform::from_xyz(x, y, 0.0),
