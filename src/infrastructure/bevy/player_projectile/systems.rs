@@ -114,7 +114,7 @@ mod tests {
         let projectile = app
             .world_mut()
             .spawn((
-                PlayerProjectileComponent::new(0.0, 0.0),
+                PlayerProjectileComponent,
                 Transform::from_xyz(0.0, 0.0, 0.0),
             ))
             .id();
@@ -152,7 +152,7 @@ mod tests {
         let out_of_bounds_y = (GAME_AREA_HEIGHT / 2.0) + 10.0;
 
         app.world_mut().spawn((
-            PlayerProjectileComponent::new(0.0, 0.0),
+            PlayerProjectileComponent,
             Transform::from_xyz(0.0, out_of_bounds_y, 0.0),
         ));
 
@@ -185,7 +185,7 @@ mod tests {
             .toggle_fire();
 
         app.world_mut().spawn((
-            PlayerProjectileComponent::new(0.0, 0.0),
+            PlayerProjectileComponent,
             Transform::from_xyz(0.0, 0.0, 0.0),
         ));
 
