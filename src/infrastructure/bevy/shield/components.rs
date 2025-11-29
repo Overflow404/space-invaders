@@ -39,15 +39,15 @@ mod tests {
     use bevy::MinimalPlugins;
 
     #[test]
-    fn should_create_the_bundle() {
+    fn should_create_the_shield_bundle() {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
             .init_asset::<Image>();
 
-        let asset_server = app.world().resource::<AssetServer>().clone();
+        let asset_server = app.world().resource::<AssetServer>();
         let x = 250.0;
 
-        let bundle = ShieldBundle::new(&asset_server, x);
+        let bundle = ShieldBundle::new(asset_server, x);
 
         assert_eq!(bundle.shield, ShieldComponent);
 
