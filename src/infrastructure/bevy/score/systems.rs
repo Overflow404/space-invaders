@@ -65,8 +65,8 @@ mod tests {
     use bevy::prelude::{AssetApp, Text};
     use bevy::text::Font;
     use bevy_test::{
-        contains_single_component, get_resource_mut, get_resource_or_fail, minimal_app, send_message,
-        spawn_dummy_entity,
+        contains_single_component, get_resource_mut, get_resource_or_fail, minimal_app,
+        send_message, spawn_dummy_entity,
     };
 
     fn setup() -> App {

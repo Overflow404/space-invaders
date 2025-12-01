@@ -53,9 +53,21 @@ mod tests {
         let mut app = setup();
 
         get_resource_or_fail::<PlayerResource>(&mut app);
-        assert!(contains_system_or_fail(&app, Startup, "spawn_player_system"));
-        assert!(contains_system_or_fail(&app, Update, "player_movement_system"));
+        assert!(contains_system_or_fail(
+            &app,
+            Startup,
+            "spawn_player_system"
+        ));
+        assert!(contains_system_or_fail(
+            &app,
+            Update,
+            "player_movement_system"
+        ));
         assert!(contains_system_or_fail(&app, Update, "player_fire_system"));
-        assert!(contains_system_or_fail(&app, Update, "reload_player_weapon_system"));
+        assert!(contains_system_or_fail(
+            &app,
+            Update,
+            "reload_player_weapon_system"
+        ));
     }
 }

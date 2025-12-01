@@ -22,6 +22,10 @@ mod tests {
 
         app.update();
 
-        assert!(contains_system_or_fail(&app, Startup, "spawn_header_system"));
+        assert!(contains_system_or_fail(
+            &app,
+            Startup,
+            "spawn_header_system"
+        ));
     }
 }

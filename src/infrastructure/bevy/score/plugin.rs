@@ -30,7 +30,9 @@ mod tests {
     use bevy::image::Image;
     use bevy::prelude::AssetApp;
     use bevy::text::Font;
-    use bevy_test::{contains_single_component, contains_system_or_fail, get_resource_or_fail, minimal_app};
+    use bevy_test::{
+        contains_single_component, contains_system_or_fail, get_resource_or_fail, minimal_app,
+    };
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -53,8 +55,16 @@ mod tests {
         assert_eq!(score_resource.0.get_current(), 0);
 
         assert!(contains_system_or_fail(&app, Startup, "spawn_score_system"));
-        assert!(contains_system_or_fail(&app, Update, "update_score_text_system"));
-        assert!(contains_system_or_fail(&app, Update, "handle_enemy_killed_system"));
+        assert!(contains_system_or_fail(
+            &app,
+            Update,
+            "update_score_text_system"
+        ));
+        assert!(contains_system_or_fail(
+            &app,
+            Update,
+            "handle_enemy_killed_system"
+        ));
 
         assert!(contains_single_component::<ScoreValueComponent>(&mut app));
     }

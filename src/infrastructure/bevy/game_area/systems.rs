@@ -42,7 +42,7 @@ mod tests {
     use bevy::image::Image;
     use bevy::utils::default;
     use bevy::window::WindowResolution;
-    use bevy_test::{count_components, get_component_or_fail, minimal_app};
+    use bevy_test::{get_component_or_fail, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -60,6 +60,7 @@ mod tests {
     mod spawn_game_area_system {
         use super::*;
         use bevy::app::Startup;
+        use bevy_test::contains_single_component;
 
         #[test]
         fn should_spawn_game_area() {
@@ -67,7 +68,7 @@ mod tests {
             app.add_systems(Startup, spawn_game_area_system);
             app.update();
 
-            assert_eq!(count_components::<GameAreaComponent>(&mut app), 1);
+            assert!(contains_single_component::<GameAreaComponent>(&mut app));
         }
     }
 

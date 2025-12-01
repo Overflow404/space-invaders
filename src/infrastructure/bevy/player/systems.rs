@@ -116,8 +116,8 @@ mod tests {
 
     #[cfg(test)]
     mod spawn_player_system {
-        use bevy::prelude::Startup;
         use super::*;
+        use bevy::prelude::Startup;
 
         #[test]
         fn should_spawn_player() {
@@ -126,7 +126,6 @@ mod tests {
             app.update();
 
             assert!(contains_single_component::<PlayerComponent>(&mut app));
-            assert_eq!(count_components::<PlayerComponent>(&mut app), 1);
 
             let mut query = app.world_mut().query::<(&PlayerComponent, &Transform)>();
             let (_, transform) = query

@@ -42,7 +42,11 @@ mod tests {
 
         get_resource_or_fail::<LivesResource>(&mut app);
 
-        assert!(contains_system_or_fail(&app, Startup, "spawn_header_system"));
+        assert!(contains_system_or_fail(
+            &app,
+            Startup,
+            "spawn_header_system"
+        ));
         assert!(contains_system_or_fail(&app, Startup, "spawn_lives_system"));
     }
 }

@@ -35,6 +35,10 @@ mod tests {
         let mut app = setup();
 
         get_resource_or_fail::<ShieldFormationResource>(&mut app);
-        assert!(contains_system_or_fail(&app, Startup, "spawn_shields_system"));
+        assert!(contains_system_or_fail(
+            &app,
+            Startup,
+            "spawn_shields_system"
+        ));
     }
 }

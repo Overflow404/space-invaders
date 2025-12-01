@@ -73,8 +73,8 @@ mod tests {
     use bevy::app::{App, Update};
     use bevy::prelude::{Time, Timer, TimerMode, Transform};
     use bevy_test::{
-        advance_time_by_seconds, did_component_despawn, contains_entity, get_component_or_fail,
-        minimal_app, send_message, spawn_dummy_entity, did_message_fire,
+        advance_time_by_seconds, contains_entity, did_component_despawn, did_message_fire,
+        get_component_or_fail, minimal_app, send_message, spawn_dummy_entity,
     };
 
     fn setup() -> App {

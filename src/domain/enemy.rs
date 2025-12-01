@@ -16,7 +16,10 @@ impl Enemy {
 
 impl Enemy {
     pub fn new(id: usize) -> Self {
-        Enemy { id, is_firing: false }
+        Enemy {
+            id,
+            is_firing: false,
+        }
     }
 
     pub fn get_id(&self) -> usize {
@@ -50,6 +53,9 @@ mod tests {
         assert!(enemy.is_firing(), "Player should fire after first toggle");
 
         enemy.toggle_fire();
-        assert!(!enemy.is_firing(), "Player should stop firing after second toggle");
+        assert!(
+            !enemy.is_firing(),
+            "Player should stop firing after second toggle"
+        );
     }
 }

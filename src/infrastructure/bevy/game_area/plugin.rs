@@ -43,6 +43,10 @@ mod tests {
     fn should_initialize_the_game_area_plugin() {
         let mut app = setup();
         assert!(contains_single_component::<GameAreaComponent>(&mut app));
-        assert!(contains_system_or_fail(&app, PostUpdate, "resize_game_area_system"));
+        assert!(contains_system_or_fail(
+            &app,
+            PostUpdate,
+            "resize_game_area_system"
+        ));
     }
 }
