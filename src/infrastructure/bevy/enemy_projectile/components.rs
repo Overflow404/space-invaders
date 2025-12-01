@@ -2,7 +2,7 @@ use crate::infrastructure::bevy::enemy_projectile::resources::{
     ENEMY_PROJECTILE_COLOR, ENEMY_PROJECTILE_HEIGHT, ENEMY_PROJECTILE_WIDTH,
 };
 use bevy::math::Vec2;
-use bevy::prelude::{default, Bundle, Component, Sprite, Transform};
+use bevy::prelude::{default, Bundle, Component, Message, Sprite, Transform};
 
 #[derive(Bundle)]
 pub struct EnemyProjectileBundle {
@@ -10,6 +10,9 @@ pub struct EnemyProjectileBundle {
     pub sprite: Sprite,
     pub transform: Transform,
 }
+
+#[derive(Message)]
+pub struct EnemyProjectileExpiredMessage;
 
 #[derive(Component, PartialEq, Debug)]
 pub struct EnemyProjectileComponent;

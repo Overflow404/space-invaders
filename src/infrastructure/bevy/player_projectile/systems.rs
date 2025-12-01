@@ -55,7 +55,7 @@ pub fn player_projectile_lifecycle_system(
 
     if reset_needed {
         message_writer.write(PlayerProjectileExpiredMessage);
-        timer.0.reset();
+        timer.0.finish();
     }
 }
 
@@ -92,6 +92,7 @@ mod tests {
     #[cfg(test)]
     mod player_projectile_lifecycle_system {
         use super::*;
+        use bevy_test::get_resource_mut;
 
         #[test]
         fn should_despawn_when_enemy_is_killed() {
@@ -126,6 +127,9 @@ mod tests {
             advance_time_by_seconds(&mut app, 0.01);
             app.update();
 
+            let timer = get_resource_mut::<PlayerProjectileMovementTimerResource>(&mut app);
+            assert!(timer.0.is_finished());
+
             assert!(did_component_despawn::<PlayerProjectileComponent>(&mut app));
             assert!(did_message_fire::<PlayerProjectileExpiredMessage>(&mut app));
         }
@@ -142,6 +146,9 @@ mod tests {
 
             advance_time_by_seconds(&mut app, 2.0);
             app.update();
+
+            let timer = get_resource_mut::<PlayerProjectileMovementTimerResource>(&mut app);
+            assert!(timer.0.is_finished());
 
             assert!(did_component_despawn::<PlayerProjectileComponent>(&mut app));
             assert!(did_message_fire::<PlayerProjectileExpiredMessage>(&mut app));
