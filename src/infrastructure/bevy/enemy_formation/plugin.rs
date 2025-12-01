@@ -50,7 +50,7 @@ mod tests {
     use bevy::image::Image;
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode};
-    use bevy_test::{contains_system, get_resource_or_fail, minimal_app};
+    use bevy_test::{contains_system_or_fail, get_resource_or_fail, minimal_app};
 
     #[test]
     fn should_initialize_the_plugin() {
@@ -76,23 +76,23 @@ mod tests {
         assert_eq!(formation_timer.0.duration().as_secs_f32(), 1.2);
         assert_eq!(formation_timer.0.mode(), TimerMode::Repeating);
 
-        assert!(contains_system(
+        assert!(contains_system_or_fail(
             &app,
             Startup,
             "spawn_enemy_formation_system"
         ));
-        assert!(contains_system(
+        assert!(contains_system_or_fail(
             &app,
             Update,
             "enemy_formation_lifecycle_system"
         ));
-        assert!(contains_system(&app, Update, "collisions_system"));
-        assert!(contains_system(
+        assert!(contains_system_or_fail(&app, Update, "collisions_system"));
+        assert!(contains_system_or_fail(
             &app,
             Update,
             "enemy_formation_movement_system"
         ));
-        assert!(contains_system(
+        assert!(contains_system_or_fail(
             &app,
             Update,
             "spawn_random_projectiles_system"

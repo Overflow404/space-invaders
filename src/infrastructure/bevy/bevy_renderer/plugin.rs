@@ -96,7 +96,7 @@ mod tests {
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode};
     use bevy::text::Font;
-    use bevy_test::{contains_component, count_components, minimal_app};
+    use bevy_test::{contains_single_component, count_components, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -116,14 +116,14 @@ mod tests {
     fn should_spawn_all_the_components() {
         let mut app = setup();
 
-        assert!(contains_component::<CameraComponent>(&mut app));
-        assert!(contains_component::<HeaderComponent>(&mut app));
-        assert!(contains_component::<ScoreLabelComponent>(&mut app));
-        assert!(contains_component::<ScoreValueComponent>(&mut app));
-        assert!(contains_component::<LivesComponent>(&mut app));
-        assert!(contains_component::<GameAreaComponent>(&mut app));
-        assert!(contains_component::<PlayerComponent>(&mut app));
-        assert!(contains_component::<FooterComponent>(&mut app));
+        assert!(contains_single_component::<CameraComponent>(&mut app));
+        assert!(contains_single_component::<HeaderComponent>(&mut app));
+        assert!(contains_single_component::<ScoreLabelComponent>(&mut app));
+        assert!(contains_single_component::<ScoreValueComponent>(&mut app));
+        assert!(contains_single_component::<LivesComponent>(&mut app));
+        assert!(contains_single_component::<GameAreaComponent>(&mut app));
+        assert!(contains_single_component::<PlayerComponent>(&mut app));
+        assert!(contains_single_component::<FooterComponent>(&mut app));
         assert_eq!(count_components::<EnemyComponent>(&mut app), 55);
         assert_eq!(count_components::<ShieldComponent>(&mut app), 4);
     }

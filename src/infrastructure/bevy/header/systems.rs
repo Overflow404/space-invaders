@@ -13,7 +13,7 @@ mod tests {
     use bevy::color::Color;
     use bevy::prelude::UiRect;
     use bevy::ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, Val};
-    use bevy_test::{contains_component, get_component_or_fail, minimal_app};
+    use bevy_test::{contains_single_component, get_component_or_fail, minimal_app};
 
     fn setup() -> App {
         minimal_app(false)
@@ -30,7 +30,7 @@ mod tests {
             app.add_systems(Startup, spawn_header_system);
             app.update();
 
-            assert!(contains_component::<HeaderComponent>(&mut app));
+            assert!(contains_single_component::<HeaderComponent>(&mut app));
         }
 
         #[test]

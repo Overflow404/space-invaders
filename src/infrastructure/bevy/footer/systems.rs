@@ -10,7 +10,7 @@ mod tests {
     use super::*;
     use crate::infrastructure::bevy::footer::components::FooterComponent;
     use bevy::app::{App, Startup};
-    use bevy_test::{contains_component, count_components, minimal_app};
+    use bevy_test::{contains_single_component, count_components, minimal_app};
 
     fn setup() -> App {
         minimal_app(false)
@@ -26,7 +26,7 @@ mod tests {
             app.add_systems(Startup, spawn_footer_system);
             app.update();
 
-            assert!(contains_component::<FooterComponent>(&mut app));
+            assert!(contains_single_component::<FooterComponent>(&mut app));
             assert_eq!(count_components::<FooterComponent>(&mut app), 1);
         }
     }

@@ -32,7 +32,7 @@ impl Plugin for PlayerProjectilePlugin {
 mod tests {
     use super::*;
     use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
-    use bevy_test::{contains_message, contains_system, get_resource_or_fail, minimal_app};
+    use bevy_test::{contains_message, contains_system_or_fail, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -55,12 +55,12 @@ mod tests {
 
         assert!(contains_message::<PlayerProjectileExpiredMessage>(&app));
 
-        assert!(contains_system(
+        assert!(contains_system_or_fail(
             &app,
             Update,
             "player_projectile_movement_system"
         ));
-        assert!(contains_system(
+        assert!(contains_system_or_fail(
             &app,
             Update,
             "player_projectile_lifecycle_system"

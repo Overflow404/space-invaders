@@ -73,8 +73,8 @@ mod tests {
     use bevy::app::{App, Update};
     use bevy::prelude::{Time, Timer, TimerMode, Transform};
     use bevy_test::{
-        advance_time_by_seconds, component_despawned, contains_entity, get_component_or_fail,
-        minimal_app, send_message, spawn_dummy_entity, verify_message_fired,
+        advance_time_by_seconds, did_component_despawn, contains_entity, get_component_or_fail,
+        minimal_app, send_message, spawn_dummy_entity, did_message_fire,
     };
 
     fn setup() -> App {
@@ -126,8 +126,8 @@ mod tests {
             advance_time_by_seconds(&mut app, 0.01);
             app.update();
 
-            assert!(component_despawned::<PlayerProjectileComponent>(&mut app));
-            assert!(verify_message_fired::<PlayerProjectileExpiredMessage>(&mut app).is_ok());
+            assert!(did_component_despawn::<PlayerProjectileComponent>(&mut app));
+            assert!(did_message_fire::<PlayerProjectileExpiredMessage>(&mut app));
         }
 
         #[test]
@@ -143,8 +143,8 @@ mod tests {
             advance_time_by_seconds(&mut app, 2.0);
             app.update();
 
-            assert!(component_despawned::<PlayerProjectileComponent>(&mut app));
-            assert!(verify_message_fired::<PlayerProjectileExpiredMessage>(&mut app).is_ok());
+            assert!(did_component_despawn::<PlayerProjectileComponent>(&mut app));
+            assert!(did_message_fire::<PlayerProjectileExpiredMessage>(&mut app));
         }
     }
 

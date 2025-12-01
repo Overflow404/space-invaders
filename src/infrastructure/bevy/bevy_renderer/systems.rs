@@ -27,7 +27,7 @@ mod tests {
     mod camera_system {
         use super::*;
         use crate::infrastructure::bevy::bevy_renderer::components::CameraComponent;
-        use bevy_test::contains_component;
+        use bevy_test::contains_single_component;
 
         #[test]
         fn should_spawn_camera() {
@@ -35,7 +35,7 @@ mod tests {
             app.add_systems(Startup, camera_system);
             app.update();
 
-            assert!(contains_component::<CameraComponent>(&mut app));
+            assert!(contains_single_component::<CameraComponent>(&mut app));
         }
     }
 

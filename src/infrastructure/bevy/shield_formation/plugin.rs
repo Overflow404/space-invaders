@@ -18,7 +18,7 @@ mod tests {
     use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::prelude::AssetApp;
-    use bevy_test::{contains_system, get_resource_or_fail, minimal_app};
+    use bevy_test::{contains_system_or_fail, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -35,6 +35,6 @@ mod tests {
         let mut app = setup();
 
         get_resource_or_fail::<ShieldFormationResource>(&mut app);
-        assert!(contains_system(&app, Startup, "spawn_shields_system"));
+        assert!(contains_system_or_fail(&app, Startup, "spawn_shields_system"));
     }
 }

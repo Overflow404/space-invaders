@@ -12,7 +12,7 @@ impl Plugin for FooterPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy_test::{contains_system, minimal_app};
+    use bevy_test::{contains_system_or_fail, minimal_app};
 
     #[test]
     fn should_initialize_the_footer_plugin() {
@@ -21,6 +21,6 @@ mod tests {
 
         app.update();
 
-        assert!(contains_system(&app, Startup, "spawn_footer_system"));
+        assert!(contains_system_or_fail(&app, Startup, "spawn_footer_system"));
     }
 }

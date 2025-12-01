@@ -21,7 +21,7 @@ mod tests {
     use bevy::prelude::{AssetApp, Window};
     use bevy::utils::default;
     use bevy::window::WindowResolution;
-    use bevy_test::{contains_component, contains_system, minimal_app};
+    use bevy_test::{contains_single_component, contains_system_or_fail, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -42,7 +42,7 @@ mod tests {
     #[test]
     fn should_initialize_the_game_area_plugin() {
         let mut app = setup();
-        assert!(contains_component::<GameAreaComponent>(&mut app));
-        assert!(contains_system(&app, PostUpdate, "resize_game_area_system"));
+        assert!(contains_single_component::<GameAreaComponent>(&mut app));
+        assert!(contains_system_or_fail(&app, PostUpdate, "resize_game_area_system"));
     }
 }

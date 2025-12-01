@@ -12,7 +12,7 @@ impl Plugin for EnemyProjectilePlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy_test::{contains_system, minimal_app};
+    use bevy_test::{contains_system_or_fail, minimal_app};
 
     #[test]
     fn should_initialize_the_plugin() {
@@ -22,7 +22,7 @@ mod tests {
 
         app.update();
 
-        assert!(contains_system(
+        assert!(contains_system_or_fail(
             &app,
             Update,
             "enemy_projectile_movement_system"

@@ -65,7 +65,7 @@ mod tests {
     use bevy::prelude::{AssetApp, Text};
     use bevy::text::Font;
     use bevy_test::{
-        contains_component, get_resource_mut, get_resource_or_fail, minimal_app, send_message,
+        contains_single_component, get_resource_mut, get_resource_or_fail, minimal_app, send_message,
         spawn_dummy_entity,
     };
 
@@ -91,8 +91,8 @@ mod tests {
 
             app.update();
 
-            assert!(contains_component::<ScoreLabelComponent>(&mut app));
-            assert!(contains_component::<ScoreValueComponent>(&mut app));
+            assert!(contains_single_component::<ScoreLabelComponent>(&mut app));
+            assert!(contains_single_component::<ScoreValueComponent>(&mut app));
         }
     }
 

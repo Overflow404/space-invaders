@@ -1,33 +1,16 @@
-use bevy::app::{App, PluginGroup, Startup, Update};
+use bevy::app::{App, PluginGroup};
 use bevy::asset::{AssetServer, Handle};
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::ecs::system::RunSystemOnce;
-use bevy::prelude::{
-    Component, Entity, IntoSystem, Message, MessageReader, Messages, Mut, Resource, Time,
-};
+use bevy::prelude::{Component, Entity, Message, MessageReader, Messages, Mut, Resource, Time};
 use bevy::text::Font;
 use bevy::time::TimePlugin;
 use bevy::MinimalPlugins;
-use std::error::Error;
 use std::time::Duration;
 
-pub fn get_update_systems(app: &App) -> impl Iterator {
-    app.get_schedule(Update)
-        .expect("Update schedule not found")
-        .systems()
-        .expect("No systems found")
-}
-
-pub fn get_startup_systems(app: &App) -> impl Iterator {
-    app.get_schedule(Startup)
-        .expect("Startup schedule not found")
-        .systems()
-        .expect("No systems found")
-}
-
-pub fn contains_system(app: &App, schedule: impl ScheduleLabel, name: &str) -> bool {
+pub fn contains_system_or_fail(app: &App, schedule: impl ScheduleLabel, name: &str) -> bool {
     app.get_schedule(schedule)
-        .expect("Startup schedule not found")
+        .expect("Schedule not found")
         .systems()
         .expect("No systems found")
         .any(|system| system.1.name().shortname().to_string() == name)
@@ -59,11 +42,11 @@ pub fn contains_entity(app: &App, entity: Entity) -> bool {
     app.world().get_entity(entity).is_ok()
 }
 
-pub fn contains_component<T: Component>(app: &mut App) -> bool {
+pub fn contains_single_component<T: Component>(app: &mut App) -> bool {
     app.world_mut().query::<&T>().iter(app.world()).len() == 1
 }
 
-pub fn component_despawned<T: Component>(app: &mut App) -> bool {
+pub fn did_component_despawn<T: Component>(app: &mut App) -> bool {
     app.world_mut().query::<&T>().iter(app.world()).len() == 0
 }
 
@@ -71,17 +54,10 @@ pub fn count_components<T: Component>(app: &mut App) -> usize {
     app.world_mut().query::<&T>().iter(app.world()).count()
 }
 
-pub fn verify_message_fired<T: Message>(app: &mut App) -> Result<(), Box<dyn Error>> {
+pub fn did_message_fire<T: Message>(app: &mut App) -> bool {
     app.world_mut()
-        .run_system_once(move |mut reader: MessageReader<T>| {
-            let mut iterator = reader.read();
-
-            iterator
-                .next()
-                .unwrap_or_else(|| panic!("Message did not arrive!"));
-        })
-        .map_err(|e| format!("Cannot run system: {e}"))?;
-    Ok(())
+        .run_system_once(move |mut reader: MessageReader<T>| reader.read().next().is_some())
+        .unwrap_or(false)
 }
 
 pub fn spawn_dummy_entity(app: &mut App) -> Entity {
@@ -95,15 +71,6 @@ pub fn send_message<T: Message>(app: &mut App, message: T) {
 pub fn advance_time_by_seconds(app: &mut App, seconds: f32) {
     let mut time = app.world_mut().resource_mut::<Time>();
     time.advance_by(Duration::from_secs_f32(seconds));
-}
-
-pub fn run_system<T, Out, Marker>(app: &mut App, system: T) -> Result<Out, String>
-where
-    T: IntoSystem<(), Out, Marker>,
-{
-    app.world_mut()
-        .run_system_once(system)
-        .map_err(|e| format!("Cannot run system: {e}"))
 }
 
 pub fn dummy_font(app: &App) -> Handle<Font> {

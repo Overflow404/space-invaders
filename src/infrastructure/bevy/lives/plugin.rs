@@ -22,7 +22,7 @@ mod tests {
     use bevy::image::Image;
     use bevy::prelude::AssetApp;
     use bevy::text::Font;
-    use bevy_test::{contains_system, get_resource_or_fail, minimal_app};
+    use bevy_test::{contains_system_or_fail, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -42,7 +42,7 @@ mod tests {
 
         get_resource_or_fail::<LivesResource>(&mut app);
 
-        assert!(contains_system(&app, Startup, "spawn_header_system"));
-        assert!(contains_system(&app, Startup, "spawn_lives_system"));
+        assert!(contains_system_or_fail(&app, Startup, "spawn_header_system"));
+        assert!(contains_system_or_fail(&app, Startup, "spawn_lives_system"));
     }
 }

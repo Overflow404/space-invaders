@@ -56,7 +56,7 @@ mod tests {
     use bevy::image::Image;
     use bevy::prelude::{AssetApp, Children, ImageNode, Text};
     use bevy::text::Font;
-    use bevy_test::{contains_component, minimal_app};
+    use bevy_test::{contains_single_component, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -79,7 +79,7 @@ mod tests {
             app.add_systems(Startup, spawn_lives_system);
             app.update();
 
-            assert!(contains_component::<LivesComponent>(&mut app));
+            assert!(contains_single_component::<LivesComponent>(&mut app));
         }
 
         #[test]

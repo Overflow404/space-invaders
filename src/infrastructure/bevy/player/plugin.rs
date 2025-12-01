@@ -32,7 +32,7 @@ mod tests {
     use bevy::image::Image;
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode};
-    use bevy_test::{contains_system, get_resource_or_fail, minimal_app};
+    use bevy_test::{contains_system_or_fail, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -53,9 +53,9 @@ mod tests {
         let mut app = setup();
 
         get_resource_or_fail::<PlayerResource>(&mut app);
-        assert!(contains_system(&app, Startup, "spawn_player_system"));
-        assert!(contains_system(&app, Update, "player_movement_system"));
-        assert!(contains_system(&app, Update, "player_fire_system"));
-        assert!(contains_system(&app, Update, "reload_player_weapon_system"));
+        assert!(contains_system_or_fail(&app, Startup, "spawn_player_system"));
+        assert!(contains_system_or_fail(&app, Update, "player_movement_system"));
+        assert!(contains_system_or_fail(&app, Update, "player_fire_system"));
+        assert!(contains_system_or_fail(&app, Update, "reload_player_weapon_system"));
     }
 }

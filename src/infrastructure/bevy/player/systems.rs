@@ -96,8 +96,8 @@ mod tests {
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode, Time, Timer, TimerMode};
     use bevy_test::{
-        advance_time_by_seconds, contains_component, count_components, get_resource_mut,
-        get_resource_or_fail, minimal_app, run_system, send_message, spawn_dummy_entity,
+        advance_time_by_seconds, contains_single_component, count_components, get_resource_mut,
+        get_resource_or_fail, minimal_app, send_message, spawn_dummy_entity,
     };
 
     fn setup() -> App {
@@ -116,25 +116,24 @@ mod tests {
 
     #[cfg(test)]
     mod spawn_player_system {
+        use bevy::prelude::Startup;
         use super::*;
 
         #[test]
-        fn should_spawn_player() -> Result<(), String> {
+        fn should_spawn_player() {
             let mut app = setup();
+            app.add_systems(Startup, spawn_player_system);
+            app.update();
 
-            run_system(&mut app, spawn_player_system)?;
-
-            assert!(contains_component::<PlayerComponent>(&mut app));
+            assert!(contains_single_component::<PlayerComponent>(&mut app));
             assert_eq!(count_components::<PlayerComponent>(&mut app), 1);
 
             let mut query = app.world_mut().query::<(&PlayerComponent, &Transform)>();
             let (_, transform) = query
                 .single(app.world())
-                .map_err(|e| format!("Query failed: {}", e))?;
+                .expect("Player transform not found");
 
             assert_eq!(transform.translation.x, 0.0);
-
-            Ok(())
         }
     }
 
@@ -153,7 +152,7 @@ mod tests {
         }
 
         #[test]
-        fn should_move_right_on_right_arrow() -> Result<(), String> {
+        fn should_move_right_on_right_arrow() {
             let mut app = setup_movement(0.0);
 
             get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowRight);
@@ -166,14 +165,13 @@ mod tests {
                 .world_mut()
                 .query::<&Transform>()
                 .single(app.world())
-                .map_err(|e| e.to_string())?;
+                .expect("Transform not found");
 
             assert!(transform.translation.x > 0.0);
-            Ok(())
         }
 
         #[test]
-        fn should_move_right_on_d_key() -> Result<(), String> {
+        fn should_move_right_on_d_key() {
             let mut app = setup_movement(0.0);
 
             get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::KeyD);
@@ -185,14 +183,13 @@ mod tests {
                 .world_mut()
                 .query::<&Transform>()
                 .single(app.world())
-                .map_err(|e| e.to_string())?;
+                .expect("Transform not found");
 
             assert!(transform.translation.x > 0.0);
-            Ok(())
         }
 
         #[test]
-        fn should_move_left_on_left_arrow() -> Result<(), String> {
+        fn should_move_left_on_left_arrow() {
             let mut app = setup_movement(0.0);
 
             get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowLeft);
@@ -204,14 +201,13 @@ mod tests {
                 .world_mut()
                 .query::<&Transform>()
                 .single(app.world())
-                .map_err(|e| e.to_string())?;
+                .expect("Transform not found");
 
             assert!(transform.translation.x < 0.0);
-            Ok(())
         }
 
         #[test]
-        fn should_move_left_on_a_key() -> Result<(), String> {
+        fn should_move_left_on_a_key() {
             let mut app = setup_movement(0.0);
 
             get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::KeyA);
@@ -223,14 +219,13 @@ mod tests {
                 .world_mut()
                 .query::<&Transform>()
                 .single(app.world())
-                .map_err(|e| e.to_string())?;
+                .expect("Transform not found");
 
             assert!(transform.translation.x < 0.0);
-            Ok(())
         }
 
         #[test]
-        fn should_clamp_at_boundaries() -> Result<(), String> {
+        fn should_clamp_at_boundaries() {
             let boundary = (GAME_AREA_WIDTH / 2.0) - (PLAYER_WIDTH / 2.0);
             let mut app = setup_movement(boundary);
 
@@ -243,11 +238,10 @@ mod tests {
                 .world_mut()
                 .query::<&Transform>()
                 .single(app.world())
-                .map_err(|e| e.to_string())?;
+                .expect("Transform not found");
 
             let diff = (transform.translation.x - boundary).abs();
             assert!(diff < 0.001);
-            Ok(())
         }
     }
 
