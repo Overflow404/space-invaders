@@ -24,7 +24,7 @@ mod tests {
     use bevy::prelude::AssetApp;
     use bevy::text::Font;
     use bevy::MinimalPlugins;
-    use bevy_test::{count_components, get_resource};
+    use bevy_test::{count_components, get_resource_or_fail};
 
     fn setup() -> App {
         let mut app = App::new();
@@ -42,7 +42,7 @@ mod tests {
     fn should_initialize_the_plugin() {
         let mut app = setup();
 
-        let lives_resource = get_resource::<LivesResource>(&mut app);
+        let lives_resource = get_resource_or_fail::<LivesResource>(&mut app);
         assert_eq!(lives_resource.0.get_current(), 3);
 
         assert!(count_components::<LivesComponent>(&mut app) <= 1);

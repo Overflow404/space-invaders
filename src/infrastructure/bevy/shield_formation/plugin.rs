@@ -19,7 +19,7 @@ mod tests {
     use bevy::image::Image;
     use bevy::prelude::AssetApp;
     use bevy::MinimalPlugins;
-    use bevy_test::{get_resource, get_startup_systems};
+    use bevy_test::{get_resource_or_fail, get_startup_systems};
 
     fn setup() -> App {
         let mut app = App::new();
@@ -35,7 +35,7 @@ mod tests {
     fn should_initialize_the_shield_formation_plugin() {
         let mut app = setup();
 
-        get_resource::<ShieldFormationResource>(&mut app);
+        get_resource_or_fail::<ShieldFormationResource>(&mut app);
         assert_eq!(get_startup_systems(&mut app).count(), 1);
     }
 }

@@ -255,7 +255,7 @@ mod tests {
         use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileComponent;
         use bevy::input::ButtonInput;
         use bevy::prelude::KeyCode;
-        use bevy_test::{count_components, get_resource, run_system};
+        use bevy_test::{count_components, get_resource_or_fail, run_system};
         use std::error::Error;
 
         #[test]
@@ -279,7 +279,7 @@ mod tests {
 
             assert_eq!(final_count, 1, "A projectile should spawn");
 
-            let player_res = get_resource::<PlayerResource>(&mut app);
+            let player_res = get_resource_or_fail::<PlayerResource>(&mut app);
 
             assert!(
                 player_res.0.is_firing(),
@@ -324,7 +324,7 @@ mod tests {
         use super::*;
         use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
         use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
-        use bevy_test::{get_resource, run_system, send_message, spawn_dummy_entity};
+        use bevy_test::{get_resource_or_fail, run_system, send_message, spawn_dummy_entity};
         use std::error::Error;
 
         #[test]
@@ -337,7 +337,7 @@ mod tests {
                 .add_message::<PlayerProjectileExpiredMessage>()
                 .add_systems(Update, sync_player_firing_state_system);
 
-            let pre_update_player_resource = get_resource::<PlayerResource>(&mut app);
+            let pre_update_player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
 
             assert!(!pre_update_player_resource.0.is_firing());
 
@@ -351,7 +351,7 @@ mod tests {
 
             app.update();
 
-            let post_update_player_resource = get_resource::<PlayerResource>(&mut app);
+            let post_update_player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
 
             assert!(post_update_player_resource.0.is_firing());
 
@@ -368,7 +368,7 @@ mod tests {
                 .add_message::<PlayerProjectileExpiredMessage>()
                 .add_systems(Update, sync_player_firing_state_system);
 
-            let pre_update_player_resource = get_resource::<PlayerResource>(&mut app);
+            let pre_update_player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
 
             assert!(!pre_update_player_resource.0.is_firing());
 
@@ -376,7 +376,7 @@ mod tests {
 
             app.update();
 
-            let post_update_player_resource = get_resource::<PlayerResource>(&mut app);
+            let post_update_player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
 
             assert!(post_update_player_resource.0.is_firing());
 

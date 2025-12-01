@@ -10,7 +10,6 @@ use crate::infrastructure::bevy::enemy_formation::resources::{
 use crate::infrastructure::bevy::enemy_formation::systems::{
     collisions_system, enemy_formation_lifecycle_system, enemy_formation_movement_system,
     spawn_enemy_formation_system, spawn_random_projectiles_system,
-    sync_enemy_formation_state_system,
 };
 use crate::infrastructure::bevy::enemy_projectile::resources::ENEMY_PROJECTILE_DURATION;
 use bevy::app::{App, Plugin, Startup, Update};
@@ -39,7 +38,6 @@ impl Plugin for EnemyFormationPlugin {
                     collisions_system,
                     enemy_formation_movement_system,
                     spawn_random_projectiles_system,
-                    sync_enemy_formation_state_system,
                 ),
             );
     }
@@ -48,45 +46,56 @@ impl Plugin for EnemyFormationPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::bevy::enemy::components::EnemyComponent;
     use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode};
-    use bevy::MinimalPlugins;
-    use bevy_test::{count_components, get_resource, get_update_systems};
+    use bevy_test::{contains_system, get_resource_or_fail, minimal_app};
 
-    fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+    #[test]
+    fn should_initialize_the_plugin() {
+        let mut app = minimal_app();
+
+        app.add_plugins(AssetPlugin::default())
             .add_plugins(EnemyFormationPlugin)
             .init_asset::<Image>()
             .init_resource::<ButtonInput<KeyCode>>();
 
         app.update();
-        app
-    }
 
-    #[test]
-    fn should_initialize_the_plugin() {
-        let mut app = setup();
+        get_resource_or_fail::<EnemyFormationResource>(&mut app);
 
-        let formation_resource = get_resource::<EnemyFormationResource>(&mut app);
-        assert!(!formation_resource.0.is_annihilated());
+        let fire_probability = get_resource_or_fail::<EnemyFireProbability>(&mut app);
+        assert_eq!(fire_probability.0, 0.2);
 
-        let formation_timer = get_resource::<EnemyFormationMovementTimer>(&mut app);
-        assert_eq!(
-            formation_timer.0.duration().as_secs_f32(),
-            ENEMY_FORMATION_STEP_DURATION
-        );
+        let formation_timer = get_resource_or_fail::<EnemyFormationMovementTimer>(&mut app);
+        assert_eq!(formation_timer.0.duration().as_secs_f32(), 0.6);
         assert_eq!(formation_timer.0.mode(), TimerMode::Repeating);
 
-        let fire_probability = get_resource::<EnemyFireProbability>(&mut app);
-        assert_eq!(fire_probability.0, ENEMY_FIRE_PROBABILITY);
+        let formation_timer = get_resource_or_fail::<EnemyProjectileMovementTimer>(&mut app);
+        assert_eq!(formation_timer.0.duration().as_secs_f32(), 1.2);
+        assert_eq!(formation_timer.0.mode(), TimerMode::Repeating);
 
-        assert_eq!(get_update_systems(&app).count(), 5);
-
-        let enemy_count = count_components::<EnemyComponent>(&mut app);
-        assert_eq!(enemy_count, 55);
+        assert!(contains_system(
+            &app,
+            Startup,
+            "spawn_enemy_formation_system"
+        ));
+        assert!(contains_system(
+            &app,
+            Update,
+            "enemy_formation_lifecycle_system"
+        ));
+        assert!(contains_system(&app, Update, "collisions_system"));
+        assert!(contains_system(
+            &app,
+            Update,
+            "enemy_formation_movement_system"
+        ));
+        assert!(contains_system(
+            &app,
+            Update,
+            "spawn_random_projectiles_system"
+        ));
     }
 }

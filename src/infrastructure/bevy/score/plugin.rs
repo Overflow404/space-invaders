@@ -31,7 +31,7 @@ mod tests {
     use bevy::prelude::AssetApp;
     use bevy::text::Font;
     use bevy::MinimalPlugins;
-    use bevy_test::{contains_component, get_resource, get_update_systems};
+    use bevy_test::{contains_component, get_resource_or_fail, get_update_systems};
 
     fn setup() -> App {
         let mut app = App::new();
@@ -50,7 +50,7 @@ mod tests {
     fn should_initialize_the_plugin() {
         let mut app = setup();
 
-        let score_resource = get_resource::<ScoreResource>(&mut app);
+        let score_resource = get_resource_or_fail::<ScoreResource>(&mut app);
         assert_eq!(score_resource.0.get_current(), 0);
         assert_eq!(get_update_systems(&app).count(), 2);
 

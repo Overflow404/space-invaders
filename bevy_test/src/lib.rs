@@ -8,6 +8,7 @@ use bevy::text::Font;
 use bevy::MinimalPlugins;
 use std::error::Error;
 use std::time::Duration;
+use bevy::ecs::schedule::{ScheduleLabel};
 
 pub fn get_update_systems(app: &App) -> impl Iterator {
     app.get_schedule(Update)
@@ -23,7 +24,15 @@ pub fn get_startup_systems(app: &App) -> impl Iterator {
         .expect("No systems found")
 }
 
-pub fn get_resource<T: Resource>(app: &mut App) -> &T {
+pub fn contains_system(app: &App, schedule: impl ScheduleLabel, name: &str) -> bool {
+    app.get_schedule(schedule)
+        .expect("Startup schedule not found")
+        .systems()
+        .expect("No systems found")
+        .any(|system| system.1.name().shortname().to_string() == name)
+}
+
+pub fn get_resource_or_fail<T: Resource>(app: &mut App) -> &T {
     app.world()
         .get_resource::<T>()
         .expect("Resource not found in world")

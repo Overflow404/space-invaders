@@ -61,21 +61,16 @@ mod tests {
     use bevy::asset::{AssetPlugin, AssetServer, Handle};
     use bevy::image::Image;
     use bevy::prelude::*;
-    use bevy_test::get_resource;
-
-    fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-            .init_asset::<Image>();
-
-        app
-    }
+    use bevy_test::{get_resource_or_fail, minimal_app};
 
     #[test]
     fn should_create_the_enemy_bundle() {
-        let mut app = setup();
+        let mut app = minimal_app();
 
-        let asset_server = get_resource::<AssetServer>(&mut app);
+        app.add_plugins(AssetPlugin::default())
+            .init_asset::<Image>();
+
+        let asset_server = get_resource_or_fail::<AssetServer>(&mut app);
 
         let expected_id = 99;
         let expected_x = 100.0;

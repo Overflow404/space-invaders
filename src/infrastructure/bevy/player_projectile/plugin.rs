@@ -33,7 +33,7 @@ mod tests {
     use super::*;
     use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
     use bevy::MinimalPlugins;
-    use bevy_test::{contains_message, get_resource, get_update_systems};
+    use bevy_test::{contains_message, get_resource_or_fail, get_update_systems};
 
     fn setup() -> App {
         let mut app = App::new();
@@ -49,7 +49,7 @@ mod tests {
     fn should_initialize_the_plugin() {
         let mut app = setup();
 
-        let timer = get_resource::<PlayerProjectileMovementTimerResource>(&mut app);
+        let timer = get_resource_or_fail::<PlayerProjectileMovementTimerResource>(&mut app);
 
         assert_eq!(timer.0.duration().as_millis(), 1200);
         assert_eq!(timer.0.mode(), TimerMode::Once);

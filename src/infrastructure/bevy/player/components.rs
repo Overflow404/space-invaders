@@ -35,7 +35,7 @@ mod tests {
     use bevy::asset::{AssetPlugin, AssetServer, Handle};
     use bevy::image::Image;
     use bevy::prelude::*;
-    use bevy_test::get_resource;
+    use bevy_test::get_resource_or_fail;
 
     fn setup() -> App {
         let mut app = App::new();
@@ -49,7 +49,7 @@ mod tests {
     fn should_create_the_bundle() {
         let mut app = setup();
 
-        let asset_server = get_resource::<AssetServer>(&mut app);
+        let asset_server = get_resource_or_fail::<AssetServer>(&mut app);
 
         let bundle = PlayerBundle::new(asset_server);
 

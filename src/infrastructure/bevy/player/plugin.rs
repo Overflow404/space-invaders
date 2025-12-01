@@ -35,7 +35,7 @@ mod tests {
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode};
     use bevy::MinimalPlugins;
-    use bevy_test::{count_components, get_resource, get_update_systems};
+    use bevy_test::{count_components, get_resource_or_fail, get_update_systems};
 
     fn setup() -> App {
         let mut app = App::new();
@@ -55,7 +55,7 @@ mod tests {
     fn should_initialize_the_plugin() {
         let mut app = setup();
 
-        let player_resource = get_resource::<PlayerResource>(&mut app);
+        let player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
         assert!(!player_resource.0.is_firing());
 
         assert_eq!(get_update_systems(&app).count(), 5);

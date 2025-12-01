@@ -1,4 +1,4 @@
-use crate::domain::enemy_formation::{COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
+use crate::domain::enemy_formation::{FormationStatus, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
 use crate::infrastructure::bevy::enemy::components::{
     EnemyBundle, EnemyComponent, EnemyKilledMessage,
 };
@@ -45,7 +45,9 @@ pub fn enemy_formation_lifecycle_system(
     mut enemy_formation_res: ResMut<EnemyFormationResource>,
     mut timer: ResMut<EnemyFormationMovementTimer>,
 ) {
-    if enemy_formation_res.0.has_breached() || enemy_formation_res.0.is_annihilated() {
+    if enemy_formation_res.0.get_status() == FormationStatus::Breached
+        || enemy_formation_res.0.get_status() == FormationStatus::Annihilated
+    {
         timer.0.finish();
     } else if timer.0.tick(time.delta()).just_finished() {
         enemy_formation_res.0.advance();
@@ -106,6 +108,7 @@ fn spawn_enemies(
 }
 
 pub fn collisions_system(
+    mut enemy_formation_resource: ResMut<EnemyFormationResource>,
     player_projectile_query: Query<(Entity, &Transform, &Sprite), With<PlayerProjectileComponent>>,
     enemy_query: Query<(Entity, &Transform, &Sprite, &EnemyComponent), With<EnemyComponent>>,
     mut despawn_enemy_message_writer: MessageWriter<EnemyKilledMessage>,
@@ -128,6 +131,7 @@ pub fn collisions_system(
                     > enemy_transform.translation.y - enemy_size.y / 2.0;
 
             if collision {
+                enemy_formation_resource.0.kill(enemy_component.id);
                 despawn_enemy_message_writer.write(EnemyKilledMessage::new(
                     enemy_entity,
                     enemy_component.id,
@@ -168,15 +172,6 @@ pub fn spawn_random_projectiles_system(
         })
 }
 
-pub fn sync_enemy_formation_state_system(
-    mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
-    mut enemy_formation_resource: ResMut<EnemyFormationResource>,
-) {
-    for enemy in enemy_killed_message.read() {
-        enemy_formation_resource.0.kill(enemy.enemy_id);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::domain::enemy_formation::EnemyFormation;
@@ -192,12 +187,12 @@ mod tests {
     use bevy::image::Image;
     use bevy::prelude::{IntoScheduleConfigs, Transform, With};
     use bevy::text::Font;
-    use bevy::MinimalPlugins;
+    use bevy_test::minimal_app;
     use std::error::Error;
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        let mut app = minimal_app();
+        app.add_plugins(AssetPlugin::default())
             .add_systems(Startup, spawn_enemy_formation_system.chain())
             .add_systems(Update, enemy_formation_movement_system.chain())
             .insert_resource(EnemyFormationResource(EnemyFormation::new()))
@@ -221,27 +216,29 @@ mod tests {
         Ok((translation.x, translation.y))
     }
 
-    #[test]
-    fn should_display_the_enemy_formation() -> Result<(), Box<dyn Error>> {
-        let mut app = setup();
+    #[cfg(test)]
+    pub mod spawn_enemy_formation_system {
+        use crate::infrastructure::bevy::enemy::components::EnemyComponent;
+        use crate::infrastructure::bevy::enemy_formation::systems::tests::setup;
+        use std::error::Error;
 
-        let enemy_count = bevy_test::count_components::<EnemyComponent>(&mut app);
+        #[test]
+        fn should_spawn_initial_batch_of_enemies() -> Result<(), Box<dyn Error>> {
+            let mut app = setup();
 
-        assert_eq!(enemy_count, 55);
-        Ok(())
+            let enemy_count = bevy_test::count_components::<EnemyComponent>(&mut app);
+
+            assert_eq!(enemy_count, 55);
+            Ok(())
+        }
     }
 
     #[cfg(test)]
     mod movement_system {
-        use crate::infrastructure::bevy::enemy_formation::resources::{
-            EnemyFormationMovementTimer, EnemyFormationResource,
-        };
-        use crate::infrastructure::bevy::enemy_formation::systems::enemy_formation_lifecycle_system;
+        use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationResource;
         use crate::infrastructure::bevy::enemy_formation::systems::tests::{
             get_first_enemy_coordinates, setup,
         };
-        use bevy::prelude::{Time, Timer, TimerMode};
-        use bevy_test::{advance_time_by_seconds, run_system};
         use std::error::Error;
 
         #[test]
@@ -339,6 +336,18 @@ mod tests {
             assert!(first_enemy_y_t1 < first_enemy_y_t0);
             Ok(())
         }
+    }
+
+    #[cfg(test)]
+    mod lifecycle_system {
+        use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationMovementTimer;
+        use crate::infrastructure::bevy::enemy_formation::systems::enemy_formation_lifecycle_system;
+        use crate::infrastructure::bevy::enemy_formation::systems::tests::{
+            get_first_enemy_coordinates, setup,
+        };
+        use bevy::prelude::{Time, Timer, TimerMode};
+        use bevy_test::{advance_time_by_seconds, run_system};
+        use std::error::Error;
 
         #[test]
         fn should_advance_on_tick() -> Result<(), Box<dyn Error>> {
@@ -369,6 +378,7 @@ mod tests {
     mod collision_system {
         use crate::domain::score::Score;
         use crate::infrastructure::bevy::enemy::components::{EnemyComponent, EnemyKilledMessage};
+        use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationResource;
         use crate::infrastructure::bevy::enemy_formation::systems::collisions_system;
         use crate::infrastructure::bevy::enemy_formation::systems::tests::setup;
         use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileBundle;
@@ -402,6 +412,22 @@ mod tests {
             app.update();
 
             verify_message_fired::<EnemyKilledMessage>(&mut app)?;
+
+            let post_update_enemy_formation_resource = app
+                .world_mut()
+                .get_resource::<EnemyFormationResource>()
+                .unwrap_or_else(|| panic!("EnemyFormationResource missing"));
+
+            assert!(
+                post_update_enemy_formation_resource
+                    .0
+                    .get_enemies()
+                    .get(0)
+                    .unwrap()
+                    .get(0)
+                    .unwrap()
+                    .is_none()
+            );
 
             Ok(())
         }
@@ -443,51 +469,6 @@ mod tests {
             assert!(projectiles > 0);
 
             Ok(())
-        }
-    }
-
-    #[cfg(test)]
-    mod domain_sync_system {
-        use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
-        use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationResource;
-        use crate::infrastructure::bevy::enemy_formation::systems::sync_enemy_formation_state_system;
-        use crate::infrastructure::bevy::enemy_formation::systems::tests::setup;
-        use bevy::app::Update;
-        use bevy_test::{send_message, spawn_dummy_entity};
-
-        #[test]
-        fn should_sync_domain() {
-            let mut app = setup();
-            app.add_message::<EnemyKilledMessage>();
-            app.add_systems(Update, sync_enemy_formation_state_system);
-
-            let killed_enemy_id = 2;
-
-            let enemy_entity = spawn_dummy_entity(&mut app);
-            let player_projectile_entity = spawn_dummy_entity(&mut app);
-
-            send_message(
-                &mut app,
-                EnemyKilledMessage::new(enemy_entity, killed_enemy_id, player_projectile_entity),
-            );
-
-            app.update();
-
-            let post_update_enemy_formation_resource = app
-                .world_mut()
-                .get_resource::<EnemyFormationResource>()
-                .unwrap_or_else(|| panic!("EnemyFormationResource missing"));
-
-            assert!(
-                post_update_enemy_formation_resource
-                    .0
-                    .get_enemies()
-                    .get(0)
-                    .unwrap()
-                    .get(1)
-                    .unwrap()
-                    .is_none()
-            );
         }
     }
 }

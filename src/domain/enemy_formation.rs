@@ -119,12 +119,8 @@ impl EnemyFormation {
         self.position
     }
 
-    pub fn has_breached(&self) -> bool {
-        self.status == FormationStatus::Breached
-    }
-
-    pub fn is_annihilated(&self) -> bool {
-        self.status == FormationStatus::Annihilated
+    pub fn get_status(&self) -> FormationStatus {
+        self.status
     }
 
     pub fn kill(&mut self, id: usize) {

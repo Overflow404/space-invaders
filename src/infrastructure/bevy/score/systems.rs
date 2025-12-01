@@ -134,7 +134,7 @@ mod tests {
     #[cfg(test)]
     mod handle_enemy_killed_system {
         use super::*;
-        use bevy_test::{get_resource, send_message, spawn_dummy_entity};
+        use bevy_test::{get_resource_or_fail, send_message, spawn_dummy_entity};
 
         #[test]
         fn should_increase_score_when_enemy_is_killed() {
@@ -152,7 +152,7 @@ mod tests {
 
             app.update();
 
-            let post_update_score_resource = get_resource::<ScoreResource>(&mut app);
+            let post_update_score_resource = get_resource_or_fail::<ScoreResource>(&mut app);
 
             assert_eq!(post_update_score_resource.0.get_current(), 10);
         }
