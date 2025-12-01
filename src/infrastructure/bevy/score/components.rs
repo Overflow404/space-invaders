@@ -1,3 +1,8 @@
+use crate::infrastructure::bevy::score::resources::{
+    SCORE_CONTAINER_HEIGHT, SCORE_CONTAINER_WIDTH, SCORE_LABEL_FONT_COLOR, SCORE_LABEL_FONT_SIZE,
+    SCORE_LABEL_HEIGHT, SCORE_LABEL_MARGIN_RIGHT, SCORE_LABEL_TEXT, SCORE_VALUE_FONT_COLOR,
+    SCORE_VALUE_FONT_SIZE, SCORE_VALUE_HEIGHT,
+};
 use bevy::asset::Handle;
 use bevy::color::Color;
 use bevy::prelude::{default, Bundle, Component};
@@ -12,16 +17,16 @@ pub struct ScoreValueComponent;
 pub struct ScoreLabelComponent;
 
 #[derive(Bundle)]
-pub struct ScoreViewBundle {
+pub struct ScoreContainerBundle {
     pub node: Node,
 }
 
-impl ScoreViewBundle {
+impl ScoreContainerBundle {
     pub fn new() -> Self {
         Self {
             node: Node {
-                width: Val::Percent(50.0),
-                height: Val::Px(50.0),
+                width: SCORE_CONTAINER_WIDTH,
+                height: SCORE_CONTAINER_HEIGHT,
                 flex_direction: FlexDirection::Row,
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -31,7 +36,7 @@ impl ScoreViewBundle {
     }
 }
 
-impl Default for ScoreViewBundle {
+impl Default for ScoreContainerBundle {
     fn default() -> Self {
         Self::new()
     }
@@ -51,17 +56,17 @@ impl ScoreLabelBundle {
         Self {
             score_label: ScoreLabelComponent,
             node: Node {
-                height: Val::Percent(50.0),
-                margin: UiRect::right(Val::Px(20.0)),
+                height: SCORE_LABEL_HEIGHT,
+                margin: UiRect::right(SCORE_LABEL_MARGIN_RIGHT),
                 ..default()
             },
-            text: Text::new("Score: "),
+            text: Text::new(SCORE_LABEL_TEXT),
             text_font: TextFont {
                 font,
-                font_size: 14.0,
+                font_size: SCORE_LABEL_FONT_SIZE,
                 ..default()
             },
-            text_color: TextColor(Color::WHITE),
+            text_color: TextColor(SCORE_LABEL_FONT_COLOR),
         }
     }
 }
@@ -80,16 +85,16 @@ impl ScoreValueBundle {
         Self {
             score_value: ScoreValueComponent,
             node: Node {
-                height: Val::Percent(50.0),
+                height: SCORE_VALUE_HEIGHT,
                 ..default()
             },
             text: Text::new(score.to_string()),
             text_font: TextFont {
                 font,
-                font_size: 14.0,
+                font_size: SCORE_VALUE_FONT_SIZE,
                 ..default()
             },
-            text_color: TextColor(Color::srgb_u8(51, 255, 3)),
+            text_color: TextColor(SCORE_VALUE_FONT_COLOR),
         }
     }
 }
@@ -98,12 +103,13 @@ impl ScoreValueBundle {
 mod tests {
     use super::*;
     use bevy::app::App;
-    use bevy::asset::{AssetApp, AssetPlugin, AssetServer};
+    use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::MinimalPlugins;
+    use bevy_test::dummy_font;
 
     #[test]
-    fn should_create_score_view_bundle() {
-        let bundle = ScoreViewBundle::new();
+    fn should_create_score_score_container_bundle() {
+        let bundle = ScoreContainerBundle::new();
 
         assert_eq!(bundle.node.width, Val::Percent(50.0));
         assert_eq!(bundle.node.height, Val::Px(50.0));
@@ -118,8 +124,7 @@ mod tests {
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
             .init_asset::<Font>();
 
-        let asset_server = app.world().resource::<AssetServer>().clone();
-        let font = asset_server.load("test.ttf");
+        let font = dummy_font(&app);
 
         let bundle = ScoreLabelBundle::new(font.clone());
 
@@ -140,8 +145,7 @@ mod tests {
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
             .init_asset::<Font>();
 
-        let asset_server = app.world().resource::<AssetServer>().clone();
-        let font = asset_server.load("test.ttf");
+        let font = dummy_font(&app);
         let score = 42;
 
         let bundle = ScoreValueBundle::new(font.clone(), score);

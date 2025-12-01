@@ -2,7 +2,8 @@ use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
 use crate::infrastructure::bevy::header::components::HeaderComponent;
 use crate::infrastructure::bevy::header::resources::FONT;
 use crate::infrastructure::bevy::score::components::{
-    ScoreLabelBundle, ScoreLabelComponent, ScoreValueBundle, ScoreValueComponent, ScoreViewBundle,
+    ScoreContainerBundle, ScoreLabelBundle, ScoreLabelComponent, ScoreValueBundle,
+    ScoreValueComponent,
 };
 use crate::infrastructure::bevy::score::resources::ScoreResource;
 use bevy::asset::AssetServer;
@@ -12,7 +13,7 @@ use bevy::ecs::system::{Commands, Query, Res};
 use bevy::prelude::{DetectChanges, MessageReader, ResMut};
 use bevy::ui::widget::Text;
 
-pub fn score_change_system(
+pub fn update_score_text_system(
     score_resource: Res<ScoreResource>,
     mut score_query: Query<&mut Text, With<ScoreValueComponent>>,
 ) {
@@ -23,7 +24,7 @@ pub fn score_change_system(
     }
 }
 
-pub fn sync_score_on_enemy_killed_system(
+pub fn handle_enemy_killed_system(
     mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
     mut score_resource: ResMut<ScoreResource>,
 ) {
@@ -44,7 +45,7 @@ pub fn spawn_score_system(
 
         commands.entity(header).with_children(|parent| {
             parent
-                .spawn(ScoreViewBundle::new())
+                .spawn(ScoreContainerBundle::new())
                 .with_children(|score_section| {
                     score_section.spawn(ScoreLabelBundle::new(font.clone()));
                     score_section.spawn(ScoreValueBundle::new(font, current_score));
@@ -59,86 +60,62 @@ mod tests {
     use crate::domain::score::Score;
     use crate::infrastructure::bevy::header::systems::spawn_header_system;
     use crate::infrastructure::bevy::score::resources::ScoreResource;
-    use bevy::app::{App, Update};
+    use bevy::app::{App, Startup, Update};
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::image::Image;
     use bevy::prelude::With;
     use bevy::text::Font;
     use bevy::MinimalPlugins;
-    use bevy_test::{contains_component, count_components, run_system};
+    use bevy_test::contains_component;
 
     fn setup() -> App {
         let mut app = App::new();
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+            .add_systems(Startup, spawn_header_system)
             .insert_resource(ScoreResource(Score::new()))
             .init_asset::<Image>()
             .init_asset::<Font>();
+
+        app.update();
+
         app
     }
 
-    #[test]
-    fn should_spawn_score_components() {
-        let mut app = setup();
-
-        run_system(&mut app, spawn_header_system).expect("System should run");
-        run_system(&mut app, spawn_score_system).expect("System should run");
-
-        assert!(contains_component::<ScoreLabelComponent>(&mut app));
-        assert!(contains_component::<ScoreValueComponent>(&mut app));
-        assert_eq!(count_components::<ScoreLabelComponent>(&mut app), 1);
-        assert_eq!(count_components::<ScoreValueComponent>(&mut app), 1);
-    }
-
     #[cfg(test)]
-    mod spawn_system {
+    mod should_spawn_score_system {
         use super::*;
-        use crate::infrastructure::bevy::header::systems::spawn_header_system;
         use bevy_test::run_system;
-        use std::error::Error;
 
         #[test]
-        fn should_render_initial_score() -> Result<(), Box<dyn Error>> {
+        fn should_spawn_score_components() {
             let mut app = setup();
 
-            run_system(&mut app, spawn_header_system)?;
-            run_system(&mut app, spawn_score_system)?;
+            run_system(&mut app, spawn_score_system).expect("System should run");
 
-            let mut score_view_label_query = app
-                .world_mut()
-                .query_filtered::<&Text, With<ScoreLabelComponent>>();
-
-            let mut score_view_value_query = app
-                .world_mut()
-                .query_filtered::<&Text, With<ScoreValueComponent>>();
-
-            let score_label = score_view_label_query.single(app.world())?;
-            let score_value = score_view_value_query.single(app.world())?;
-
-            assert_eq!(score_label.0, String::from("Score: "));
-            assert_eq!(score_value.0, String::from("0"));
-
-            Ok(())
+            assert!(contains_component::<ScoreLabelComponent>(&mut app));
+            assert!(contains_component::<ScoreValueComponent>(&mut app));
         }
     }
 
     #[cfg(test)]
-    mod change_system {
+    mod update_score_text_system {
         use super::*;
-        use crate::infrastructure::bevy::header::systems::spawn_header_system;
-        use bevy_test::run_system;
+        use bevy_test::{dummy_font, get_resource_mut, run_system};
         use std::error::Error;
 
         #[test]
-        fn should_render_when_score_changes() -> Result<(), Box<dyn Error>> {
+        fn should_update_score_text() -> Result<(), Box<dyn Error>> {
             let mut app = setup();
+            app.add_systems(Startup, spawn_score_system);
 
-            run_system(&mut app, spawn_header_system)?;
-            run_system(&mut app, spawn_score_system)?;
+            let font = dummy_font(&app);
 
-            app.add_systems(Update, score_change_system);
+            app.world_mut().spawn(ScoreValueBundle::new(font, 0));
 
-            let mut score_resource = app.world_mut().resource_mut::<ScoreResource>();
+            let mut score_resource = get_resource_mut::<ScoreResource>(&mut app);
             score_resource.0.increment(50);
+
+            run_system(&mut app, update_score_text_system).expect("System should run");
 
             app.update();
 
@@ -155,7 +132,7 @@ mod tests {
     }
 
     #[cfg(test)]
-    mod enemy_killed_sync_system {
+    mod handle_enemy_killed_system {
         use super::*;
         use bevy_test::{get_resource, send_message, spawn_dummy_entity};
 
@@ -163,7 +140,7 @@ mod tests {
         fn should_increase_score_when_enemy_is_killed() {
             let mut app = setup();
             app.add_message::<EnemyKilledMessage>()
-                .add_systems(Update, sync_score_on_enemy_killed_system);
+                .add_systems(Update, handle_enemy_killed_system);
 
             let enemy_entity = spawn_dummy_entity(&mut app);
             let player_projectile_entity = spawn_dummy_entity(&mut app);

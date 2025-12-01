@@ -38,6 +38,7 @@ impl Plugin for SpaceInvadersPlugin {
                 PlayerPlugin,
                 FooterPlugin,
                 EnemyProjectilePlugin,
+                PlayerProjectilePlugin,
             ));
     }
 }
@@ -47,7 +48,6 @@ impl Renderer for BevyRenderer {
         App::new()
             .add_plugins(Self::window_plugin_config())
             .add_plugins(SpaceInvadersPlugin)
-            .add_plugins(PlayerProjectilePlugin)
             .run();
     }
 }
@@ -104,7 +104,6 @@ mod tests {
             .add_plugins(AssetPlugin::default())
             .add_plugins(WindowPlugin::default())
             .add_plugins(SpaceInvadersPlugin)
-            .add_plugins(PlayerProjectilePlugin)
             .init_asset::<Image>()
             .init_asset::<Font>()
             .init_resource::<ButtonInput<KeyCode>>()

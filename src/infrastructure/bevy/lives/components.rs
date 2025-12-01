@@ -1,4 +1,4 @@
-use bevy::asset::{AssetServer, Handle};
+use bevy::asset::Handle;
 use bevy::color::Color;
 use bevy::prelude::{default, Bundle, Component};
 use bevy::text::{Font, TextColor, TextFont};
@@ -69,6 +69,7 @@ mod tests {
     use bevy::app::App;
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::MinimalPlugins;
+    use bevy_test::dummy_font;
 
     #[test]
     fn should_create_lives_view_bundle() {
@@ -89,8 +90,7 @@ mod tests {
         app.add_plugins((MinimalPlugins, AssetPlugin::default()))
             .init_asset::<Font>();
 
-        let asset_server = app.world().resource::<AssetServer>().clone();
-        let font = asset_server.load("test.ttf");
+        let font = dummy_font(&app);
 
         let bundle = LivesLabelBundle::new(font.clone());
 

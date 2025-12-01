@@ -2,7 +2,7 @@ use crate::domain::score::Score;
 use crate::infrastructure::bevy::header::systems::spawn_header_system;
 use crate::infrastructure::bevy::score::resources::ScoreResource;
 use crate::infrastructure::bevy::score::systems::{
-    score_change_system, spawn_score_system, sync_score_on_enemy_killed_system,
+    handle_enemy_killed_system, spawn_score_system, update_score_text_system,
 };
 use bevy::app::{App, Plugin, Startup, Update};
 use bevy::prelude::IntoScheduleConfigs;
@@ -15,7 +15,7 @@ impl Plugin for ScorePlugin {
             .add_systems(Startup, spawn_score_system.after(spawn_header_system))
             .add_systems(
                 Update,
-                (score_change_system, sync_score_on_enemy_killed_system),
+                (update_score_text_system, handle_enemy_killed_system),
             );
     }
 }

@@ -1,8 +1,11 @@
-use bevy::app::{App, Update, Startup};
+use bevy::app::{App, Startup, Update};
+use bevy::asset::{AssetServer, Handle};
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::{
-    Component, Entity, IntoSystem, Message, MessageReader, Messages, Resource, Time,
+    Component, Entity, IntoSystem, Message, MessageReader, Messages, Mut, Resource, Time,
 };
+use bevy::text::Font;
+use bevy::MinimalPlugins;
 use std::error::Error;
 use std::time::Duration;
 
@@ -20,10 +23,15 @@ pub fn get_startup_systems(app: &App) -> impl Iterator {
         .expect("No systems found")
 }
 
-
 pub fn get_resource<T: Resource>(app: &mut App) -> &T {
     app.world()
         .get_resource::<T>()
+        .expect("Resource not found in world")
+}
+
+pub fn get_resource_mut<T: Resource>(app: &mut App) -> Mut<'_, T> {
+    app.world_mut()
+        .get_resource_mut::<T>()
         .expect("Resource not found in world")
 }
 
@@ -86,4 +94,15 @@ where
     app.world_mut()
         .run_system_once(system)
         .map_err(|e| format!("Cannot run system: {e}"))
+}
+
+pub fn dummy_font(app: &App) -> Handle<Font> {
+    let asset_server = app.world().resource::<AssetServer>().clone();
+    asset_server.load("test.ttf")
+}
+
+pub fn minimal_app() -> App {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins);
+    app
 }

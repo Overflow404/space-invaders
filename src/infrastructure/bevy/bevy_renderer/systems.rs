@@ -19,29 +19,19 @@ pub fn window_scale_system(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use bevy::prelude::*;
-
-    fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins)
-            .add_systems(Startup, camera_system)
-            .add_systems(Update, window_scale_system)
-            .init_resource::<UiScale>();
-
-        app.update();
-        app
-    }
 
     #[cfg(test)]
     mod camera_system {
         use crate::infrastructure::bevy::bevy_renderer::components::CameraComponent;
-        use crate::infrastructure::bevy::bevy_renderer::systems::tests::setup;
-        use bevy_test::contains_component;
+        use crate::infrastructure::bevy::bevy_renderer::systems::camera_system;
+        use bevy::app::Startup;
+        use bevy_test::{contains_component, minimal_app};
 
         #[test]
         fn camera_system_should_spawn_camera() {
-            let mut app = setup();
+            let mut app = minimal_app();
+
+            app.add_systems(Startup, camera_system).update();
 
             assert!(contains_component::<CameraComponent>(&mut app));
         }
@@ -50,13 +40,18 @@ mod tests {
     #[cfg(test)]
     mod window_scale_system {
         use crate::infrastructure::bevy::bevy_renderer::resources::{WINDOW_HEIGHT, WINDOW_WIDTH};
-        use crate::infrastructure::bevy::bevy_renderer::systems::tests::setup;
+        use crate::infrastructure::bevy::bevy_renderer::systems::window_scale_system;
+        use bevy::app::Startup;
         use bevy::prelude::{default, UiScale, Window};
         use bevy::window::WindowResolution;
+        use bevy_test::minimal_app;
 
         #[test]
-        fn window_scale_system_should_scale_uniformly() {
-            let mut app = setup();
+        fn window_scale_system_should_scale_up() {
+            let mut app = minimal_app();
+
+            app.add_systems(Startup, window_scale_system)
+                .init_resource::<UiScale>();
 
             app.world_mut().spawn(Window {
                 resolution: WindowResolution::new(
@@ -74,7 +69,10 @@ mod tests {
 
         #[test]
         fn window_scale_system_should_use_minimum_scale() {
-            let mut app = setup();
+            let mut app = minimal_app();
+
+            app.add_systems(Startup, window_scale_system)
+                .init_resource::<UiScale>();
 
             app.world_mut().spawn(Window {
                 resolution: WindowResolution::new(2400, 1050),
@@ -89,7 +87,10 @@ mod tests {
 
         #[test]
         fn window_scale_system_should_scale_down() {
-            let mut app = setup();
+            let mut app = minimal_app();
+
+            app.add_systems(Startup, window_scale_system)
+                .init_resource::<UiScale>();
 
             app.world_mut().spawn(Window {
                 resolution: WindowResolution::new(600, 350),
