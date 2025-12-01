@@ -185,13 +185,11 @@ mod tests {
     use bevy::image::Image;
     use bevy::prelude::{AssetApp, Transform, With};
     use bevy::text::Font;
-    use bevy::time::TimePlugin;
-    use bevy::MinimalPlugins;
+    use bevy_test::minimal_app;
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins.build().disable::<TimePlugin>())
-            .add_plugins(AssetPlugin::default())
+        let mut app = minimal_app(true);
+        app.add_plugins(AssetPlugin::default())
             .insert_resource(EnemyFormationResource(EnemyFormation::new()))
             .insert_resource(PlayerResource(Player::new()))
             .init_asset::<Image>()

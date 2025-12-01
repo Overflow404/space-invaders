@@ -16,16 +16,13 @@ mod tests {
     use super::*;
     use crate::infrastructure::bevy::enemy_projectile::components::EnemyProjectileComponent;
     use crate::infrastructure::bevy::enemy_projectile::resources::ENEMY_PROJECTILE_SPEED;
-    use bevy::app::{App, PluginGroup, Update};
+    use bevy::app::{App, Update};
     use bevy::prelude::{Time, Transform};
-    use bevy::time::TimePlugin;
-    use bevy::MinimalPlugins;
-    use bevy_test::{advance_time_by_seconds, get_component_or_fail};
+    use bevy_test::{advance_time_by_seconds, get_component_or_fail, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins.build().disable::<TimePlugin>())
-            .init_resource::<Time>();
+        let mut app = minimal_app(true);
+        app.init_resource::<Time>();
         app
     }
 

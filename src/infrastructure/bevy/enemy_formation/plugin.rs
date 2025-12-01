@@ -54,7 +54,7 @@ mod tests {
 
     #[test]
     fn should_initialize_the_plugin() {
-        let mut app = minimal_app();
+        let mut app = minimal_app(false);
 
         app.add_plugins(AssetPlugin::default())
             .add_plugins(EnemyFormationPlugin)

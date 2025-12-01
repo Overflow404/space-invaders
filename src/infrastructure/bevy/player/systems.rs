@@ -90,22 +90,19 @@ mod tests {
         PlayerProjectileComponent, PlayerProjectileExpiredMessage,
     };
     use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
-    use bevy::app::{App, PluginGroup, Update};
+    use bevy::app::{App, Update};
     use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode, Time, Timer, TimerMode};
-    use bevy::time::TimePlugin;
-    use bevy::MinimalPlugins;
     use bevy_test::{
         advance_time_by_seconds, contains_component, count_components, get_resource_mut,
-        get_resource_or_fail, run_system, send_message, spawn_dummy_entity,
+        get_resource_or_fail, minimal_app, run_system, send_message, spawn_dummy_entity,
     };
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins.build().disable::<TimePlugin>())
-            .add_plugins(AssetPlugin::default())
+        let mut app = minimal_app(true);
+        app.add_plugins(AssetPlugin::default())
             .init_resource::<ButtonInput<KeyCode>>()
             .init_resource::<Time>()
             .init_asset::<Image>()

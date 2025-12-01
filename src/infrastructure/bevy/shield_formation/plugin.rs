@@ -21,7 +21,7 @@ mod tests {
     use bevy_test::{contains_system, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
-        let mut app = minimal_app();
+        let mut app = minimal_app(false);
         app.add_plugins(AssetPlugin::default())
             .add_plugins(ShieldFormationPlugin)
             .init_asset::<Image>();

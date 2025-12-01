@@ -32,16 +32,15 @@ impl ShieldBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::app::App;
     use bevy::asset::{AssetApp, AssetPlugin, AssetServer, Handle};
     use bevy::image::Image;
     use bevy::math::Vec2;
-    use bevy::MinimalPlugins;
+    use bevy_test::minimal_app;
 
     #[test]
     fn should_create_the_shield_bundle() {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        let mut app = minimal_app(false);
+        app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();
 
         let asset_server = app.world().resource::<AssetServer>();

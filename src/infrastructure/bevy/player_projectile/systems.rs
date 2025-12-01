@@ -70,19 +70,16 @@ mod tests {
     use crate::infrastructure::bevy::player_projectile::resources::{
         PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_SPEED,
     };
-    use bevy::app::{App, PluginGroup, Update};
+    use bevy::app::{App, Update};
     use bevy::prelude::{Time, Timer, TimerMode, Transform};
-    use bevy::time::TimePlugin;
-    use bevy::MinimalPlugins;
     use bevy_test::{
         advance_time_by_seconds, component_despawned, contains_entity, get_component_or_fail,
-        send_message, spawn_dummy_entity, verify_message_fired,
+        minimal_app, send_message, spawn_dummy_entity, verify_message_fired,
     };
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins.build().disable::<TimePlugin>())
-            .init_resource::<Time>()
+        let mut app = minimal_app(true);
+        app.init_resource::<Time>()
             .add_message::<PlayerProjectileExpiredMessage>()
             .add_message::<EnemyKilledMessage>()
             .insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(

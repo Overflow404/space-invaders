@@ -66,10 +66,8 @@ impl LivesLabelBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::app::App;
     use bevy::asset::{AssetApp, AssetPlugin};
-    use bevy::MinimalPlugins;
-    use bevy_test::dummy_font;
+    use bevy_test::{dummy_font, minimal_app};
 
     #[test]
     fn should_create_lives_view_bundle() {
@@ -86,9 +84,8 @@ mod tests {
 
     #[test]
     fn should_create_lives_label_bundle() {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-            .init_asset::<Font>();
+        let mut app = minimal_app(false);
+        app.add_plugins(AssetPlugin::default()).init_asset::<Font>();
 
         let font = dummy_font(&app);
 

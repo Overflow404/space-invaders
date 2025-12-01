@@ -31,7 +31,7 @@ mod tests {
 
         #[test]
         fn should_spawn_camera() {
-            let mut app = minimal_app();
+            let mut app = minimal_app(false);
             app.add_systems(Startup, camera_system);
             app.update();
 
@@ -47,7 +47,7 @@ mod tests {
 
         #[test]
         fn should_scale_up() {
-            let mut app = minimal_app();
+            let mut app = minimal_app(false);
             app.init_resource::<UiScale>();
             app.add_systems(Startup, window_scale_system);
 
@@ -67,7 +67,7 @@ mod tests {
 
         #[test]
         fn should_use_minimum_scale() {
-            let mut app = minimal_app();
+            let mut app = minimal_app(false);
             app.init_resource::<UiScale>();
             app.add_systems(Startup, window_scale_system);
 
@@ -84,7 +84,7 @@ mod tests {
 
         #[test]
         fn should_scale_down() {
-            let mut app = minimal_app();
+            let mut app = minimal_app(false);
             app.init_resource::<UiScale>();
             app.add_systems(Startup, window_scale_system);
 

@@ -13,7 +13,7 @@ mod tests {
     use bevy_test::{contains_component, count_components, minimal_app};
 
     fn setup() -> App {
-        minimal_app()
+        minimal_app(false)
     }
 
     #[cfg(test)]

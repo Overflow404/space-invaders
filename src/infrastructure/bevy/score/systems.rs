@@ -70,7 +70,7 @@ mod tests {
     };
 
     fn setup() -> App {
-        let mut app = minimal_app();
+        let mut app = minimal_app(false);
         app.add_plugins(AssetPlugin::default())
             .insert_resource(ScoreResource(Score::new()))
             .init_asset::<Image>()

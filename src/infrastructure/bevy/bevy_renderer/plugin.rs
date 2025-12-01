@@ -96,12 +96,11 @@ mod tests {
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode};
     use bevy::text::Font;
-    use bevy_test::{contains_component, count_components};
+    use bevy_test::{contains_component, count_components, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins)
-            .add_plugins(AssetPlugin::default())
+        let mut app = minimal_app(false);
+        app.add_plugins(AssetPlugin::default())
             .add_plugins(WindowPlugin::default())
             .add_plugins(SpaceInvadersPlugin)
             .init_asset::<Image>()

@@ -38,7 +38,7 @@ mod tests {
     use bevy_test::{count_components, minimal_app};
 
     fn setup() -> App {
-        let mut app = minimal_app();
+        let mut app = minimal_app(false);
         app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();
         app

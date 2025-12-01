@@ -59,7 +59,7 @@ mod tests {
     use bevy_test::{contains_component, minimal_app};
 
     fn setup() -> App {
-        let mut app = minimal_app();
+        let mut app = minimal_app(false);
         app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>()
             .init_asset::<Font>()

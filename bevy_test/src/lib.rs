@@ -1,4 +1,4 @@
-use bevy::app::{App, Startup, Update};
+use bevy::app::{App, PluginGroup, Startup, Update};
 use bevy::asset::{AssetServer, Handle};
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::ecs::system::RunSystemOnce;
@@ -6,6 +6,7 @@ use bevy::prelude::{
     Component, Entity, IntoSystem, Message, MessageReader, Messages, Mut, Resource, Time,
 };
 use bevy::text::Font;
+use bevy::time::TimePlugin;
 use bevy::MinimalPlugins;
 use std::error::Error;
 use std::time::Duration;
@@ -110,8 +111,11 @@ pub fn dummy_font(app: &App) -> Handle<Font> {
     asset_server.load("test.ttf")
 }
 
-pub fn minimal_app() -> App {
+pub fn minimal_app(disable_time_plugin: bool) -> App {
     let mut app = App::new();
-    app.add_plugins(MinimalPlugins);
+    app.add_plugins(match disable_time_plugin {
+        true => MinimalPlugins.build().disable::<TimePlugin>(),
+        false => MinimalPlugins.build(),
+    });
     app
 }

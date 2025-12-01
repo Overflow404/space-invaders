@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn should_create_the_enemy_bundle() {
-        let mut app = minimal_app();
+        let mut app = minimal_app(false);
 
         app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();

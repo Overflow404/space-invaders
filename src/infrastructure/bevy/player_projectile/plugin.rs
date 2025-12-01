@@ -35,7 +35,7 @@ mod tests {
     use bevy_test::{contains_message, contains_system, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
-        let mut app = minimal_app();
+        let mut app = minimal_app(false);
 
         app.add_plugins(PlayerProjectilePlugin)
             .add_message::<EnemyKilledMessage>();

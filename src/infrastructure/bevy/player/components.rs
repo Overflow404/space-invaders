@@ -35,11 +35,11 @@ mod tests {
     use bevy::asset::{AssetPlugin, AssetServer, Handle};
     use bevy::image::Image;
     use bevy::prelude::*;
-    use bevy_test::get_resource_or_fail;
+    use bevy_test::{get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        let mut app = minimal_app(false);
+        app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();
 
         app
