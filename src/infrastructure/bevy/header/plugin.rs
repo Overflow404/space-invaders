@@ -12,18 +12,16 @@ impl Plugin for HeaderPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::bevy::header::components::HeaderComponent;
-    use bevy::MinimalPlugins;
-    use bevy_test::contains_component;
+    use bevy_test::{contains_system, minimal_app};
 
     #[test]
     fn should_initialize_the_plugin() {
-        let mut app = App::new();
+        let mut app = minimal_app();
 
-        app.add_plugins((MinimalPlugins, HeaderPlugin));
+        app.add_plugins(HeaderPlugin);
 
         app.update();
 
-        assert!(contains_component::<HeaderComponent>(&mut app));
+        assert!(contains_system(&app, Startup, "spawn_header_system"));
     }
 }

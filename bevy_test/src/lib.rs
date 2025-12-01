@@ -44,7 +44,7 @@ pub fn get_resource_mut<T: Resource>(app: &mut App) -> Mut<'_, T> {
         .expect("Resource not found in world")
 }
 
-pub fn get_component<T: Component>(app: &mut App, entity: Entity) -> &T {
+pub fn get_component_or_fail<T: Component>(app: &mut App, entity: Entity) -> &T {
     app.world()
         .get::<T>(entity)
         .expect("Cannot get component for entity")

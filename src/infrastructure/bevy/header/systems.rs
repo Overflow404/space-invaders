@@ -13,7 +13,7 @@ mod tests {
     use bevy::color::Color;
     use bevy::prelude::UiRect;
     use bevy::ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, Val};
-    use bevy_test::{contains_component, get_component, minimal_app};
+    use bevy_test::{contains_component, get_component_or_fail, minimal_app};
 
     fn setup() -> App {
         minimal_app()
@@ -46,7 +46,7 @@ mod tests {
                 .expect("Header not found")
                 .0;
 
-            let node = get_component::<Node>(&mut app, entity);
+            let node = get_component_or_fail::<Node>(&mut app, entity);
             assert_eq!(node.width, Val::Percent(100.0));
             assert_eq!(node.height, Val::Px(HEADER_HEIGHT));
             assert_eq!(node.flex_direction, FlexDirection::Row);
@@ -54,7 +54,7 @@ mod tests {
             assert_eq!(node.align_items, AlignItems::Center);
             assert_eq!(node.padding, UiRect::horizontal(Val::Px(20.0)));
 
-            let background_color = get_component::<BackgroundColor>(&mut app, entity);
+            let background_color = get_component_or_fail::<BackgroundColor>(&mut app, entity);
             assert_eq!(background_color.0, Color::srgb_u8(0, 0, 0));
         }
     }

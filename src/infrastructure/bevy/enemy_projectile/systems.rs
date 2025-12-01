@@ -20,7 +20,7 @@ mod tests {
     use bevy::prelude::{Time, Transform};
     use bevy::time::TimePlugin;
     use bevy::MinimalPlugins;
-    use bevy_test::{advance_time_by_seconds, get_component};
+    use bevy_test::{advance_time_by_seconds, get_component_or_fail};
 
     fn setup() -> App {
         let mut app = App::new();
@@ -48,7 +48,7 @@ mod tests {
 
             app.update();
 
-            let transform = get_component::<Transform>(&mut app, projectile);
+            let transform = get_component_or_fail::<Transform>(&mut app, projectile);
             let expected_y = -ENEMY_PROJECTILE_SPEED * delta_time;
 
             assert!((transform.translation.y - expected_y).abs() < 0.001);
@@ -71,7 +71,7 @@ mod tests {
 
             app.update();
 
-            let transform = get_component::<Transform>(&mut app, projectile);
+            let transform = get_component_or_fail::<Transform>(&mut app, projectile);
             assert_eq!(transform.translation.y, 100.0);
         }
     }

@@ -42,7 +42,7 @@ mod tests {
     use bevy::image::Image;
     use bevy::utils::default;
     use bevy::window::WindowResolution;
-    use bevy_test::{count_components, get_component, minimal_app};
+    use bevy_test::{count_components, get_component_or_fail, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app();
@@ -104,7 +104,7 @@ mod tests {
                 .single(app.world())
                 .expect("GameAreaComponent not found");
 
-            let sprite = get_component::<Sprite>(&mut app, entity);
+            let sprite = get_component_or_fail::<Sprite>(&mut app, entity);
             assert_eq!(sprite.custom_size, Some(Vec2::new(new_width, new_height)));
         }
     }

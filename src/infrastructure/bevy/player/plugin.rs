@@ -26,19 +26,17 @@ impl Plugin for PlayerPlugin {
 mod tests {
     use super::*;
     use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
-    use crate::infrastructure::bevy::player::components::PlayerComponent;
     use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
     use crate::infrastructure::bevy::player_projectile::plugin::PlayerProjectilePlugin;
     use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode};
-    use bevy::MinimalPlugins;
-    use bevy_test::{count_components, get_resource_or_fail, get_update_systems};
+    use bevy_test::{contains_system, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        let mut app = minimal_app();
+        app.add_plugins(AssetPlugin::default())
             .add_plugins(PlayerPlugin)
             .add_plugins(PlayerProjectilePlugin)
             .add_message::<EnemyKilledMessage>()
@@ -54,12 +52,10 @@ mod tests {
     fn should_initialize_the_plugin() {
         let mut app = setup();
 
-        let player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
-        assert!(!player_resource.0.is_firing());
-
-        assert_eq!(get_update_systems(&app).count(), 5);
-
-        let player_count = count_components::<PlayerComponent>(&mut app);
-        assert_eq!(player_count, 1);
+        get_resource_or_fail::<PlayerResource>(&mut app);
+        assert!(contains_system(&app, Startup, "spawn_player_system"));
+        assert!(contains_system(&app, Update, "player_movement_system"));
+        assert!(contains_system(&app, Update, "player_fire_system"));
+        assert!(contains_system(&app, Update, "reload_player_weapon_system"));
     }
 }

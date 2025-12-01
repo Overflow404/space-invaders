@@ -30,12 +30,11 @@ mod tests {
     use bevy::image::Image;
     use bevy::prelude::AssetApp;
     use bevy::text::Font;
-    use bevy::MinimalPlugins;
-    use bevy_test::{contains_component, get_resource_or_fail, get_update_systems};
+    use bevy_test::{contains_component, contains_system, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        let mut app = minimal_app();
+        app.add_plugins(AssetPlugin::default())
             .add_plugins(HeaderPlugin)
             .add_plugins(ScorePlugin)
             .add_message::<EnemyKilledMessage>()
@@ -52,8 +51,11 @@ mod tests {
 
         let score_resource = get_resource_or_fail::<ScoreResource>(&mut app);
         assert_eq!(score_resource.0.get_current(), 0);
-        assert_eq!(get_update_systems(&app).count(), 2);
 
-        contains_component::<ScoreValueComponent>(&mut app);
+        assert!(contains_system(&app, Startup, "spawn_score_system"));
+        assert!(contains_system(&app, Update, "update_score_text_system"));
+        assert!(contains_system(&app, Update, "handle_enemy_killed_system"));
+
+        assert!(contains_component::<ScoreValueComponent>(&mut app));
     }
 }

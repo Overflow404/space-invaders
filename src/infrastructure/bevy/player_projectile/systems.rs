@@ -75,8 +75,8 @@ mod tests {
     use bevy::time::TimePlugin;
     use bevy::MinimalPlugins;
     use bevy_test::{
-        advance_time_by_seconds, component_despawned, contains_entity, get_component, send_message,
-        spawn_dummy_entity, verify_message_fired,
+        advance_time_by_seconds, component_despawned, contains_entity, get_component_or_fail,
+        send_message, spawn_dummy_entity, verify_message_fired,
     };
 
     fn setup() -> App {
@@ -172,7 +172,7 @@ mod tests {
             advance_time_by_seconds(&mut app, delta_time);
             app.update();
 
-            let transform = get_component::<Transform>(&mut app, projectile);
+            let transform = get_component_or_fail::<Transform>(&mut app, projectile);
             let expected_y = PLAYER_PROJECTILE_SPEED * delta_time;
 
             assert!((transform.translation.y - expected_y).abs() < 0.001);
