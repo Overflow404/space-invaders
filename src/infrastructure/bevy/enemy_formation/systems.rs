@@ -380,7 +380,7 @@ mod tests {
         use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileBundle;
         use crate::infrastructure::bevy::score::resources::ScoreResource;
         use bevy::app::Update;
-        use bevy_test::verify_message_fired;
+        use bevy_test::did_message_fire;
 
         #[test]
         fn should_trigger_an_event_when_killing_an_enemy() {
@@ -407,7 +407,7 @@ mod tests {
 
             app.update();
 
-            assert!(verify_message_fired::<EnemyKilledMessage>(&mut app).is_ok());
+            assert!(did_message_fire::<EnemyKilledMessage>(&mut app));
 
             let post_update_enemy_formation_resource = app
                 .world_mut()
