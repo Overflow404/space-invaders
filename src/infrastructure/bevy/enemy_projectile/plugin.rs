@@ -12,17 +12,20 @@ impl Plugin for EnemyProjectilePlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::MinimalPlugins;
-    use bevy_test::get_update_systems;
+    use bevy_test::{contains_system, minimal_app};
 
     #[test]
     fn should_initialize_the_plugin() {
-        let mut app = App::new();
+        let mut app = minimal_app();
 
-        app.add_plugins((MinimalPlugins, EnemyProjectilePlugin));
+        app.add_plugins(EnemyProjectilePlugin);
 
         app.update();
 
-        assert_eq!(get_update_systems(&app).count(), 1);
+        assert!(contains_system(
+            &app,
+            Update,
+            "enemy_projectile_movement_system"
+        ));
     }
 }

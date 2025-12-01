@@ -61,53 +61,48 @@ pub fn player_projectile_lifecycle_system(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
-    use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
-    use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
-    use crate::infrastructure::bevy::player_projectile::systems::player_projectile_lifecycle_system;
-    use bevy::app::{App, Update};
-    use bevy::prelude::{Time, Timer, TimerMode};
+    use crate::infrastructure::bevy::game_area::resources::GAME_AREA_HEIGHT;
+    use crate::infrastructure::bevy::player_projectile::components::{
+        PlayerProjectileComponent, PlayerProjectileExpiredMessage,
+    };
+    use crate::infrastructure::bevy::player_projectile::resources::{
+        PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_SPEED,
+    };
+    use bevy::app::{App, PluginGroup, Update};
+    use bevy::prelude::{Time, Timer, TimerMode, Transform};
+    use bevy::time::TimePlugin;
     use bevy::MinimalPlugins;
+    use bevy_test::{
+        advance_time_by_seconds, component_despawned, contains_entity, get_component, send_message,
+        spawn_dummy_entity, verify_message_fired,
+    };
 
     fn setup() -> App {
         let mut app = App::new();
-        app.add_plugins(MinimalPlugins)
+        app.add_plugins(MinimalPlugins.build().disable::<TimePlugin>())
             .init_resource::<Time>()
             .add_message::<PlayerProjectileExpiredMessage>()
             .add_message::<EnemyKilledMessage>()
             .insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
                 1.0,
                 TimerMode::Once,
-            )))
-            .add_systems(Update, player_projectile_lifecycle_system);
-
+            )));
         app
     }
 
     #[cfg(test)]
-    mod lifecycle_system {
-        use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
-        use crate::infrastructure::bevy::game_area::resources::GAME_AREA_HEIGHT;
-        use crate::infrastructure::bevy::player_projectile::components::{
-            PlayerProjectileComponent, PlayerProjectileExpiredMessage,
-        };
-        use crate::infrastructure::bevy::player_projectile::systems::player_projectile_lifecycle_system;
-        use crate::infrastructure::bevy::player_projectile::systems::tests::setup;
-        use bevy::prelude::Transform;
-        use bevy_test::{
-            advance_time_by_seconds, component_despawned, contains_entity, run_system,
-            send_message, spawn_dummy_entity, verify_message_fired,
-        };
-        use std::error::Error;
+    mod player_projectile_lifecycle_system {
+        use super::*;
 
         #[test]
         fn should_despawn_when_enemy_is_killed() {
             let mut app = setup();
+            app.add_systems(Update, player_projectile_lifecycle_system);
 
             let enemy_entity = spawn_dummy_entity(&mut app);
             let player_projectile_entity = spawn_dummy_entity(&mut app);
-
-            assert!(contains_entity(&app, player_projectile_entity));
 
             send_message(
                 &mut app,
@@ -120,8 +115,9 @@ mod tests {
         }
 
         #[test]
-        fn should_notify_and_despawn_when_out_of_bounds() -> Result<(), Box<dyn Error>> {
+        fn should_notify_and_despawn_when_out_of_bounds() {
             let mut app = setup();
+            app.add_systems(Update, player_projectile_lifecycle_system);
 
             let out_of_bounds_y = (GAME_AREA_HEIGHT / 2.0) + 10.0;
 
@@ -131,47 +127,38 @@ mod tests {
             ));
 
             advance_time_by_seconds(&mut app, 0.01);
-
             app.update();
 
             assert!(component_despawned::<PlayerProjectileComponent>(&mut app));
-            verify_message_fired::<PlayerProjectileExpiredMessage>(&mut app)?;
-
-            Ok(())
+            assert!(verify_message_fired::<PlayerProjectileExpiredMessage>(&mut app).is_ok());
         }
 
         #[test]
-        fn should_notify_and_despawn_when_timer_finishes() -> Result<(), Box<dyn Error>> {
+        fn should_notify_and_despawn_when_timer_finishes() {
             let mut app = setup();
+            app.add_systems(Update, player_projectile_lifecycle_system);
 
             app.world_mut().spawn((
                 PlayerProjectileComponent,
                 Transform::from_xyz(0.0, 0.0, 0.0),
             ));
 
-            advance_time_by_seconds(&mut app, 2f32);
-
-            run_system(&mut app, player_projectile_lifecycle_system)?;
+            advance_time_by_seconds(&mut app, 2.0);
+            app.update();
 
             assert!(component_despawned::<PlayerProjectileComponent>(&mut app));
-            verify_message_fired::<PlayerProjectileExpiredMessage>(&mut app)?;
-
-            Ok(())
+            assert!(verify_message_fired::<PlayerProjectileExpiredMessage>(&mut app).is_ok());
         }
     }
 
     #[cfg(test)]
-    mod movement_system {
-        use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileComponent;
-        use crate::infrastructure::bevy::player_projectile::systems::player_projectile_movement_system;
-        use crate::infrastructure::bevy::player_projectile::systems::tests::setup;
-        use bevy::prelude::Transform;
-        use bevy_test::{advance_time_by_seconds, get_component, run_system};
-        use std::error::Error;
+    mod player_projectile_movement_system {
+        use super::*;
 
         #[test]
-        fn should_move_projectile_upwards() -> Result<(), Box<dyn Error>> {
+        fn should_move_projectile_upwards() {
             let mut app = setup();
+            app.add_systems(Update, player_projectile_movement_system);
 
             let projectile = app
                 .world_mut()
@@ -181,18 +168,14 @@ mod tests {
                 ))
                 .id();
 
-            advance_time_by_seconds(&mut app, 0.1);
-
-            run_system(&mut app, player_projectile_movement_system)?;
+            let delta_time = 0.1;
+            advance_time_by_seconds(&mut app, delta_time);
+            app.update();
 
             let transform = get_component::<Transform>(&mut app, projectile);
+            let expected_y = PLAYER_PROJECTILE_SPEED * delta_time;
 
-            assert!(
-                (transform.translation.y - 50.0).abs() < 0.001,
-                "Projectile should have moved up by 50 units"
-            );
-
-            Ok(())
+            assert!((transform.translation.y - expected_y).abs() < 0.001);
         }
     }
 }

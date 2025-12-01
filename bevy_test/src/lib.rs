@@ -1,5 +1,6 @@
 use bevy::app::{App, Startup, Update};
 use bevy::asset::{AssetServer, Handle};
+use bevy::ecs::schedule::ScheduleLabel;
 use bevy::ecs::system::RunSystemOnce;
 use bevy::prelude::{
     Component, Entity, IntoSystem, Message, MessageReader, Messages, Mut, Resource, Time,
@@ -8,7 +9,6 @@ use bevy::text::Font;
 use bevy::MinimalPlugins;
 use std::error::Error;
 use std::time::Duration;
-use bevy::ecs::schedule::{ScheduleLabel};
 
 pub fn get_update_systems(app: &App) -> impl Iterator {
     app.get_schedule(Update)

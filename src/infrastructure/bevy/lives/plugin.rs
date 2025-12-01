@@ -18,17 +18,15 @@ impl Plugin for LivesPlugin {
 mod tests {
     use super::*;
     use crate::infrastructure::bevy::header::plugin::HeaderPlugin;
-    use crate::infrastructure::bevy::lives::components::LivesComponent;
     use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::prelude::AssetApp;
     use bevy::text::Font;
-    use bevy::MinimalPlugins;
-    use bevy_test::{count_components, get_resource_or_fail};
+    use bevy_test::{contains_system, get_resource_or_fail, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        let mut app = minimal_app();
+        app.add_plugins(AssetPlugin::default())
             .add_plugins(HeaderPlugin)
             .add_plugins(LivesPlugin)
             .init_asset::<Image>()
@@ -42,9 +40,9 @@ mod tests {
     fn should_initialize_the_plugin() {
         let mut app = setup();
 
-        let lives_resource = get_resource_or_fail::<LivesResource>(&mut app);
-        assert_eq!(lives_resource.0.get_current(), 3);
+        get_resource_or_fail::<LivesResource>(&mut app);
 
-        assert!(count_components::<LivesComponent>(&mut app) <= 1);
+        assert!(contains_system(&app, Startup, "spawn_header_system"));
+        assert!(contains_system(&app, Startup, "spawn_lives_system"));
     }
 }

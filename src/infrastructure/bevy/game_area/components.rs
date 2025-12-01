@@ -1,6 +1,5 @@
 use crate::infrastructure::bevy::game_area::resources::BACKGROUND_IMAGE;
-use bevy::asset::{AssetServer, Handle};
-use bevy::image::Image;
+use bevy::asset::AssetServer;
 use bevy::math::Vec2;
 use bevy::prelude::{default, Bundle, Component, Sprite, Transform};
 
@@ -32,7 +31,8 @@ impl GameAreaBundle {
 mod tests {
     use super::*;
     use bevy::app::App;
-    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::asset::{AssetApp, AssetPlugin, Handle};
+    use bevy::image::Image;
     use bevy::MinimalPlugins;
 
     #[test]

@@ -7,25 +7,27 @@ pub fn spawn_footer_system(mut commands: Commands) {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::infrastructure::bevy::footer::components::FooterComponent;
-    use crate::infrastructure::bevy::footer::systems::spawn_footer_system;
     use bevy::app::{App, Startup};
-    use bevy::MinimalPlugins;
-    use bevy_test::contains_component;
+    use bevy_test::{contains_component, count_components, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins)
-            .add_systems(Startup, spawn_footer_system);
-
-        app.update();
-        app
+        minimal_app()
     }
 
-    #[test]
-    fn should_display_the_footer() {
-        let mut app = setup();
+    #[cfg(test)]
+    mod spawn_footer_system {
+        use super::*;
 
-        assert!(contains_component::<FooterComponent>(&mut app));
+        #[test]
+        fn should_spawn_footer() {
+            let mut app = setup();
+            app.add_systems(Startup, spawn_footer_system);
+            app.update();
+
+            assert!(contains_component::<FooterComponent>(&mut app));
+            assert_eq!(count_components::<FooterComponent>(&mut app), 1);
+        }
     }
 }

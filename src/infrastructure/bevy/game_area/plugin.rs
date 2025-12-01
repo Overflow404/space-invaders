@@ -21,12 +21,11 @@ mod tests {
     use bevy::prelude::{AssetApp, Window};
     use bevy::utils::default;
     use bevy::window::WindowResolution;
-    use bevy::MinimalPlugins;
-    use bevy_test::contains_component;
+    use bevy_test::{contains_component, contains_system, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        let mut app = minimal_app();
+        app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();
 
         app.world_mut().spawn(Window {
@@ -44,5 +43,6 @@ mod tests {
     fn should_initialize_the_game_area_plugin() {
         let mut app = setup();
         assert!(contains_component::<GameAreaComponent>(&mut app));
+        assert!(contains_system(&app, PostUpdate, "resize_game_area_system"));
     }
 }

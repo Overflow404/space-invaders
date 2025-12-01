@@ -13,54 +13,66 @@ pub fn enemy_projectile_movement_system(
 
 #[cfg(test)]
 mod tests {
-    use crate::infrastructure::bevy::enemy::resources::EnemyProjectileMovementTimer;
-    use bevy::app::App;
-    use bevy::prelude::{Time, Timer, TimerMode};
+    use super::*;
+    use crate::infrastructure::bevy::enemy_projectile::components::EnemyProjectileComponent;
+    use crate::infrastructure::bevy::enemy_projectile::resources::ENEMY_PROJECTILE_SPEED;
+    use bevy::app::{App, PluginGroup, Update};
+    use bevy::prelude::{Time, Transform};
+    use bevy::time::TimePlugin;
     use bevy::MinimalPlugins;
+    use bevy_test::{advance_time_by_seconds, get_component};
 
     fn setup() -> App {
         let mut app = App::new();
-        app.add_plugins(MinimalPlugins);
-
-        app.init_resource::<Time>();
-        app.insert_resource(EnemyProjectileMovementTimer(Timer::from_seconds(
-            1.0,
-            TimerMode::Once,
-        )));
-
+        app.add_plugins(MinimalPlugins.build().disable::<TimePlugin>())
+            .init_resource::<Time>();
         app
     }
 
     #[cfg(test)]
-    mod movement_system {
-        use crate::infrastructure::bevy::enemy_projectile::components::EnemyProjectileComponent;
-        use crate::infrastructure::bevy::enemy_projectile::systems::enemy_projectile_movement_system;
-        use crate::infrastructure::bevy::enemy_projectile::systems::tests::setup;
-        use bevy::prelude::Transform;
-        use bevy_test::{advance_time_by_seconds, get_component, run_system};
-        use std::error::Error;
+    mod enemy_projectile_movement_system {
+        use super::*;
 
         #[test]
-        fn should_advance_projectiles_downwards() -> Result<(), Box<dyn Error>> {
+        fn should_move_projectiles_downwards() {
             let mut app = setup();
+            app.add_systems(Update, enemy_projectile_movement_system);
 
             let projectile = app
                 .world_mut()
                 .spawn((EnemyProjectileComponent, Transform::from_xyz(0.0, 0.0, 0.0)))
                 .id();
 
-            advance_time_by_seconds(&mut app, 0.1);
+            let delta_time = 0.1;
+            advance_time_by_seconds(&mut app, delta_time);
 
-            run_system(&mut app, enemy_projectile_movement_system)?;
+            app.update();
 
             let transform = get_component::<Transform>(&mut app, projectile);
+            let expected_y = -ENEMY_PROJECTILE_SPEED * delta_time;
 
-            assert!(
-                (transform.translation.y.abs() - 50.0).abs() < 0.001,
-                "Projectile should have moved down by 50 units"
-            );
+            assert!((transform.translation.y - expected_y).abs() < 0.001);
+        }
 
-            Ok(())
+        #[test]
+        fn should_not_move_when_time_delta_is_zero() {
+            let mut app = setup();
+            app.add_systems(Update, enemy_projectile_movement_system);
+
+            let projectile = app
+                .world_mut()
+                .spawn((
+                    EnemyProjectileComponent,
+                    Transform::from_xyz(0.0, 100.0, 0.0),
+                ))
+                .id();
+
+            advance_time_by_seconds(&mut app, 0.0);
+
+            app.update();
+
+            let transform = get_component::<Transform>(&mut app, projectile);
+            assert_eq!(transform.translation.y, 100.0);
         }
     }
 }

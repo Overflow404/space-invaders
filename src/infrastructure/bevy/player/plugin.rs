@@ -1,8 +1,7 @@
 use crate::domain::player::Player;
 use crate::infrastructure::bevy::player::resources::PlayerResource;
 use crate::infrastructure::bevy::player::systems::{
-    player_fire_system, player_movement_system, spawn_player_system,
-    sync_player_firing_state_system,
+    player_fire_system, player_movement_system, reload_player_weapon_system, spawn_player_system,
 };
 use bevy::app::{App, Plugin, Startup, Update};
 
@@ -17,7 +16,7 @@ impl Plugin for PlayerPlugin {
                 (
                     player_movement_system,
                     player_fire_system,
-                    sync_player_firing_state_system,
+                    reload_player_weapon_system,
                 ),
             );
     }

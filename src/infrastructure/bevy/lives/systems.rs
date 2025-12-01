@@ -1,8 +1,6 @@
 use crate::infrastructure::bevy::header::components::HeaderComponent;
 use crate::infrastructure::bevy::header::resources::FONT;
-use crate::infrastructure::bevy::lives::components::{
-    LivesComponent, LivesLabelBundle, LivesViewBundle,
-};
+use crate::infrastructure::bevy::lives::components::{LivesLabelBundle, LivesViewBundle};
 use crate::infrastructure::bevy::lives::resources::LivesResource;
 use crate::infrastructure::bevy::player::resources::PLAYER_IMAGE;
 use bevy::asset::AssetServer;
@@ -50,67 +48,65 @@ pub fn spawn_lives_system(
 mod tests {
     use super::*;
     use crate::domain::lives::Lives;
-    use crate::infrastructure::bevy::header::systems::spawn_header_system;
+    use crate::infrastructure::bevy::header::components::HeaderComponent;
+    use crate::infrastructure::bevy::lives::components::LivesComponent;
     use crate::infrastructure::bevy::lives::resources::LivesResource;
-    use bevy::app::App;
-    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::app::{App, Startup};
+    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
-    use bevy::prelude::{Children, ImageNode};
+    use bevy::prelude::{AssetApp, Children, ImageNode, Text};
     use bevy::text::Font;
-    use bevy::ui::widget::Text;
-    use bevy::MinimalPlugins;
-    use bevy_test::{contains_component, count_components, run_system};
+    use bevy_test::{contains_component, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-            .insert_resource(LivesResource(Lives::new()))
+        let mut app = minimal_app();
+        app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>()
-            .init_asset::<Font>();
+            .init_asset::<Font>()
+            .insert_resource(LivesResource(Lives::new()));
+
+        app.world_mut().spawn(HeaderComponent);
         app
     }
 
-    #[test]
-    fn should_spawn_lives_component() {
-        let mut app = setup();
+    #[cfg(test)]
+    mod spawn_lives_system {
+        use super::*;
 
-        run_system(&mut app, spawn_header_system).expect("System should run");
-        run_system(&mut app, spawn_lives_system).expect("System should run");
+        #[test]
+        fn should_spawn_lives_component() {
+            let mut app = setup();
+            app.add_systems(Startup, spawn_lives_system);
+            app.update();
 
-        assert!(contains_component::<LivesComponent>(&mut app));
-        assert_eq!(count_components::<LivesComponent>(&mut app), 1);
-    }
+            assert!(contains_component::<LivesComponent>(&mut app));
+        }
 
-    #[test]
-    fn should_display_the_lives_with_label_and_icons() -> Result<(), Box<dyn std::error::Error>> {
-        let mut app = setup();
+        #[test]
+        fn should_display_the_lives_with_label_and_icons() {
+            let mut app = setup();
+            app.add_systems(Startup, spawn_lives_system);
+            app.update();
 
-        run_system(&mut app, spawn_header_system)?;
-        run_system(&mut app, spawn_lives_system)?;
+            let mut query = app.world_mut().query::<(&LivesComponent, &Children)>();
+            let (_, children) = query.single(app.world()).unwrap();
 
-        let mut query = app.world_mut().query::<(&LivesComponent, &Children)>();
-        let (_, children) = query.single(app.world())?;
+            let label_count = children
+                .iter()
+                .filter(|child| {
+                    app.world()
+                        .get::<Text>(**child)
+                        .map_or(false, |text| text.0 == "LIVES")
+                })
+                .count();
 
-        let label = children
-            .iter()
-            .filter(|child| {
-                if let Some(text) = app.world().get::<Text>(**child)
-                    && text.0 == "LIVES"
-                {
-                    return true;
-                }
-                false
-            })
-            .collect::<Vec<&Entity>>();
+            let icon_count = children
+                .iter()
+                .filter(|child| app.world().get::<ImageNode>(**child).is_some())
+                .count();
 
-        let lives = children
-            .iter()
-            .filter(|child| app.world().get::<ImageNode>(**child).is_some())
-            .collect::<Vec<&Entity>>();
-
-        assert!(!label.is_empty());
-        assert_eq!(lives.len(), 3);
-
-        Ok(())
+            assert_eq!(label_count, 1);
+            assert_eq!(icon_count, 3);
+        }
     }
 }

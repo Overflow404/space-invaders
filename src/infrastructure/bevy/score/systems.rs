@@ -2,8 +2,7 @@ use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
 use crate::infrastructure::bevy::header::components::HeaderComponent;
 use crate::infrastructure::bevy::header::resources::FONT;
 use crate::infrastructure::bevy::score::components::{
-    ScoreContainerBundle, ScoreLabelBundle, ScoreLabelComponent, ScoreValueBundle,
-    ScoreValueComponent,
+    ScoreContainerBundle, ScoreLabelBundle, ScoreValueBundle, ScoreValueComponent,
 };
 use crate::infrastructure::bevy::score::resources::ScoreResource;
 use bevy::asset::AssetServer;
@@ -58,39 +57,39 @@ pub fn spawn_score_system(
 mod tests {
     use super::*;
     use crate::domain::score::Score;
-    use crate::infrastructure::bevy::header::systems::spawn_header_system;
+    use crate::infrastructure::bevy::header::components::HeaderComponent;
     use crate::infrastructure::bevy::score::resources::ScoreResource;
     use bevy::app::{App, Startup, Update};
-    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
-    use bevy::prelude::With;
+    use bevy::prelude::{AssetApp, Text};
     use bevy::text::Font;
-    use bevy::MinimalPlugins;
-    use bevy_test::contains_component;
+    use bevy_test::{
+        contains_component, get_resource_mut, get_resource_or_fail, minimal_app, send_message,
+        spawn_dummy_entity,
+    };
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
-            .add_systems(Startup, spawn_header_system)
+        let mut app = minimal_app();
+        app.add_plugins(AssetPlugin::default())
             .insert_resource(ScoreResource(Score::new()))
             .init_asset::<Image>()
             .init_asset::<Font>();
-
-        app.update();
-
         app
     }
 
     #[cfg(test)]
-    mod should_spawn_score_system {
+    mod spawn_score_system {
         use super::*;
-        use bevy_test::run_system;
+        use crate::infrastructure::bevy::score::components::ScoreLabelComponent;
 
         #[test]
         fn should_spawn_score_components() {
             let mut app = setup();
+            app.world_mut().spawn(HeaderComponent);
+            app.add_systems(Startup, spawn_score_system);
 
-            run_system(&mut app, spawn_score_system).expect("System should run");
+            app.update();
 
             assert!(contains_component::<ScoreLabelComponent>(&mut app));
             assert!(contains_component::<ScoreValueComponent>(&mut app));
@@ -100,41 +99,31 @@ mod tests {
     #[cfg(test)]
     mod update_score_text_system {
         use super::*;
-        use bevy_test::{dummy_font, get_resource_mut, run_system};
-        use std::error::Error;
 
         #[test]
-        fn should_update_score_text() -> Result<(), Box<dyn Error>> {
+        fn should_update_score_text() {
             let mut app = setup();
-            app.add_systems(Startup, spawn_score_system);
+            app.add_systems(Update, update_score_text_system);
 
-            let font = dummy_font(&app);
+            app.world_mut().spawn((ScoreValueComponent, Text::new("0")));
 
-            app.world_mut().spawn(ScoreValueBundle::new(font, 0));
-
-            let mut score_resource = get_resource_mut::<ScoreResource>(&mut app);
-            score_resource.0.increment(50);
-
-            run_system(&mut app, update_score_text_system).expect("System should run");
+            get_resource_mut::<ScoreResource>(&mut app).0.increment(50);
 
             app.update();
 
-            let mut score_view_value_query = app
+            let text = app
                 .world_mut()
-                .query_filtered::<&Text, With<ScoreValueComponent>>();
+                .query_filtered::<&Text, With<ScoreValueComponent>>()
+                .single(app.world())
+                .expect("Score value text not found");
 
-            let score_value = score_view_value_query.single(app.world())?;
-
-            assert_eq!(score_value.0, String::from("50"));
-
-            Ok(())
+            assert_eq!(text.0, "50");
         }
     }
 
     #[cfg(test)]
     mod handle_enemy_killed_system {
         use super::*;
-        use bevy_test::{get_resource_or_fail, send_message, spawn_dummy_entity};
 
         #[test]
         fn should_increase_score_when_enemy_is_killed() {
@@ -142,19 +131,13 @@ mod tests {
             app.add_message::<EnemyKilledMessage>()
                 .add_systems(Update, handle_enemy_killed_system);
 
-            let enemy_entity = spawn_dummy_entity(&mut app);
-            let player_projectile_entity = spawn_dummy_entity(&mut app);
-
-            send_message(
-                &mut app,
-                EnemyKilledMessage::new(enemy_entity, 1, player_projectile_entity),
-            );
+            let dummy = spawn_dummy_entity(&mut app);
+            send_message(&mut app, EnemyKilledMessage::new(dummy, 1, dummy));
 
             app.update();
 
-            let post_update_score_resource = get_resource_or_fail::<ScoreResource>(&mut app);
-
-            assert_eq!(post_update_score_resource.0.get_current(), 10);
+            let res = get_resource_or_fail::<ScoreResource>(&mut app);
+            assert_eq!(res.0.get_current(), 10);
         }
     }
 }

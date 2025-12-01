@@ -4,11 +4,10 @@ use crate::infrastructure::bevy::score::resources::{
     SCORE_VALUE_FONT_SIZE, SCORE_VALUE_HEIGHT,
 };
 use bevy::asset::Handle;
-use bevy::color::Color;
 use bevy::prelude::{default, Bundle, Component};
 use bevy::text::{Font, TextColor, TextFont};
 use bevy::ui::widget::Text;
-use bevy::ui::{AlignItems, FlexDirection, JustifyContent, Node, UiRect, Val};
+use bevy::ui::{AlignItems, FlexDirection, JustifyContent, Node, UiRect};
 
 #[derive(Component, PartialEq, Debug)]
 pub struct ScoreValueComponent;
@@ -104,6 +103,8 @@ mod tests {
     use super::*;
     use bevy::app::App;
     use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::color::Color;
+    use bevy::ui::Val;
     use bevy::MinimalPlugins;
     use bevy_test::dummy_font;
 

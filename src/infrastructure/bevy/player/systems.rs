@@ -59,69 +59,70 @@ pub fn player_fire_system(
     }
 }
 
-pub fn sync_player_firing_state_system(
+pub fn reload_player_weapon_system(
     mut enemy_killed_message: MessageReader<EnemyKilledMessage>,
     mut projectile_expired_message: MessageReader<PlayerProjectileExpiredMessage>,
     mut player_resource: ResMut<PlayerResource>,
 ) {
-    let mut should_reset_player = false;
+    let mut should_reload = false;
 
-    for _ in enemy_killed_message.read() {
-        should_reset_player = true;
+    if enemy_killed_message.read().count() > 0 {
+        should_reload = true;
     }
 
-    for _ in projectile_expired_message.read() {
-        should_reset_player = true;
+    if projectile_expired_message.read().count() > 0 {
+        should_reload = true;
     }
 
-    if should_reset_player {
+    if should_reload {
         player_resource.0.toggle_fire();
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::domain::player::Player;
+    use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
     use crate::infrastructure::bevy::player::components::PlayerComponent;
     use crate::infrastructure::bevy::player::resources::PlayerResource;
-    use crate::infrastructure::bevy::player::systems::{
-        player_fire_system, player_movement_system, spawn_player_system,
-        sync_player_firing_state_system,
+    use crate::infrastructure::bevy::player_projectile::components::{
+        PlayerProjectileComponent, PlayerProjectileExpiredMessage,
     };
     use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
-    use bevy::app::{App, Update};
+    use bevy::app::{App, PluginGroup, Update};
     use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode, Time, Timer, TimerMode};
+    use bevy::time::TimePlugin;
     use bevy::MinimalPlugins;
+    use bevy_test::{
+        advance_time_by_seconds, contains_component, count_components, get_resource_mut,
+        get_resource_or_fail, run_system, send_message, spawn_dummy_entity,
+    };
 
     fn setup() -> App {
         let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        app.add_plugins(MinimalPlugins.build().disable::<TimePlugin>())
+            .add_plugins(AssetPlugin::default())
             .init_resource::<ButtonInput<KeyCode>>()
             .init_resource::<Time>()
+            .init_asset::<Image>()
             .insert_resource(PlayerResource(Player::new()))
             .insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
                 1.0,
                 TimerMode::Once,
-            )))
-            .init_asset::<Image>()
-            .add_systems(Update, (player_movement_system, player_fire_system));
-
-        app.update();
+            )));
         app
     }
 
     #[cfg(test)]
-    mod spawn_system {
+    mod spawn_player_system {
         use super::*;
-        use bevy::prelude::Transform;
-        use bevy_test::{contains_component, count_components, run_system};
-        use std::error::Error;
 
         #[test]
-        fn should_spawn_player() -> Result<(), Box<dyn Error>> {
+        fn should_spawn_player() -> Result<(), String> {
             let mut app = setup();
 
             run_system(&mut app, spawn_player_system)?;
@@ -130,7 +131,9 @@ mod tests {
             assert_eq!(count_components::<PlayerComponent>(&mut app), 1);
 
             let mut query = app.world_mut().query::<(&PlayerComponent, &Transform)>();
-            let (_, transform) = query.single(app.world())?;
+            let (_, transform) = query
+                .single(app.world())
+                .map_err(|e| format!("Query failed: {}", e))?;
 
             assert_eq!(transform.translation.x, 0.0);
 
@@ -139,248 +142,200 @@ mod tests {
     }
 
     #[cfg(test)]
-    mod movement_system {
+    mod player_movement_system {
         use super::*;
-        use crate::domain::enemy_formation::MovingDirection;
         use crate::infrastructure::bevy::game_area::resources::GAME_AREA_WIDTH;
         use crate::infrastructure::bevy::player::resources::PLAYER_WIDTH;
-        use bevy::input::ButtonInput;
-        use bevy::prelude::{Entity, KeyCode, Transform, With};
-        use bevy_test::run_system;
-        use std::error::Error;
 
-        fn player_should_move_on_input(
-            key_code: KeyCode,
-            moving_direction: MovingDirection,
-        ) -> Result<(), Box<dyn Error>> {
+        fn setup_movement(x_pos: f32) -> App {
             let mut app = setup();
-
-            run_system(&mut app, spawn_player_system)?;
-
-            let start_x = app
-                .world_mut()
-                .query::<&Transform>()
-                .single(app.world())?
-                .translation
-                .x;
-
             app.world_mut()
-                .get_resource_mut::<ButtonInput<KeyCode>>()
-                .ok_or("ButtonInput resource missing")?
-                .press(key_code);
+                .spawn((PlayerComponent, Transform::from_xyz(x_pos, 0.0, 0.0)));
+            app.add_systems(Update, player_movement_system);
+            app
+        }
+
+        #[test]
+        fn should_move_right_on_right_arrow() -> Result<(), String> {
+            let mut app = setup_movement(0.0);
+
+            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowRight);
+
+            advance_time_by_seconds(&mut app, 0.1);
 
             app.update();
 
-            let end_x = app
+            let transform = app
                 .world_mut()
                 .query::<&Transform>()
-                .single(app.world())?
-                .translation
-                .x;
+                .single(app.world())
+                .map_err(|e| e.to_string())?;
 
-            match moving_direction {
-                MovingDirection::ToLeft => assert!(end_x < start_x, "Player should move left"),
-                MovingDirection::ToRight => assert!(end_x > start_x, "Player should move right"),
-            }
-
+            assert!(transform.translation.x > 0.0);
             Ok(())
         }
 
         #[test]
-        fn player_should_move_right_on_right_key_press() -> Result<(), Box<dyn Error>> {
-            player_should_move_on_input(KeyCode::ArrowRight, MovingDirection::ToRight)
+        fn should_move_right_on_d_key() -> Result<(), String> {
+            let mut app = setup_movement(0.0);
+
+            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::KeyD);
+            advance_time_by_seconds(&mut app, 0.1);
+
+            app.update();
+
+            let transform = app
+                .world_mut()
+                .query::<&Transform>()
+                .single(app.world())
+                .map_err(|e| e.to_string())?;
+
+            assert!(transform.translation.x > 0.0);
+            Ok(())
         }
 
         #[test]
-        fn player_should_move_right_on_key_d_press() -> Result<(), Box<dyn Error>> {
-            player_should_move_on_input(KeyCode::KeyD, MovingDirection::ToRight)
+        fn should_move_left_on_left_arrow() -> Result<(), String> {
+            let mut app = setup_movement(0.0);
+
+            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowLeft);
+            advance_time_by_seconds(&mut app, 0.1);
+
+            app.update();
+
+            let transform = app
+                .world_mut()
+                .query::<&Transform>()
+                .single(app.world())
+                .map_err(|e| e.to_string())?;
+
+            assert!(transform.translation.x < 0.0);
+            Ok(())
         }
 
         #[test]
-        fn player_should_move_left_on_left_key_press() -> Result<(), Box<dyn Error>> {
-            player_should_move_on_input(KeyCode::ArrowLeft, MovingDirection::ToLeft)
+        fn should_move_left_on_a_key() -> Result<(), String> {
+            let mut app = setup_movement(0.0);
+
+            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::KeyA);
+            advance_time_by_seconds(&mut app, 0.1);
+
+            app.update();
+
+            let transform = app
+                .world_mut()
+                .query::<&Transform>()
+                .single(app.world())
+                .map_err(|e| e.to_string())?;
+
+            assert!(transform.translation.x < 0.0);
+            Ok(())
         }
 
         #[test]
-        fn player_should_move_left_on_key_a_press() -> Result<(), Box<dyn Error>> {
-            player_should_move_on_input(KeyCode::KeyA, MovingDirection::ToLeft)
-        }
-
-        #[test]
-        fn player_should_not_move_out_of_bounds() -> Result<(), Box<dyn Error>> {
-            let mut app = setup();
-
-            run_system(&mut app, spawn_player_system)?;
-
+        fn should_clamp_at_boundaries() -> Result<(), String> {
             let boundary = (GAME_AREA_WIDTH / 2.0) - (PLAYER_WIDTH / 2.0);
+            let mut app = setup_movement(boundary);
 
-            let player_entity = app
-                .world_mut()
-                .query_filtered::<Entity, With<PlayerComponent>>()
-                .single(app.world())?;
-
-            let mut transform = app
-                .world_mut()
-                .get_mut::<Transform>(player_entity)
-                .ok_or("Player Transform missing")?;
-
-            transform.translation.x = boundary;
-
-            app.world_mut()
-                .get_resource_mut::<ButtonInput<KeyCode>>()
-                .ok_or("Input missing")?
-                .press(KeyCode::ArrowRight);
+            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowRight);
+            advance_time_by_seconds(&mut app, 1.0);
 
             app.update();
 
-            let end_x = app
+            let transform = app
                 .world_mut()
                 .query::<&Transform>()
-                .single(app.world())?
-                .translation
-                .x;
+                .single(app.world())
+                .map_err(|e| e.to_string())?;
 
-            assert!(
-                (end_x - boundary).abs() < 0.001,
-                "Player should be clamped at boundary"
-            );
-
+            let diff = (transform.translation.x - boundary).abs();
+            assert!(diff < 0.001);
             Ok(())
         }
     }
 
     #[cfg(test)]
-    mod fire_system {
+    mod player_fire_system {
         use super::*;
-        use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileComponent;
-        use bevy::input::ButtonInput;
-        use bevy::prelude::KeyCode;
-        use bevy_test::{count_components, get_resource_or_fail, run_system};
-        use std::error::Error;
 
-        #[test]
-        fn player_should_spawn_projectile_when_firing() -> Result<(), Box<dyn Error>> {
+        fn setup_fire() -> App {
             let mut app = setup();
-
-            run_system(&mut app, spawn_player_system)?;
-
-            let initial_count = count_components::<PlayerProjectileComponent>(&mut app);
-
-            assert_eq!(initial_count, 0);
-
             app.world_mut()
-                .get_resource_mut::<ButtonInput<KeyCode>>()
-                .ok_or("ButtonInput resource missing")?
-                .press(KeyCode::Space);
-
-            app.update();
-
-            let final_count = count_components::<PlayerProjectileComponent>(&mut app);
-
-            assert_eq!(final_count, 1, "A projectile should spawn");
-
-            let player_res = get_resource_or_fail::<PlayerResource>(&mut app);
-
-            assert!(
-                player_res.0.is_firing(),
-                "Player resource should be marked as firing"
-            );
-
-            Ok(())
+                .spawn((PlayerComponent, Transform::from_xyz(0.0, 0.0, 0.0)));
+            app.add_systems(Update, player_fire_system);
+            app
         }
 
         #[test]
-        fn player_should_not_fire_if_cooldown_is_active() -> Result<(), Box<dyn Error>> {
-            let mut app = setup();
+        fn should_spawn_projectile() {
+            let mut app = setup_fire();
 
-            run_system(&mut app, spawn_player_system)?;
-
-            app.world_mut()
-                .get_resource_mut::<PlayerResource>()
-                .ok_or("PlayerResource missing")?
-                .0
-                .toggle_fire();
-
-            app.world_mut()
-                .get_resource_mut::<ButtonInput<KeyCode>>()
-                .ok_or("ButtonInput resource missing")?
-                .press(KeyCode::Space);
+            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::Space);
 
             app.update();
 
-            let count = count_components::<PlayerProjectileComponent>(&mut app);
-
-            assert_eq!(
-                count, 0,
-                "Should not spawn projectile if cooldown is active"
+            assert_eq!(count_components::<PlayerProjectileComponent>(&mut app), 1);
+            assert!(
+                get_resource_or_fail::<PlayerResource>(&mut app)
+                    .0
+                    .is_firing()
             );
+        }
 
-            Ok(())
+        #[test]
+        fn should_not_spawn_if_cooldown_active() {
+            let mut app = setup_fire();
+
+            get_resource_mut::<PlayerResource>(&mut app).0.toggle_fire();
+            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::Space);
+
+            app.update();
+
+            assert_eq!(count_components::<PlayerProjectileComponent>(&mut app), 0);
         }
     }
 
     #[cfg(test)]
-    mod domain_sync_system {
+    mod reload_player_weapon_system {
         use super::*;
-        use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
-        use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
-        use bevy_test::{get_resource_or_fail, run_system, send_message, spawn_dummy_entity};
-        use std::error::Error;
 
-        #[test]
-        fn should_toggle_firing_when_hitting_enemy() -> Result<(), Box<dyn Error>> {
+        fn setup_reload() -> App {
             let mut app = setup();
-
-            run_system(&mut app, spawn_player_system)?;
-
             app.add_message::<EnemyKilledMessage>()
                 .add_message::<PlayerProjectileExpiredMessage>()
-                .add_systems(Update, sync_player_firing_state_system);
+                .add_systems(Update, reload_player_weapon_system);
 
-            let pre_update_player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
-
-            assert!(!pre_update_player_resource.0.is_firing());
-
-            let enemy_entity = spawn_dummy_entity(&mut app);
-            let player_projectile_entity = spawn_dummy_entity(&mut app);
-
-            send_message(
-                &mut app,
-                EnemyKilledMessage::new(enemy_entity, 1, player_projectile_entity),
-            );
-
-            app.update();
-
-            let post_update_player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
-
-            assert!(post_update_player_resource.0.is_firing());
-
-            Ok(())
+            get_resource_mut::<PlayerResource>(&mut app).0.toggle_fire();
+            app
         }
 
         #[test]
-        fn should_toggle_firing_when_projectile_expires() -> Result<(), Box<dyn Error>> {
-            let mut app = setup();
+        fn should_reload_on_enemy_killed() {
+            let mut app = setup_reload();
+            let dummy = spawn_dummy_entity(&mut app);
 
-            run_system(&mut app, spawn_player_system)?;
+            send_message(&mut app, EnemyKilledMessage::new(dummy, 1, dummy));
+            app.update();
 
-            app.add_message::<EnemyKilledMessage>()
-                .add_message::<PlayerProjectileExpiredMessage>()
-                .add_systems(Update, sync_player_firing_state_system);
+            assert!(
+                !get_resource_or_fail::<PlayerResource>(&mut app)
+                    .0
+                    .is_firing()
+            );
+        }
 
-            let pre_update_player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
-
-            assert!(!pre_update_player_resource.0.is_firing());
+        #[test]
+        fn should_reload_on_projectile_expiry() {
+            let mut app = setup_reload();
 
             send_message(&mut app, PlayerProjectileExpiredMessage);
-
             app.update();
 
-            let post_update_player_resource = get_resource_or_fail::<PlayerResource>(&mut app);
-
-            assert!(post_update_player_resource.0.is_firing());
-
-            Ok(())
+            assert!(
+                !get_resource_or_fail::<PlayerResource>(&mut app)
+                    .0
+                    .is_firing()
+            );
         }
     }
 }

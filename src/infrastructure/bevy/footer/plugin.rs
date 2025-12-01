@@ -12,17 +12,15 @@ impl Plugin for FooterPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::bevy::footer::components::FooterComponent;
-    use bevy::MinimalPlugins;
-    use bevy_test::contains_component;
+    use bevy_test::{contains_system, minimal_app};
 
     #[test]
     fn should_initialize_the_footer_plugin() {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, FooterPlugin));
+        let mut app = minimal_app();
+        app.add_plugins(FooterPlugin);
 
         app.update();
 
-        assert!(contains_component::<FooterComponent>(&mut app));
+        assert!(contains_system(&app, Startup, "spawn_footer_system"));
     }
 }

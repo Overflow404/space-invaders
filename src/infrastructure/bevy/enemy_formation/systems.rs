@@ -174,123 +174,122 @@ pub fn spawn_random_projectiles_system(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::domain::enemy_formation::EnemyFormation;
     use crate::domain::player::Player;
-    use crate::infrastructure::bevy::enemy::components::{EnemyComponent, EnemyKilledMessage};
+    use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
     use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationResource;
-    use crate::infrastructure::bevy::enemy_formation::systems::{
-        enemy_formation_movement_system, spawn_enemy_formation_system,
-    };
     use crate::infrastructure::bevy::player::resources::PlayerResource;
-    use bevy::app::{App, Startup, Update};
-    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::app::{App, Startup};
+    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
-    use bevy::prelude::{IntoScheduleConfigs, Transform, With};
+    use bevy::prelude::{AssetApp, Transform, With};
     use bevy::text::Font;
-    use bevy_test::minimal_app;
-    use std::error::Error;
+    use bevy::time::TimePlugin;
+    use bevy::MinimalPlugins;
 
     fn setup() -> App {
-        let mut app = minimal_app();
-        app.add_plugins(AssetPlugin::default())
-            .add_systems(Startup, spawn_enemy_formation_system.chain())
-            .add_systems(Update, enemy_formation_movement_system.chain())
+        let mut app = App::new();
+        app.add_plugins(MinimalPlugins.build().disable::<TimePlugin>())
+            .add_plugins(AssetPlugin::default())
             .insert_resource(EnemyFormationResource(EnemyFormation::new()))
             .insert_resource(PlayerResource(Player::new()))
             .init_asset::<Image>()
             .init_asset::<Font>()
             .add_message::<EnemyKilledMessage>();
-
-        app.update();
         app
     }
 
-    fn get_first_enemy_coordinates(app: &mut App) -> Result<(f32, f32), Box<dyn Error>> {
+    fn get_first_enemy_coordinates(app: &mut App) -> (f32, f32) {
         let translation = app
             .world_mut()
             .query_filtered::<&Transform, With<EnemyComponent>>()
             .iter(app.world())
             .next()
-            .ok_or("First enemy coordinates not found")?
+            .expect("First enemy coordinates not found")
             .translation;
-        Ok((translation.x, translation.y))
+        (translation.x, translation.y)
     }
 
     #[cfg(test)]
-    pub mod spawn_enemy_formation_system {
+    mod spawn_enemy_formation_system {
+        use super::*;
         use crate::infrastructure::bevy::enemy::components::EnemyComponent;
-        use crate::infrastructure::bevy::enemy_formation::systems::tests::setup;
-        use std::error::Error;
+        use bevy_test::count_components;
 
         #[test]
-        fn should_spawn_initial_batch_of_enemies() -> Result<(), Box<dyn Error>> {
+        fn should_spawn_initial_batch_of_enemies() {
             let mut app = setup();
+            app.add_systems(Startup, spawn_enemy_formation_system);
+            app.update();
 
-            let enemy_count = bevy_test::count_components::<EnemyComponent>(&mut app);
+            let enemy_count = count_components::<EnemyComponent>(&mut app);
 
             assert_eq!(enemy_count, 55);
-            Ok(())
         }
     }
 
     #[cfg(test)]
-    mod movement_system {
-        use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationResource;
-        use crate::infrastructure::bevy::enemy_formation::systems::tests::{
-            get_first_enemy_coordinates, setup,
-        };
-        use std::error::Error;
+    mod enemy_formation_movement_system {
+        use super::*;
+        use bevy::app::Update;
 
         #[test]
-        fn should_move_to_the_right_when_there_is_enough_space() -> Result<(), Box<dyn Error>> {
+        fn should_move_to_the_right_when_there_is_enough_space() {
             let mut app = setup();
-
-            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
-
-            let mut resource = app.world_mut().resource_mut::<EnemyFormationResource>();
-            resource.0.advance();
-
+            app.add_systems(Startup, spawn_enemy_formation_system);
+            app.add_systems(Update, enemy_formation_movement_system);
             app.update();
 
-            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
-
-            assert!(first_enemy_x_t1 > first_enemy_x_t0);
-            Ok(())
-        }
-
-        #[test]
-        fn should_move_to_the_left_when_there_is_enough_space() -> Result<(), Box<dyn Error>> {
-            let mut app = setup();
-
-            for _ in 0..31 {
-                app.world_mut()
-                    .resource_mut::<EnemyFormationResource>()
-                    .0
-                    .advance();
-            }
-
-            app.update();
-
-            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
+            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app).0;
 
             app.world_mut()
                 .resource_mut::<EnemyFormationResource>()
                 .0
                 .advance();
-
             app.update();
 
-            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
+            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app).0;
+
+            assert!(first_enemy_x_t1 > first_enemy_x_t0);
+        }
+
+        #[test]
+        fn should_move_to_the_left_when_there_is_enough_space() {
+            let mut app = setup();
+            app.add_systems(Startup, spawn_enemy_formation_system);
+            app.add_systems(Update, enemy_formation_movement_system);
+            app.update();
+
+            for _ in 0..31 {
+                app.world_mut()
+                    .resource_mut::<EnemyFormationResource>()
+                    .0
+                    .advance();
+            }
+            app.update();
+
+            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app).0;
+
+            app.world_mut()
+                .resource_mut::<EnemyFormationResource>()
+                .0
+                .advance();
+            app.update();
+
+            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app).0;
 
             assert!(first_enemy_x_t1 < first_enemy_x_t0);
-            Ok(())
         }
 
         #[test]
-        fn should_drop_down_when_there_is_not_enough_right_space() -> Result<(), Box<dyn Error>> {
+        fn should_drop_down_when_there_is_not_enough_right_space() {
             let mut app = setup();
+            app.add_systems(Startup, spawn_enemy_formation_system);
+            app.add_systems(Update, enemy_formation_movement_system);
+            app.update();
 
-            let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
+            let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app).1;
 
             for _ in 0..31 {
                 app.world_mut()
@@ -298,18 +297,19 @@ mod tests {
                     .0
                     .advance();
             }
-
             app.update();
 
-            let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
+            let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app).1;
 
             assert!(first_enemy_y_t1 < first_enemy_y_t0);
-            Ok(())
         }
 
         #[test]
-        fn should_drop_down_when_there_is_not_enough_left_space() -> Result<(), Box<dyn Error>> {
+        fn should_drop_down_when_there_is_not_enough_left_space() {
             let mut app = setup();
+            app.add_systems(Startup, spawn_enemy_formation_system);
+            app.add_systems(Update, enemy_formation_movement_system);
+            app.update();
 
             for _ in 0..31 {
                 app.world_mut()
@@ -317,10 +317,9 @@ mod tests {
                     .0
                     .advance();
             }
-
             app.update();
 
-            let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app)?.1;
+            let first_enemy_y_t0 = get_first_enemy_coordinates(&mut app).1;
 
             for _ in 0..31 {
                 app.world_mut()
@@ -328,72 +327,71 @@ mod tests {
                     .0
                     .advance();
             }
-
             app.update();
 
-            let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app)?.1;
+            let first_enemy_y_t1 = get_first_enemy_coordinates(&mut app).1;
 
             assert!(first_enemy_y_t1 < first_enemy_y_t0);
-            Ok(())
         }
     }
 
     #[cfg(test)]
-    mod lifecycle_system {
+    mod enemy_formation_lifecycle_system {
+        use super::*;
         use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationMovementTimer;
-        use crate::infrastructure::bevy::enemy_formation::systems::enemy_formation_lifecycle_system;
-        use crate::infrastructure::bevy::enemy_formation::systems::tests::{
-            get_first_enemy_coordinates, setup,
-        };
+        use bevy::app::Update;
         use bevy::prelude::{Time, Timer, TimerMode};
-        use bevy_test::{advance_time_by_seconds, run_system};
-        use std::error::Error;
+        use bevy_test::advance_time_by_seconds;
 
         #[test]
-        fn should_advance_on_tick() -> Result<(), Box<dyn Error>> {
+        fn should_advance_on_tick() {
             let mut app = setup();
-
-            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app)?.0;
-
             app.init_resource::<Time>();
             app.insert_resource(EnemyFormationMovementTimer(Timer::from_seconds(
                 1.0,
                 TimerMode::Once,
             )));
 
-            advance_time_by_seconds(&mut app, 1.0);
-
-            run_system(&mut app, enemy_formation_lifecycle_system)?;
+            app.add_systems(Startup, spawn_enemy_formation_system);
+            app.add_systems(
+                Update,
+                (
+                    enemy_formation_lifecycle_system,
+                    enemy_formation_movement_system,
+                )
+                    .chain(),
+            );
 
             app.update();
+            let first_enemy_x_t0 = get_first_enemy_coordinates(&mut app).0;
 
-            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app)?.0;
+            advance_time_by_seconds(&mut app, 1.1);
+            app.update();
+
+            let first_enemy_x_t1 = get_first_enemy_coordinates(&mut app).0;
 
             assert!(first_enemy_x_t1 > first_enemy_x_t0);
-            Ok(())
         }
     }
 
     #[cfg(test)]
-    mod collision_system {
+    mod collisions_system {
+        use super::*;
         use crate::domain::score::Score;
         use crate::infrastructure::bevy::enemy::components::{EnemyComponent, EnemyKilledMessage};
-        use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationResource;
-        use crate::infrastructure::bevy::enemy_formation::systems::collisions_system;
-        use crate::infrastructure::bevy::enemy_formation::systems::tests::setup;
         use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileBundle;
         use crate::infrastructure::bevy::score::resources::ScoreResource;
         use bevy::app::Update;
-        use bevy::prelude::Transform;
         use bevy_test::verify_message_fired;
-        use std::error::Error;
 
         #[test]
-        fn should_trigger_an_event_when_killing_an_enemy() -> Result<(), Box<dyn Error>> {
+        fn should_trigger_an_event_when_killing_an_enemy() {
             let mut app = setup();
-
+            app.add_systems(Startup, spawn_enemy_formation_system);
             app.add_systems(Update, collisions_system);
             app.insert_resource(ScoreResource(Score::new()));
+
+            app.update();
 
             let enemy_info = app
                 .world_mut()
@@ -401,7 +399,7 @@ mod tests {
                 .iter(app.world())
                 .next()
                 .map(|(t, c)| (t.translation, c.id))
-                .ok_or("EnemyComponent not found")?;
+                .expect("EnemyComponent not found");
 
             let enemy_x = enemy_info.0.x;
             let enemy_y = enemy_info.0.y;
@@ -411,12 +409,12 @@ mod tests {
 
             app.update();
 
-            verify_message_fired::<EnemyKilledMessage>(&mut app)?;
+            assert!(verify_message_fired::<EnemyKilledMessage>(&mut app).is_ok());
 
             let post_update_enemy_formation_resource = app
                 .world_mut()
                 .get_resource::<EnemyFormationResource>()
-                .unwrap_or_else(|| panic!("EnemyFormationResource missing"));
+                .expect("EnemyFormationResource missing");
 
             assert!(
                 post_update_enemy_formation_resource
@@ -428,26 +426,25 @@ mod tests {
                     .unwrap()
                     .is_none()
             );
-
-            Ok(())
         }
     }
 
     #[cfg(test)]
-    mod projectile_spawning_system {
+    mod spawn_random_projectiles_system {
+        use super::*;
         use crate::infrastructure::bevy::enemy::resources::{
             EnemyFireProbability, EnemyProjectileMovementTimer,
         };
-        use crate::infrastructure::bevy::enemy_formation::systems::spawn_random_projectiles_system;
-        use crate::infrastructure::bevy::enemy_formation::systems::tests::setup;
         use crate::infrastructure::bevy::enemy_projectile::components::EnemyProjectileComponent;
-        use bevy::prelude::{Time, Timer, TimerMode};
-        use bevy_test::{advance_time_by_seconds, run_system};
-        use std::error::Error;
+        use bevy::app::Update;
+        use bevy::prelude::{Timer, TimerMode};
+        use bevy_test::{advance_time_by_seconds, count_components};
 
         #[test]
-        fn enemy_formation_should_randomly_spawn_projectiles() -> Result<(), Box<dyn Error>> {
+        fn enemy_formation_should_randomly_spawn_projectiles() {
             let mut app = setup();
+            app.add_systems(Startup, spawn_enemy_formation_system);
+            app.add_systems(Update, spawn_random_projectiles_system);
 
             app.init_resource::<Time>();
             app.insert_resource(EnemyProjectileMovementTimer(Timer::from_seconds(
@@ -456,19 +453,14 @@ mod tests {
             )));
             app.insert_resource(EnemyFireProbability(1.0));
 
-            advance_time_by_seconds(&mut app, 1.0);
+            app.update();
 
-            run_system(&mut app, spawn_random_projectiles_system)?;
+            advance_time_by_seconds(&mut app, 1.1);
+            app.update();
 
-            let projectiles = app
-                .world_mut()
-                .query::<&EnemyProjectileComponent>()
-                .iter(app.world())
-                .len();
+            let projectiles = count_components::<EnemyProjectileComponent>(&mut app);
 
             assert!(projectiles > 0);
-
-            Ok(())
         }
     }
 }

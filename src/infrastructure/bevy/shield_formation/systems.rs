@@ -1,4 +1,4 @@
-use crate::infrastructure::bevy::shield::components::{ShieldBundle, ShieldComponent};
+use crate::infrastructure::bevy::shield::components::ShieldBundle;
 use crate::infrastructure::bevy::shield::resources::SHIELD_X;
 use crate::infrastructure::bevy::shield_formation::resources::ShieldFormationResource;
 use bevy::asset::AssetServer;
@@ -29,37 +29,34 @@ pub fn spawn_shields_system(
 mod tests {
     use super::*;
     use crate::domain::shield_formation::ShieldFormation;
+    use crate::infrastructure::bevy::shield::components::ShieldComponent;
     use crate::infrastructure::bevy::shield_formation::resources::ShieldFormationResource;
-    use bevy::app::App;
-    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::app::{App, Startup};
+    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
-    use bevy::MinimalPlugins;
-    use bevy_test::{count_components, run_system};
+    use bevy::prelude::AssetApp;
+    use bevy_test::{count_components, minimal_app};
 
     fn setup() -> App {
-        let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default()))
+        let mut app = minimal_app();
+        app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();
         app
     }
 
-    #[test]
-    fn should_spawn_the_configured_number_of_shields() -> Result<(), Box<dyn std::error::Error>> {
-        let mut app = setup();
-        app.insert_resource(ShieldFormationResource(ShieldFormation::new()));
+    #[cfg(test)]
+    mod spawn_shields_system {
+        use super::*;
 
-        run_system(&mut app, spawn_shields_system)?;
+        #[test]
+        fn should_spawn_the_configured_number_of_shields() {
+            let mut app = setup();
+            app.insert_resource(ShieldFormationResource(ShieldFormation::new()));
 
-        let shields_count = count_components::<ShieldComponent>(&mut app);
+            app.add_systems(Startup, spawn_shields_system);
+            app.update();
 
-        assert_eq!(shields_count, 4);
-
-        Ok(())
-    }
-
-    #[test]
-    fn should_not_spawn_the_shields_if_no_shields_available() -> Result<(), Box<dyn std::error::Error>> {
-        //TODO when shields will be destroyable this would make sense
-        Ok(())
+            assert_eq!(count_components::<ShieldComponent>(&mut app), 4);
+        }
     }
 }
