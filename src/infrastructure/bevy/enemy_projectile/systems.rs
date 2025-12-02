@@ -1,11 +1,12 @@
 use crate::infrastructure::bevy::enemy_projectile::components::{
-    EnemyProjectileComponent, EnemyProjectileExpiredMessage,
+    EnemyProjectileComponent, EnemyProjectileExpiredMessage, EnemyProjectileTimer,
+    PlayerKilledMessage,
 };
-use crate::infrastructure::bevy::enemy_projectile::resources::{
-    EnemyProjectileMovementTimerResource, ENEMY_PROJECTILE_SPEED,
-};
+use crate::infrastructure::bevy::enemy_projectile::resources::ENEMY_PROJECTILE_SPEED;
 use crate::infrastructure::bevy::game_area::resources::GAME_AREA_HEIGHT;
-use bevy::prelude::{Commands, Entity, MessageWriter, Query, Res, ResMut, Time, Transform, With};
+use crate::infrastructure::bevy::player::components::PlayerComponent;
+use bevy::math::Vec2;
+use bevy::prelude::{Commands, Entity, MessageWriter, Query, Res, Sprite, Time, Transform, With};
 
 pub fn enemy_projectile_movement_system(
     time: Res<Time>,
@@ -18,25 +19,64 @@ pub fn enemy_projectile_movement_system(
 
 pub fn enemy_projectile_lifecycle_system(
     mut commands: Commands,
-    mut query: Query<(Entity, &mut Transform), With<EnemyProjectileComponent>>,
     time: Res<Time>,
-    mut timer: ResMut<EnemyProjectileMovementTimerResource>,
+    mut query: Query<
+        (Entity, &Transform, &mut EnemyProjectileTimer),
+        With<EnemyProjectileComponent>,
+    >,
     mut message_writer: MessageWriter<EnemyProjectileExpiredMessage>,
 ) {
-    timer.0.tick(time.delta());
-    let mut reset_needed = false;
-
-    for (entity, transform) in query.iter_mut() {
+    for (entity, transform, mut timer_component) in query.iter_mut() {
+        let mut reset_needed = false;
         let out_of_bound_y = -GAME_AREA_HEIGHT / 2.0;
+
         if transform.translation.y < out_of_bound_y {
-            commands.entity(entity).despawn();
             reset_needed = true;
         }
-    }
 
-    if reset_needed {
-        message_writer.write(EnemyProjectileExpiredMessage);
-        timer.0.finish();
+        timer_component.0.tick(time.delta());
+
+        if timer_component.0.is_finished() {
+            reset_needed = true;
+        }
+
+        if reset_needed {
+            commands.entity(entity).despawn();
+            message_writer.write(EnemyProjectileExpiredMessage);
+            timer_component.0.reset();
+        }
+    }
+}
+
+pub fn collision_system(
+    mut commands: Commands,
+    mut projectile_query: Query<(Entity, &Transform, &Sprite), With<EnemyProjectileComponent>>,
+    player_query: Query<(Entity, &Transform, &Sprite, &PlayerComponent), With<PlayerComponent>>,
+    mut player_killed_message_writer: MessageWriter<PlayerKilledMessage>,
+) {
+    for (player_entity, player_transform, player_sprite, _) in player_query.iter() {
+        for (projectile_entity, projectile_transform, projectile_sprite) in
+            projectile_query.iter_mut()
+        {
+            let player_size = player_sprite.custom_size.unwrap_or(Vec2::ONE);
+            let projectile_size = projectile_sprite.custom_size.unwrap_or(Vec2::ONE);
+
+            let collision = projectile_transform.translation.x
+                < player_transform.translation.x + player_size.x / 2.0
+                && projectile_transform.translation.x + projectile_size.x
+                    > player_transform.translation.x - player_size.x / 2.0
+                && projectile_transform.translation.y
+                    < player_transform.translation.y + player_size.y / 2.0
+                && projectile_transform.translation.y + projectile_size.y
+                    > player_transform.translation.y - player_size.y / 2.0;
+
+            if collision {
+                player_killed_message_writer.write(PlayerKilledMessage::new(projectile_entity));
+                commands.entity(player_entity).despawn();
+                //TODO continue logic instead of hard despawn updating score etc
+                break;
+            }
+        }
     }
 }
 
@@ -48,17 +88,13 @@ mod tests {
     };
     use crate::infrastructure::bevy::enemy_projectile::resources::ENEMY_PROJECTILE_SPEED;
     use bevy::app::{App, Update};
-    use bevy::prelude::{Time, Timer, TimerMode, Transform};
+    use bevy::prelude::{Time, Transform};
     use bevy_test::{advance_time_by_seconds, get_component_or_fail, minimal_app};
 
     fn setup() -> App {
         let mut app = minimal_app(true);
         app.init_resource::<Time>()
-            .add_message::<EnemyProjectileExpiredMessage>()
-            .insert_resource(EnemyProjectileMovementTimerResource(Timer::from_seconds(
-                1.0,
-                TimerMode::Once,
-            )));
+            .add_message::<EnemyProjectileExpiredMessage>();
         app
     }
 
@@ -114,14 +150,11 @@ mod tests {
         use crate::infrastructure::bevy::enemy_projectile::components::{
             EnemyProjectileBundle, EnemyProjectileComponent, EnemyProjectileExpiredMessage,
         };
-        use crate::infrastructure::bevy::enemy_projectile::resources::EnemyProjectileMovementTimerResource;
         use crate::infrastructure::bevy::enemy_projectile::systems::enemy_projectile_lifecycle_system;
         use crate::infrastructure::bevy::enemy_projectile::systems::tests::setup;
         use crate::infrastructure::bevy::game_area::resources::GAME_AREA_HEIGHT;
         use bevy::app::Update;
-        use bevy_test::{
-            advance_time_by_seconds, did_component_despawn, did_message_fire, get_resource_mut,
-        };
+        use bevy_test::{advance_time_by_seconds, did_component_despawn, did_message_fire};
 
         #[test]
         fn should_notify_and_despawn_when_out_of_bound() {
@@ -135,11 +168,69 @@ mod tests {
             advance_time_by_seconds(&mut app, 0.01);
             app.update();
 
-            let timer = get_resource_mut::<EnemyProjectileMovementTimerResource>(&mut app);
-            assert!(timer.0.is_finished());
+            assert!(did_component_despawn::<EnemyProjectileComponent>(&mut app));
+            assert!(did_message_fire::<EnemyProjectileExpiredMessage>(&mut app));
+        }
+
+        #[test]
+        fn should_notify_and_despawn_when_timer_finishes() {
+            let mut app = setup();
+            app.add_systems(Update, enemy_projectile_lifecycle_system);
+
+            app.world_mut().spawn(EnemyProjectileBundle::new(0.0, 0.0));
+
+            advance_time_by_seconds(&mut app, 2.0);
+            app.update();
 
             assert!(did_component_despawn::<EnemyProjectileComponent>(&mut app));
             assert!(did_message_fire::<EnemyProjectileExpiredMessage>(&mut app));
+        }
+    }
+
+    #[cfg(test)]
+    mod collision_system {
+        use crate::domain::player::Player;
+        use crate::infrastructure::bevy::enemy_projectile::components::{
+            EnemyProjectileBundle, PlayerKilledMessage,
+        };
+        use crate::infrastructure::bevy::enemy_projectile::systems::collision_system;
+        use crate::infrastructure::bevy::enemy_projectile::systems::tests::setup;
+        use crate::infrastructure::bevy::player::components::PlayerComponent;
+        use crate::infrastructure::bevy::player::resources::PlayerResource;
+        use crate::infrastructure::bevy::player::systems::spawn_player_system;
+        use bevy::app::{Startup, Update};
+        use bevy::asset::{AssetApp, AssetPlugin};
+        use bevy::image::Image;
+        use bevy::prelude::Transform;
+        use bevy_test::did_message_fire;
+
+        #[test]
+        fn should_trigger_an_event_hitting_the_player() {
+            let mut app = setup();
+            app.add_systems(Startup, spawn_player_system);
+            app.add_systems(Update, collision_system);
+            app.add_plugins(AssetPlugin::default());
+            app.add_message::<PlayerKilledMessage>();
+            app.init_asset::<Image>();
+
+            app.insert_resource(PlayerResource(Player::new()));
+
+            app.update();
+
+            let player_info = app
+                .world_mut()
+                .query::<(&Transform, &PlayerComponent)>()
+                .iter(app.world())
+                .next()
+                .map(|(t, _)| t.translation)
+                .expect("PlayerComponent not found");
+
+            app.world_mut()
+                .spawn(EnemyProjectileBundle::new(player_info.x, player_info.y));
+
+            app.update();
+
+            assert!(did_message_fire::<PlayerKilledMessage>(&mut app));
         }
     }
 }
