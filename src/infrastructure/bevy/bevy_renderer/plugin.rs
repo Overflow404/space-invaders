@@ -29,13 +29,13 @@ impl Plugin for SpaceInvadersPlugin {
         app.add_systems(Startup, camera_system)
             .add_systems(PostUpdate, window_scale_system)
             .add_plugins((
+                PlayerPlugin,
                 HeaderPlugin,
                 ScorePlugin,
                 LivesPlugin,
                 GameAreaPlugin,
                 EnemyFormationPlugin,
                 ShieldFormationPlugin,
-                PlayerPlugin,
                 FooterPlugin,
                 EnemyProjectilePlugin,
                 PlayerProjectilePlugin,

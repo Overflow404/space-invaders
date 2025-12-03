@@ -1,4 +1,5 @@
 use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
+use crate::infrastructure::bevy::enemy_projectile::components::PlayerKilledMessage;
 use crate::infrastructure::bevy::game_area::resources::GAME_AREA_WIDTH;
 use crate::infrastructure::bevy::player::components::{PlayerBundle, PlayerComponent};
 use crate::infrastructure::bevy::player::resources::{
@@ -76,6 +77,16 @@ pub fn reload_player_weapon_system(
 
     if should_reload {
         player_resource.0.toggle_fire();
+    }
+}
+
+pub fn respawn_player_system(
+    mut commands: Commands,
+    mut player_killed_message: MessageReader<PlayerKilledMessage>,
+    asset_server: Res<AssetServer>,
+) {
+    for _ in player_killed_message.read() {
+        commands.spawn(PlayerBundle::new(&asset_server));
     }
 }
 
@@ -326,6 +337,51 @@ mod tests {
                     .0
                     .is_firing()
             );
+        }
+    }
+
+    #[cfg(test)]
+    mod respawn_player_system {
+        use crate::infrastructure::bevy::enemy_projectile::components::{
+            EnemyProjectileComponent, PlayerKilledMessage,
+        };
+        use crate::infrastructure::bevy::player::components::PlayerComponent;
+        use crate::infrastructure::bevy::player::systems::respawn_player_system;
+        use crate::infrastructure::bevy::player::systems::tests::setup;
+        use bevy::app::Update;
+        use bevy::prelude::{Entity, With};
+        use bevy_test::{contains_single_component, count_components, despawn, send_message};
+
+        #[test]
+        fn should_respawn_player_when_killed() {
+            let mut app = setup();
+            app.add_message::<PlayerKilledMessage>()
+                .add_systems(Update, respawn_player_system);
+
+            app.world_mut().spawn(PlayerComponent);
+            app.world_mut().spawn(EnemyProjectileComponent);
+
+            let player_entity = app
+                .world_mut()
+                .query_filtered::<Entity, With<PlayerComponent>>()
+                .single(app.world())
+                .expect("World not found");
+
+            let projectile_entity = app
+                .world_mut()
+                .query_filtered::<Entity, With<EnemyProjectileComponent>>()
+                .single(app.world())
+                .expect("World not found");
+
+            despawn(&mut app, player_entity);
+
+            assert_eq!(count_components::<PlayerComponent>(&mut app), 0);
+
+            send_message(&mut app, PlayerKilledMessage::new(projectile_entity));
+
+            app.update();
+
+            assert!(contains_single_component::<PlayerComponent>(&mut app));
         }
     }
 }

@@ -50,6 +50,10 @@ pub fn did_component_despawn<T: Component>(app: &mut App) -> bool {
     app.world_mut().query::<&T>().iter(app.world()).len() == 0
 }
 
+pub fn despawn(app: &mut App, entity: Entity) -> bool {
+    app.world_mut().despawn(entity)
+}
+
 pub fn count_components<T: Component>(app: &mut App) -> usize {
     app.world_mut().query::<&T>().iter(app.world()).count()
 }
