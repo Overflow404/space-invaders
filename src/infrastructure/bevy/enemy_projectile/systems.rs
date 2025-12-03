@@ -73,7 +73,6 @@ pub fn collision_system(
             if collision {
                 player_killed_message_writer.write(PlayerKilledMessage::new(projectile_entity));
                 commands.entity(player_entity).despawn();
-                //TODO continue logic instead of hard despawn updating score etc
                 break;
             }
         }
