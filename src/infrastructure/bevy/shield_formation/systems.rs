@@ -1,12 +1,14 @@
 use crate::infrastructure::bevy::shield::components::ShieldBundle;
 use crate::infrastructure::bevy::shield::resources::SHIELD_X;
 use crate::infrastructure::bevy::shield_formation::resources::ShieldFormationResource;
-use bevy::asset::AssetServer;
+use bevy::asset::Assets;
 use bevy::ecs::system::{Commands, Res};
+use bevy::image::Image;
+use bevy::prelude::ResMut;
 
 pub fn spawn_shields_system(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    mut images: ResMut<Assets<Image>>,
     shield_formation_res: Res<ShieldFormationResource>,
 ) {
     let shields = shield_formation_res.0.get_shields();
@@ -21,7 +23,7 @@ pub fn spawn_shields_system(
     for (index, _) in shields.iter().enumerate() {
         let x = SHIELD_X + (index as f32 * shield_step);
 
-        commands.spawn(ShieldBundle::new(&asset_server, x));
+        commands.spawn(ShieldBundle::new(&mut images, x));
     }
 }
 
