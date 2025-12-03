@@ -86,7 +86,7 @@ mod tests {
     use crate::infrastructure::bevy::footer::components::FooterComponent;
     use crate::infrastructure::bevy::game_area::components::GameAreaComponent;
     use crate::infrastructure::bevy::header::components::HeaderComponent;
-    use crate::infrastructure::bevy::lives::components::LivesComponent;
+    use crate::infrastructure::bevy::lives::components::LivesViewComponent;
     use crate::infrastructure::bevy::player::components::PlayerComponent;
     use crate::infrastructure::bevy::score::components::{
         ScoreLabelComponent, ScoreValueComponent,
@@ -120,7 +120,7 @@ mod tests {
         assert!(contains_single_component::<HeaderComponent>(&mut app));
         assert!(contains_single_component::<ScoreLabelComponent>(&mut app));
         assert!(contains_single_component::<ScoreValueComponent>(&mut app));
-        assert!(contains_single_component::<LivesComponent>(&mut app));
+        assert!(contains_single_component::<LivesViewComponent>(&mut app));
         assert!(contains_single_component::<GameAreaComponent>(&mut app));
         assert!(contains_single_component::<PlayerComponent>(&mut app));
         assert!(contains_single_component::<FooterComponent>(&mut app));

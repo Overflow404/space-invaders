@@ -1,15 +1,12 @@
 use crate::infrastructure::bevy::header::components::HeaderComponent;
 use crate::infrastructure::bevy::header::resources::FONT;
-use crate::infrastructure::bevy::lives::components::{LivesLabelBundle, LivesViewBundle};
+use crate::infrastructure::bevy::lives::components::{LivesLabelBundle, LivesValueBundle, LivesViewBundle};
 use crate::infrastructure::bevy::lives::resources::LivesResource;
-use crate::infrastructure::bevy::player::resources::PLAYER_IMAGE;
 use bevy::asset::AssetServer;
 use bevy::ecs::entity::Entity;
 use bevy::ecs::query::With;
 use bevy::ecs::system::{Commands, Query, Res};
-use bevy::ui::widget::ImageNode;
-use bevy::ui::{Node, UiRect, Val};
-use bevy::utils::default;
+use crate::infrastructure::bevy::player::resources::PLAYER_IMAGE;
 
 pub fn spawn_lives_system(
     mut commands: Commands,
@@ -26,18 +23,10 @@ pub fn spawn_lives_system(
                 .spawn(LivesViewBundle::new())
                 .with_children(|lives_section| {
                     lives_section.spawn(LivesLabelBundle::new(font));
+
                     for _ in 0..remaining_lives {
-                        lives_section.spawn((
-                            ImageNode {
-                                image: asset_server.load(PLAYER_IMAGE),
-                                ..default()
-                            },
-                            Node {
-                                height: Val::Percent(35.0),
-                                margin: UiRect::right(Val::Px(25.0)),
-                                ..default()
-                            },
-                        ));
+                        let image = asset_server.load(PLAYER_IMAGE);
+                        lives_section.spawn(LivesValueBundle::new(image));
                     }
                 });
         });
@@ -49,7 +38,7 @@ mod tests {
     use super::*;
     use crate::domain::lives::Lives;
     use crate::infrastructure::bevy::header::components::HeaderComponent;
-    use crate::infrastructure::bevy::lives::components::LivesComponent;
+    use crate::infrastructure::bevy::lives::components::LivesViewComponent;
     use crate::infrastructure::bevy::lives::resources::LivesResource;
     use bevy::app::{App, Startup};
     use bevy::asset::AssetPlugin;
@@ -79,7 +68,7 @@ mod tests {
             app.add_systems(Startup, spawn_lives_system);
             app.update();
 
-            assert!(contains_single_component::<LivesComponent>(&mut app));
+            assert!(contains_single_component::<LivesViewComponent>(&mut app));
         }
 
         #[test]
@@ -88,7 +77,7 @@ mod tests {
             app.add_systems(Startup, spawn_lives_system);
             app.update();
 
-            let mut query = app.world_mut().query::<(&LivesComponent, &Children)>();
+            let mut query = app.world_mut().query::<(&LivesViewComponent, &Children)>();
             let (_, children) = query.single(app.world()).unwrap();
 
             let label_count = children

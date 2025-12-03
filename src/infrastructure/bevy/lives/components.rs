@@ -1,23 +1,46 @@
 use bevy::asset::Handle;
 use bevy::color::Color;
-use bevy::prelude::{default, Bundle, Component};
+use bevy::image::Image;
+use bevy::prelude::{default, Bundle, Component, ImageNode};
 use bevy::text::{Font, TextColor, TextFont};
 use bevy::ui::widget::Text;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, Node, UiRect, Val};
 
 #[derive(Component, PartialEq, Debug)]
-pub struct LivesComponent;
+pub struct LivesViewComponent;
 
 #[derive(Bundle)]
 pub struct LivesViewBundle {
-    pub lives: LivesComponent,
+    pub lives: LivesViewComponent,
     pub node: Node,
+}
+
+#[derive(Bundle)]
+pub struct LivesValueBundle {
+    pub node: Node,
+    pub image: ImageNode,
+}
+
+impl LivesValueBundle {
+    pub fn new(handle: Handle<Image>) -> Self {
+        Self {
+            image: ImageNode {
+                image: handle,
+                ..default()
+            },
+            node: Node {
+                height: Val::Percent(35.0),
+                margin: UiRect::right(Val::Px(25.0)),
+                ..default()
+            },
+        }
+    }
 }
 
 impl LivesViewBundle {
     pub fn new() -> Self {
         Self {
-            lives: LivesComponent,
+            lives: LivesViewComponent,
             node: Node {
                 width: Val::Percent(50.0),
                 height: Val::Px(50.0),
@@ -66,14 +89,14 @@ impl LivesLabelBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::asset::{AssetApp, AssetPlugin, AssetServer};
     use bevy_test::{dummy_font, minimal_app};
 
     #[test]
     fn should_create_lives_view_bundle() {
         let bundle = LivesViewBundle::new();
 
-        assert_eq!(bundle.lives, LivesComponent);
+        assert_eq!(bundle.lives, LivesViewComponent);
 
         assert_eq!(bundle.node.width, Val::Percent(50.0));
         assert_eq!(bundle.node.height, Val::Px(50.0));
@@ -98,5 +121,22 @@ mod tests {
         assert_eq!(bundle.text_font.font, font);
         assert_eq!(bundle.text_font.font_size, 14.0);
         assert_eq!(bundle.text_color.0, Color::WHITE);
+    }
+
+    #[test]
+    fn should_create_lives_value_bundle() {
+        let mut app = minimal_app(false);
+        app.add_plugins(AssetPlugin::default()).init_asset::<Font>();
+        app.init_asset::<Image>();
+
+        let asset_server = app.world().resource::<AssetServer>().clone();
+        let handle: Handle<Image> = asset_server.load("tmp.png");
+
+        let bundle = LivesValueBundle::new(handle.clone());
+
+        assert_eq!(bundle.node.height, Val::Percent(35.0));
+        assert_eq!(bundle.node.margin, UiRect::right(Val::Px(25.0)));
+
+        assert_eq!(bundle.image.image, handle);
     }
 }
