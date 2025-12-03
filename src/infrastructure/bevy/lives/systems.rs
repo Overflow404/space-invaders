@@ -1,12 +1,16 @@
+use crate::infrastructure::bevy::enemy_projectile::components::PlayerKilledMessage;
 use crate::infrastructure::bevy::header::components::HeaderComponent;
 use crate::infrastructure::bevy::header::resources::FONT;
-use crate::infrastructure::bevy::lives::components::{LivesLabelBundle, LivesValueBundle, LivesViewBundle};
+use crate::infrastructure::bevy::lives::components::{
+    LivesLabelBundle, LivesValueBundle, LivesValueComponent, LivesViewBundle,
+};
 use crate::infrastructure::bevy::lives::resources::LivesResource;
+use crate::infrastructure::bevy::player::resources::PLAYER_IMAGE;
 use bevy::asset::AssetServer;
 use bevy::ecs::entity::Entity;
 use bevy::ecs::query::With;
 use bevy::ecs::system::{Commands, Query, Res};
-use crate::infrastructure::bevy::player::resources::PLAYER_IMAGE;
+use bevy::prelude::{DetectChanges, MessageReader, ResMut};
 
 pub fn spawn_lives_system(
     mut commands: Commands,
@@ -30,6 +34,34 @@ pub fn spawn_lives_system(
                     }
                 });
         });
+    }
+}
+
+pub fn handle_player_killed_system(
+    mut lives_res: ResMut<LivesResource>,
+    mut player_killed_message: MessageReader<PlayerKilledMessage>,
+) {
+    for _ in player_killed_message.read() {
+        lives_res.0.decrement();
+    }
+}
+
+pub fn update_lives_system(
+    lives_resource: Res<LivesResource>,
+    mut commands: Commands,
+    lives_icons_query: Query<(Entity, &LivesValueComponent)>,
+) {
+    if lives_resource.is_changed() {
+        let target_lives_count = lives_resource.0.get_current() as usize;
+        let current_icon_count = lives_icons_query.iter().count();
+
+        if current_icon_count > target_lives_count {
+            let diff = current_icon_count - target_lives_count;
+
+            for (entity, _) in lives_icons_query.iter().take(diff) {
+                commands.entity(entity).despawn();
+            }
+        }
     }
 }
 
@@ -96,6 +128,61 @@ mod tests {
 
             assert_eq!(label_count, 1);
             assert_eq!(icon_count, 3);
+        }
+    }
+
+    #[cfg(test)]
+    mod update_lives_system {
+        use super::*;
+        use crate::infrastructure::bevy::lives::components::LivesValueComponent;
+        use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileComponent;
+        use bevy::app::Update;
+        use bevy_test::{get_resource_mut_or_fail, get_resource_or_fail, send_message};
+
+        #[test]
+        fn should_decrease_lives_when_player_killed() {
+            let mut app = setup();
+            app.add_systems(Update, handle_player_killed_system);
+            app.add_message::<PlayerKilledMessage>();
+
+            let res = get_resource_or_fail::<LivesResource>(&mut app);
+            assert_eq!(res.0.get_current(), 3);
+
+            let projectile = app.world_mut().spawn(PlayerProjectileComponent).id();
+
+            send_message(&mut app, PlayerKilledMessage::new(projectile));
+
+            app.update();
+
+            let res = get_resource_or_fail::<LivesResource>(&mut app);
+            assert_eq!(res.0.get_current(), 2);
+        }
+
+        #[test]
+        fn should_render_the_updated_lives() {
+            let mut app = setup();
+            app.add_systems(Startup, spawn_lives_system);
+            app.add_systems(Update, update_lives_system);
+            app.update();
+
+            let mut query = app
+                .world_mut()
+                .query::<(&LivesValueComponent, &ImageNode)>();
+            let lives_image_count = query.iter(app.world()).count();
+
+            assert_eq!(lives_image_count, 3);
+
+            let mut res = get_resource_mut_or_fail::<LivesResource>(&mut app);
+            res.0.decrement();
+
+            app.update();
+
+            let mut query = app
+                .world_mut()
+                .query::<(&LivesValueComponent, &ImageNode)>();
+            let lives_image_count = query.iter(app.world()).count();
+
+            assert_eq!(lives_image_count, 2);
         }
     }
 }

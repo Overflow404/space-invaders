@@ -22,7 +22,7 @@ pub fn get_resource_or_fail<T: Resource>(app: &mut App) -> &T {
         .expect("Resource not found in world")
 }
 
-pub fn get_resource_mut<T: Resource>(app: &mut App) -> Mut<'_, T> {
+pub fn get_resource_mut_or_fail<T: Resource>(app: &mut App) -> Mut<'_, T> {
     app.world_mut()
         .get_resource_mut::<T>()
         .expect("Resource not found in world")

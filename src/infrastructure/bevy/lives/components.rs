@@ -11,12 +11,16 @@ pub struct LivesViewComponent;
 
 #[derive(Bundle)]
 pub struct LivesViewBundle {
-    pub lives: LivesViewComponent,
+    pub component: LivesViewComponent,
     pub node: Node,
 }
 
+#[derive(Component, PartialEq, Debug)]
+pub struct LivesValueComponent;
+
 #[derive(Bundle)]
 pub struct LivesValueBundle {
+    pub component: LivesValueComponent,
     pub node: Node,
     pub image: ImageNode,
 }
@@ -24,6 +28,7 @@ pub struct LivesValueBundle {
 impl LivesValueBundle {
     pub fn new(handle: Handle<Image>) -> Self {
         Self {
+            component: LivesValueComponent,
             image: ImageNode {
                 image: handle,
                 ..default()
@@ -40,7 +45,7 @@ impl LivesValueBundle {
 impl LivesViewBundle {
     pub fn new() -> Self {
         Self {
-            lives: LivesViewComponent,
+            component: LivesViewComponent,
             node: Node {
                 width: Val::Percent(50.0),
                 height: Val::Px(50.0),
@@ -96,7 +101,7 @@ mod tests {
     fn should_create_lives_view_bundle() {
         let bundle = LivesViewBundle::new();
 
-        assert_eq!(bundle.lives, LivesViewComponent);
+        assert_eq!(bundle.component, LivesViewComponent);
 
         assert_eq!(bundle.node.width, Val::Percent(50.0));
         assert_eq!(bundle.node.height, Val::Px(50.0));
@@ -133,6 +138,8 @@ mod tests {
         let handle: Handle<Image> = asset_server.load("tmp.png");
 
         let bundle = LivesValueBundle::new(handle.clone());
+
+        assert_eq!(bundle.component, LivesValueComponent);
 
         assert_eq!(bundle.node.height, Val::Percent(35.0));
         assert_eq!(bundle.node.margin, UiRect::right(Val::Px(25.0)));

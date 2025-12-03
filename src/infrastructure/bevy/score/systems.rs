@@ -65,7 +65,7 @@ mod tests {
     use bevy::prelude::{AssetApp, Text};
     use bevy::text::Font;
     use bevy_test::{
-        contains_single_component, get_resource_mut, get_resource_or_fail, minimal_app,
+        contains_single_component, get_resource_mut_or_fail, get_resource_or_fail, minimal_app,
         send_message, spawn_dummy_entity,
     };
 
@@ -107,7 +107,7 @@ mod tests {
 
             app.world_mut().spawn((ScoreValueComponent, Text::new("0")));
 
-            get_resource_mut::<ScoreResource>(&mut app).0.increment(50);
+            get_resource_mut_or_fail::<ScoreResource>(&mut app).0.increment(50);
 
             app.update();
 

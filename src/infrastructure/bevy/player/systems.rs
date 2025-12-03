@@ -107,7 +107,7 @@ mod tests {
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode, Time, Timer, TimerMode};
     use bevy_test::{
-        advance_time_by_seconds, contains_single_component, count_components, get_resource_mut,
+        advance_time_by_seconds, contains_single_component, count_components, get_resource_mut_or_fail,
         get_resource_or_fail, minimal_app, send_message, spawn_dummy_entity,
     };
 
@@ -165,7 +165,7 @@ mod tests {
         fn should_move_right_on_right_arrow() {
             let mut app = setup_movement(0.0);
 
-            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowRight);
+            get_resource_mut_or_fail::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowRight);
 
             advance_time_by_seconds(&mut app, 0.1);
 
@@ -184,7 +184,7 @@ mod tests {
         fn should_move_right_on_d_key() {
             let mut app = setup_movement(0.0);
 
-            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::KeyD);
+            get_resource_mut_or_fail::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::KeyD);
             advance_time_by_seconds(&mut app, 0.1);
 
             app.update();
@@ -202,7 +202,7 @@ mod tests {
         fn should_move_left_on_left_arrow() {
             let mut app = setup_movement(0.0);
 
-            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowLeft);
+            get_resource_mut_or_fail::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowLeft);
             advance_time_by_seconds(&mut app, 0.1);
 
             app.update();
@@ -220,7 +220,7 @@ mod tests {
         fn should_move_left_on_a_key() {
             let mut app = setup_movement(0.0);
 
-            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::KeyA);
+            get_resource_mut_or_fail::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::KeyA);
             advance_time_by_seconds(&mut app, 0.1);
 
             app.update();
@@ -239,7 +239,7 @@ mod tests {
             let boundary = (GAME_AREA_WIDTH / 2.0) - (PLAYER_WIDTH / 2.0);
             let mut app = setup_movement(boundary);
 
-            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowRight);
+            get_resource_mut_or_fail::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::ArrowRight);
             advance_time_by_seconds(&mut app, 1.0);
 
             app.update();
@@ -271,7 +271,7 @@ mod tests {
         fn should_spawn_projectile() {
             let mut app = setup_fire();
 
-            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::Space);
+            get_resource_mut_or_fail::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::Space);
 
             app.update();
 
@@ -287,8 +287,8 @@ mod tests {
         fn should_not_spawn_if_cooldown_active() {
             let mut app = setup_fire();
 
-            get_resource_mut::<PlayerResource>(&mut app).0.toggle_fire();
-            get_resource_mut::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::Space);
+            get_resource_mut_or_fail::<PlayerResource>(&mut app).0.toggle_fire();
+            get_resource_mut_or_fail::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::Space);
 
             app.update();
 
@@ -306,7 +306,7 @@ mod tests {
                 .add_message::<PlayerProjectileExpiredMessage>()
                 .add_systems(Update, reload_player_weapon_system);
 
-            get_resource_mut::<PlayerResource>(&mut app).0.toggle_fire();
+            get_resource_mut_or_fail::<PlayerResource>(&mut app).0.toggle_fire();
             app
         }
 
