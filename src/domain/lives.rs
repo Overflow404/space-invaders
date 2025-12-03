@@ -1,5 +1,5 @@
 pub struct Lives {
-    current: u32,
+    current: u8,
 }
 
 impl Default for Lives {
@@ -19,7 +19,7 @@ impl Lives {
         }
     }
 
-    pub fn get_current(&self) -> u32 {
+    pub fn get_current(&self) -> u8 {
         self.current
     }
 
