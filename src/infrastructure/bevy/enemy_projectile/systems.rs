@@ -6,7 +6,9 @@ use crate::infrastructure::bevy::enemy_projectile::resources::ENEMY_PROJECTILE_S
 use crate::infrastructure::bevy::game_area::resources::GAME_AREA_HEIGHT;
 use crate::infrastructure::bevy::player::components::PlayerComponent;
 use bevy::math::Vec2;
-use bevy::prelude::{Commands, Entity, MessageWriter, Query, Res, Sprite, Time, Transform, With};
+use bevy::prelude::{
+    Commands, Entity, MessageReader, MessageWriter, Query, Res, Sprite, Time, Transform, With,
+};
 
 pub fn enemy_projectile_movement_system(
     time: Res<Time>,
@@ -48,13 +50,21 @@ pub fn enemy_projectile_lifecycle_system(
     }
 }
 
-pub fn collision_system(
+pub fn on_enemy_projectile_hitting_player_system(
     mut commands: Commands,
+    mut player_killed_event_writer: MessageReader<PlayerKilledMessage>,
+) {
+    for msg in player_killed_event_writer.read() {
+        commands.entity(msg.projectile_entity).despawn();
+    }
+}
+
+pub fn collision_system(
     mut projectile_query: Query<(Entity, &Transform, &Sprite), With<EnemyProjectileComponent>>,
-    player_query: Query<(Entity, &Transform, &Sprite, &PlayerComponent), With<PlayerComponent>>,
+    player_query: Query<(&Transform, &Sprite, &PlayerComponent), With<PlayerComponent>>,
     mut player_killed_message_writer: MessageWriter<PlayerKilledMessage>,
 ) {
-    for (player_entity, player_transform, player_sprite, _) in player_query.iter() {
+    for (player_transform, player_sprite, _) in player_query.iter() {
         for (projectile_entity, projectile_transform, projectile_sprite) in
             projectile_query.iter_mut()
         {
@@ -72,7 +82,6 @@ pub fn collision_system(
 
             if collision {
                 player_killed_message_writer.write(PlayerKilledMessage::new(projectile_entity));
-                commands.entity(player_entity).despawn();
                 break;
             }
         }
@@ -230,6 +239,56 @@ mod tests {
             app.update();
 
             assert!(did_message_fire::<PlayerKilledMessage>(&mut app));
+        }
+    }
+
+    #[cfg(test)]
+    mod on_enemy_projectile_hitting_player_system {
+        use crate::infrastructure::bevy::enemy_projectile::components::{
+            EnemyProjectileBundle, EnemyProjectileComponent, PlayerKilledMessage,
+        };
+        use crate::infrastructure::bevy::enemy_projectile::systems::on_enemy_projectile_hitting_player_system;
+        use crate::infrastructure::bevy::enemy_projectile::systems::tests::setup;
+        use bevy::app::Update;
+        use bevy::asset::{AssetApp, AssetPlugin, AssetServer};
+        use bevy::image::Image;
+        use bevy_test::send_message;
+
+        #[test]
+        fn should_despawn_the_enemy_projectile() {
+            let mut app = setup();
+            app.add_plugins(AssetPlugin::default())
+                .init_asset::<Image>();
+            app.add_systems(Update, on_enemy_projectile_hitting_player_system);
+            app.add_message::<PlayerKilledMessage>();
+
+            let asset_server = app.world().resource::<AssetServer>().clone();
+            let projectile = app
+                .world_mut()
+                .spawn(EnemyProjectileBundle::new(0.0, 0.0))
+                .id();
+
+            app.update();
+
+            let enemy_projectile_info = app
+                .world_mut()
+                .query::<&EnemyProjectileComponent>()
+                .iter(app.world())
+                .next();
+
+            assert!(enemy_projectile_info.is_some());
+
+            send_message(&mut app, PlayerKilledMessage::new(projectile));
+
+            app.update();
+
+            let enemy_projectile_info = app
+                .world_mut()
+                .query::<&EnemyProjectileComponent>()
+                .iter(app.world())
+                .next();
+
+            assert!(enemy_projectile_info.is_none());
         }
     }
 }

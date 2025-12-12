@@ -10,9 +10,7 @@ use crate::infrastructure::bevy::player_projectile::components::{
 };
 use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
 use bevy::input::ButtonInput;
-use bevy::prelude::{
-    AssetServer, Commands, KeyCode, MessageReader, Query, Res, ResMut, Time, Transform, With,
-};
+use bevy::prelude::{AssetServer, Commands, Entity, KeyCode, MessageReader, Query, Res, ResMut, Time, Transform, With};
 
 pub fn spawn_player_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(PlayerBundle::new(&asset_server));
@@ -87,6 +85,19 @@ pub fn respawn_player_system(
 ) {
     for _ in player_killed_message.read() {
         commands.spawn(PlayerBundle::new(&asset_server));
+    }
+}
+
+pub fn on_enemy_projectile_hitting_player_system(
+    mut commands: Commands,
+    mut player_killed_event_writer: MessageReader<PlayerKilledMessage>,
+    player_query: Query<Entity, With<PlayerComponent>>,
+
+) {
+    for _ in player_killed_event_writer.read() {
+        for player_entity in player_query.iter() {
+            commands.entity(player_entity).despawn();
+        }
     }
 }
 

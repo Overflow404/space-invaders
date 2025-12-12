@@ -1,6 +1,9 @@
 use crate::domain::player::Player;
 use crate::infrastructure::bevy::player::resources::PlayerResource;
-use crate::infrastructure::bevy::player::systems::{player_fire_system, player_movement_system, reload_player_weapon_system, respawn_player_system, spawn_player_system};
+use crate::infrastructure::bevy::player::systems::{
+    on_enemy_projectile_hitting_player_system, player_fire_system, player_movement_system,
+    reload_player_weapon_system, respawn_player_system, spawn_player_system,
+};
 use bevy::app::{App, Plugin, Startup, Update};
 
 pub struct PlayerPlugin;
@@ -15,7 +18,8 @@ impl Plugin for PlayerPlugin {
                     player_movement_system,
                     player_fire_system,
                     reload_player_weapon_system,
-                    respawn_player_system
+                    respawn_player_system,
+                    on_enemy_projectile_hitting_player_system,
                 ),
             );
     }
@@ -25,6 +29,7 @@ impl Plugin for PlayerPlugin {
 mod tests {
     use super::*;
     use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
+    use crate::infrastructure::bevy::enemy_projectile::components::PlayerKilledMessage;
     use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
     use crate::infrastructure::bevy::player_projectile::plugin::PlayerProjectilePlugin;
     use bevy::asset::AssetPlugin;
@@ -32,7 +37,6 @@ mod tests {
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode};
     use bevy_test::{contains_system_or_fail, get_resource_or_fail, minimal_app};
-    use crate::infrastructure::bevy::enemy_projectile::components::PlayerKilledMessage;
 
     fn setup() -> App {
         let mut app = minimal_app(false);
@@ -65,7 +69,11 @@ mod tests {
             "player_movement_system"
         ));
         assert!(contains_system_or_fail(&app, Update, "player_fire_system"));
-        assert!(contains_system_or_fail(&app, Update, "respawn_player_system"));
+        assert!(contains_system_or_fail(
+            &app,
+            Update,
+            "respawn_player_system"
+        ));
         assert!(contains_system_or_fail(
             &app,
             Update,
