@@ -1,3 +1,4 @@
+use crate::domain::weapons::Fireable;
 use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
 use crate::infrastructure::bevy::enemy_projectile::components::PlayerKilledMessage;
 use crate::infrastructure::bevy::game_area::resources::GAME_AREA_WIDTH;

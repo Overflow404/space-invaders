@@ -1,3 +1,4 @@
+use crate::domain::collision::check_aabb_collision;
 use crate::infrastructure::bevy::enemy_projectile::components::{
     EnemyProjectileComponent, EnemyProjectileExpiredMessage, EnemyProjectileTimer,
     PlayerKilledMessage,
@@ -71,14 +72,18 @@ pub fn collision_system(
             let player_size = player_sprite.custom_size.unwrap_or(Vec2::ONE);
             let projectile_size = projectile_sprite.custom_size.unwrap_or(Vec2::ONE);
 
-            let collision = projectile_transform.translation.x
-                < player_transform.translation.x + player_size.x / 2.0
-                && projectile_transform.translation.x + projectile_size.x
-                    > player_transform.translation.x - player_size.x / 2.0
-                && projectile_transform.translation.y
-                    < player_transform.translation.y + player_size.y / 2.0
-                && projectile_transform.translation.y + projectile_size.y
-                    > player_transform.translation.y - player_size.y / 2.0;
+            let collision = check_aabb_collision(
+                (
+                    projectile_transform.translation.x,
+                    projectile_transform.translation.y,
+                ),
+                (projectile_size.x, projectile_size.y),
+                (
+                    player_transform.translation.x,
+                    player_transform.translation.y,
+                ),
+                (player_size.x, player_size.y),
+            );
 
             if collision {
                 player_killed_message_writer.write(PlayerKilledMessage::new(projectile_entity));

@@ -1,5 +1,7 @@
+use crate::domain::weapons::{Fireable, WeaponState};
+
 pub struct Player {
-    is_firing: bool,
+    weapon_state: WeaponState,
 }
 
 impl Default for Player {
@@ -10,15 +12,34 @@ impl Default for Player {
 
 impl Player {
     pub fn new() -> Self {
-        Player { is_firing: false }
+        Player {
+            weapon_state: WeaponState::Ready,
+        }
+    }
+}
+
+impl Fireable for Player {
+    fn start_firing(&mut self) {
+        self.weapon_state = WeaponState::Firing;
     }
 
-    pub fn toggle_fire(&mut self) {
-        self.is_firing = !self.is_firing
+    fn reload(&mut self) {
+        self.weapon_state = WeaponState::Ready;
     }
 
-    pub fn is_firing(&self) -> bool {
-        self.is_firing
+    fn can_fire(&self) -> bool {
+        self.weapon_state == WeaponState::Ready
+    }
+
+    fn is_firing(&self) -> bool {
+        self.weapon_state == WeaponState::Firing
+    }
+
+    fn toggle_fire(&mut self) {
+        self.weapon_state = match self.weapon_state {
+            WeaponState::Ready => WeaponState::Firing,
+            WeaponState::Firing => WeaponState::Ready,
+        };
     }
 }
 
@@ -49,5 +70,41 @@ mod tests {
         player.toggle_fire();
         player.toggle_fire();
         assert!(!player.is_firing());
+    }
+
+    #[test]
+    fn new_player_can_fire() {
+        let player = create_player();
+        assert!(player.can_fire());
+    }
+
+    #[test]
+    fn player_cannot_fire_while_firing() {
+        let mut player = create_player();
+        player.start_firing();
+        assert!(!player.can_fire());
+    }
+
+    #[test]
+    fn start_firing_changes_state_to_firing() {
+        let mut player = create_player();
+        player.start_firing();
+        assert!(player.is_firing());
+    }
+
+    #[test]
+    fn reload_changes_state_to_ready() {
+        let mut player = create_player();
+        player.start_firing();
+        player.reload();
+        assert!(!player.is_firing());
+        assert!(player.can_fire());
+    }
+
+    #[test]
+    fn reloading_when_ready_keeps_state_ready() {
+        let mut player = create_player();
+        player.reload();
+        assert!(player.can_fire());
     }
 }

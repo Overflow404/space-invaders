@@ -1,3 +1,4 @@
+use crate::domain::collision::check_aabb_collision;
 use crate::domain::enemy_formation::{COLUMNS, FormationStatus, NUMBER_OF_STEPS_ON_X_AXE};
 use crate::infrastructure::bevy::enemy::components::{
     EnemyBundle, EnemyComponent, EnemyKilledMessage,
@@ -57,13 +58,9 @@ pub fn enemy_formation_lifecycle_system(
 fn calculate_step_x(enemy_width: f32, gap_x: f32) -> f32 {
     let n_enemies = COLUMNS as f32;
     let n_gaps = (COLUMNS - 1) as f32;
-
     let n_steps = (NUMBER_OF_STEPS_ON_X_AXE - COLUMNS) as f32;
-
     let block_width = (n_enemies * enemy_width) + (n_gaps * gap_x);
-
     let remaining_screen = GAME_AREA_WIDTH - block_width;
-
     let step = remaining_screen / n_steps;
 
     step.max(1.0)
@@ -121,14 +118,15 @@ pub fn collisions_system(
         for (enemy_entity, enemy_transform, enemy_sprite, enemy_component) in enemy_query.iter() {
             let enemy_size = enemy_sprite.custom_size.unwrap_or(Vec2::ONE);
 
-            let collision = player_projectile_transform.translation.x
-                < enemy_transform.translation.x + enemy_size.x / 2.0
-                && player_projectile_transform.translation.x + player_projectile_size.x
-                    > enemy_transform.translation.x - enemy_size.x / 2.0
-                && player_projectile_transform.translation.y
-                    < enemy_transform.translation.y + enemy_size.y / 2.0
-                && player_projectile_transform.translation.y + player_projectile_size.y
-                    > enemy_transform.translation.y - enemy_size.y / 2.0;
+            let collision = check_aabb_collision(
+                (
+                    player_projectile_transform.translation.x,
+                    player_projectile_transform.translation.y,
+                ),
+                (player_projectile_size.x, player_projectile_size.y),
+                (enemy_transform.translation.x, enemy_transform.translation.y),
+                (enemy_size.x, enemy_size.y),
+            );
 
             if collision {
                 enemy_formation_resource.0.kill(enemy_component.id);

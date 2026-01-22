@@ -1,3 +1,5 @@
+use crate::domain::weapons::{Fireable, WeaponState};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EnemyId(usize);
 
@@ -14,27 +16,44 @@ impl EnemyId {
 #[derive(Debug, Clone, Copy)]
 pub struct Enemy {
     id: EnemyId,
-    is_firing: bool,
+    weapon_state: WeaponState,
 }
 
 impl Enemy {
     pub fn new(id: usize) -> Self {
         Enemy {
             id: EnemyId::new(id),
-            is_firing: false,
+            weapon_state: WeaponState::Ready,
         }
     }
 
     pub fn get_id(&self) -> EnemyId {
         self.id
     }
+}
 
-    pub fn is_firing(&self) -> bool {
-        self.is_firing
+impl Fireable for Enemy {
+    fn start_firing(&mut self) {
+        self.weapon_state = WeaponState::Firing;
     }
 
-    pub fn toggle_fire(&mut self) {
-        self.is_firing = !self.is_firing;
+    fn reload(&mut self) {
+        self.weapon_state = WeaponState::Ready;
+    }
+
+    fn can_fire(&self) -> bool {
+        self.weapon_state == WeaponState::Ready
+    }
+
+    fn is_firing(&self) -> bool {
+        self.weapon_state == WeaponState::Firing
+    }
+
+    fn toggle_fire(&mut self) {
+        self.weapon_state = match self.weapon_state {
+            WeaponState::Ready => WeaponState::Firing,
+            WeaponState::Firing => WeaponState::Ready,
+        };
     }
 }
 
@@ -71,5 +90,34 @@ mod tests {
         enemy.toggle_fire();
         enemy.toggle_fire();
         assert!(!enemy.is_firing());
+    }
+
+    #[test]
+    fn new_enemy_can_fire() {
+        let enemy = create_enemy_with_id(1);
+        assert!(enemy.can_fire());
+    }
+
+    #[test]
+    fn enemy_cannot_fire_while_firing() {
+        let mut enemy = create_enemy_with_id(1);
+        enemy.start_firing();
+        assert!(!enemy.can_fire());
+    }
+
+    #[test]
+    fn start_firing_changes_state_to_firing() {
+        let mut enemy = create_enemy_with_id(1);
+        enemy.start_firing();
+        assert!(enemy.is_firing());
+    }
+
+    #[test]
+    fn reload_changes_state_to_ready() {
+        let mut enemy = create_enemy_with_id(1);
+        enemy.start_firing();
+        enemy.reload();
+        assert!(!enemy.is_firing());
+        assert!(enemy.can_fire());
     }
 }
