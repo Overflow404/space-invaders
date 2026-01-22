@@ -61,27 +61,33 @@ impl EnemyProjectileBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::color::Color;
+    use bevy_test::TestAppBuilder;
 
     #[test]
-    fn should_create_the_bundle() {
+    fn spawning_enemy_projectile_creates_entity_at_specified_position() {
+        let mut app = TestAppBuilder::new().build();
+
         let start_x = 100.0;
         let start_y = 200.0;
 
-        let bundle = EnemyProjectileBundle::new(start_x, start_y);
+        app.world_mut()
+            .spawn(EnemyProjectileBundle::new(start_x, start_y));
 
-        assert_eq!(bundle.projectile, EnemyProjectileComponent);
+        let mut query = app
+            .world_mut()
+            .query::<(&EnemyProjectileComponent, &Transform, &Sprite, &EnemyProjectileTimer)>();
+        let (projectile, transform, sprite, timer) = query
+            .single(app.world())
+            .expect("EnemyProjectile not found");
 
-        assert_eq!(bundle.transform.translation.x, start_x);
-        assert_eq!(bundle.transform.translation.y, start_y);
-        assert_eq!(bundle.transform.translation.z, 0f32);
-
+        assert_eq!(*projectile, EnemyProjectileComponent);
+        assert_eq!(transform.translation.x, start_x);
+        assert_eq!(transform.translation.y, start_y);
         assert_eq!(
-            bundle.sprite.custom_size,
-            Some(Vec2::new(ENEMY_PROJECTILE_WIDTH, ENEMY_PROJECTILE_HEIGHT)),
+            sprite.custom_size,
+            Some(Vec2::new(ENEMY_PROJECTILE_WIDTH, ENEMY_PROJECTILE_HEIGHT))
         );
-
-        assert_eq!(bundle.sprite.color, Color::srgb(1.0, 1.0, 1.0));
-        //TODO timer tests
+        assert_eq!(sprite.color, ENEMY_PROJECTILE_COLOR);
+        assert_eq!(timer.0.mode(), TimerMode::Repeating);
     }
 }

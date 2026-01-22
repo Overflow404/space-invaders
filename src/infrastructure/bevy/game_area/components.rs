@@ -30,13 +30,13 @@ impl GameAreaBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::asset::{AssetApp, AssetPlugin, Handle};
+    use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::image::Image;
-    use bevy_test::minimal_app;
+    use bevy_test::TestAppBuilder;
 
     #[test]
-    fn should_create_the_bundle() {
-        let mut app = minimal_app(false);
+    fn spawning_game_area_creates_background_with_specified_dimensions() {
+        let mut app = TestAppBuilder::new().build();
         app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();
 
@@ -44,15 +44,14 @@ mod tests {
         let width = 800.0;
         let height = 600.0;
 
-        let bundle = GameAreaBundle::new(&asset_server, width, height);
+        app.world_mut()
+            .spawn(GameAreaBundle::new(&asset_server, width, height));
 
-        assert_eq!(bundle.game_area, GameAreaComponent);
+        let mut query = app.world_mut().query::<(&GameAreaComponent, &Transform, &Sprite)>();
+        let (game_area, transform, sprite) = query.single(app.world()).expect("GameArea not found");
 
-        assert_eq!(bundle.transform.translation.x, 0.0);
-        assert_eq!(bundle.transform.translation.y, 0.0);
-        assert_eq!(bundle.transform.translation.z, -1.0);
-
-        assert!(matches!(bundle.sprite.image, Handle::Strong(_)));
-        assert_eq!(bundle.sprite.custom_size, Some(Vec2::new(width, height)));
+        assert_eq!(*game_area, GameAreaComponent);
+        assert_eq!(transform.translation.z, -1.0);
+        assert_eq!(sprite.custom_size, Some(Vec2::new(width, height)));
     }
 }

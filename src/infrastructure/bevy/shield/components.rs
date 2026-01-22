@@ -186,11 +186,11 @@ mod tests {
     use crate::infrastructure::bevy::shield::resources::SHIELD_Y;
     use bevy::asset::{AssetApp, AssetPlugin, Assets};
     use bevy::image::Image;
-    use bevy_test::minimal_app;
+    use bevy_test::TestAppBuilder;
 
     #[test]
     fn should_create_the_shield_bundle() {
-        let mut app = minimal_app(false);
+        let mut app = TestAppBuilder::new().build();
         app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();
 

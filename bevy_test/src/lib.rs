@@ -1,8 +1,10 @@
-use bevy::app::{App, PluginGroup};
-use bevy::asset::{AssetServer, Handle};
+use bevy::app::{App, Plugin, PluginGroup};
+use bevy::asset::{AssetPlugin, AssetServer, Handle};
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::ecs::system::RunSystemOnce;
-use bevy::prelude::{Component, Entity, Message, MessageReader, Messages, Mut, Resource, Time};
+use bevy::image::Image;
+use bevy::input::ButtonInput;
+use bevy::prelude::{AssetApp, Component, Entity, KeyCode, Message, MessageReader, Messages, Mut, Resource, Text, Time, Transform, Vec3, With};
 use bevy::text::Font;
 use bevy::time::TimePlugin;
 use bevy::MinimalPlugins;
@@ -89,4 +91,119 @@ pub fn minimal_app(disable_time_plugin: bool) -> App {
         false => MinimalPlugins.build(),
     });
     app
+}
+
+pub fn query_single_transform<T: Component>(app: &mut App) -> Vec3 {
+    app.world_mut()
+        .query_filtered::<&Transform, With<T>>()
+        .single(app.world())
+        .expect("Component not found or multiple instances exist")
+        .translation
+}
+
+pub fn query_single_text<T: Component>(app: &mut App) -> String {
+    app.world_mut()
+        .query_filtered::<&Text, With<T>>()
+        .single(app.world())
+        .expect("Text component not found or multiple instances exist")
+        .0
+        .clone()
+}
+
+pub fn assert_text_equals<T: Component>(app: &mut App, expected: &str) {
+    let actual = query_single_text::<T>(app);
+    assert_eq!(actual, expected, "Text component value mismatch");
+}
+
+pub fn get_single_entity<T: Component>(app: &mut App) -> Entity {
+    app.world_mut()
+        .query_filtered::<Entity, With<T>>()
+        .single(app.world())
+        .expect("Component not found or multiple instances exist")
+}
+
+pub fn get_all_entities<T: Component>(app: &mut App) -> Vec<Entity> {
+    app.world_mut()
+        .query_filtered::<Entity, With<T>>()
+        .iter(app.world())
+        .collect()
+}
+
+pub struct TestAppBuilder {
+    app: App,
+    needs_update: bool,
+    auto_update: bool,
+}
+
+impl TestAppBuilder {
+    pub fn new() -> Self {
+        Self {
+            app: minimal_app(false),
+            needs_update: false,
+            auto_update: true,
+        }
+    }
+
+    pub fn with_time_disabled() -> Self {
+        Self {
+            app: minimal_app(true),
+            needs_update: false,
+            auto_update: true,
+        }
+    }
+
+    pub fn without_auto_update(mut self) -> Self {
+        self.auto_update = false;
+        self
+    }
+
+    pub fn with_plugin<P: Plugin>(mut self, plugin: P) -> Self {
+        self.app.add_plugins(plugin);
+        self.needs_update = true;
+        self
+    }
+
+    pub fn with_message<M: Message>(mut self) -> Self {
+        self.app.add_message::<M>();
+        self
+    }
+
+    pub fn with_assets(mut self) -> Self {
+        self.app
+            .add_plugins(AssetPlugin::default())
+            .init_asset::<Image>()
+            .init_asset::<Font>();
+        self
+    }
+
+    pub fn with_input(mut self) -> Self {
+        self.app.init_resource::<ButtonInput<KeyCode>>();
+        self
+    }
+
+    pub fn with_time(mut self) -> Self {
+        self.app.init_resource::<Time>();
+        self
+    }
+
+    pub fn with_setup<F>(mut self, setup_fn: F) -> Self
+    where
+        F: FnOnce(&mut App),
+    {
+        setup_fn(&mut self.app);
+        self
+    }
+
+    pub fn build(mut self) -> App {
+        if self.needs_update && self.auto_update {
+            self.app.update();
+        }
+        self.app
+    }
+}
+
+impl Default for TestAppBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }

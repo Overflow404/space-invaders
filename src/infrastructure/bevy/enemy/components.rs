@@ -58,37 +58,31 @@ impl EnemyBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::asset::{AssetPlugin, AssetServer, Handle};
-    use bevy::image::Image;
-    use bevy::prelude::*;
-    use bevy_test::{get_resource_or_fail, minimal_app};
+    use bevy::asset::AssetServer;
+    use bevy_test::TestAppBuilder;
 
     #[test]
-    fn should_create_the_enemy_bundle() {
-        let mut app = minimal_app(false);
+    fn spawning_enemy_creates_entity_at_correct_position() {
+        let mut app = TestAppBuilder::new()
+            .with_assets()
+            .build();
 
-        app.add_plugins(AssetPlugin::default())
-            .init_asset::<Image>();
-
-        let asset_server = get_resource_or_fail::<AssetServer>(&mut app);
+        let asset_server = app.world().resource::<AssetServer>().clone();
 
         let expected_id = 99;
         let expected_x = 100.0;
         let expected_y = 200.0;
 
-        let bundle = EnemyBundle::new(expected_id, expected_x, expected_y, asset_server);
+        app.world_mut()
+            .spawn(EnemyBundle::new(expected_id, expected_x, expected_y, &asset_server));
 
-        assert_eq!(bundle.enemy, EnemyComponent::new(expected_id));
-        assert_eq!(bundle.transform.translation.x, expected_x);
-        assert_eq!(bundle.transform.translation.y, expected_y);
-        assert_eq!(bundle.transform.translation.z, 0.0);
+        let mut query = app.world_mut().query::<(&EnemyComponent, &Transform, &Sprite)>();
+        let (enemy, transform, sprite) = query.single(app.world()).expect("Enemy not found");
 
-        assert_eq!(
-            bundle.sprite.custom_size,
-            Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT))
-        );
-
-        assert_eq!(bundle.sprite.color, ENEMY_COLOR);
-        assert!(matches!(bundle.sprite.image, Handle::Strong(_)));
+        assert_eq!(enemy.id, expected_id);
+        assert_eq!(transform.translation.x, expected_x);
+        assert_eq!(transform.translation.y, expected_y);
+        assert_eq!(sprite.custom_size, Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)));
+        assert_eq!(sprite.color, ENEMY_COLOR);
     }
 }

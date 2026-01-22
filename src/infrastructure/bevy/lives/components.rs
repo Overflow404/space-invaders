@@ -95,7 +95,7 @@ impl LivesLabelBundle {
 mod tests {
     use super::*;
     use bevy::asset::{AssetApp, AssetPlugin, AssetServer};
-    use bevy_test::{dummy_font, minimal_app};
+    use bevy_test::{dummy_font, TestAppBuilder};
 
     #[test]
     fn should_create_lives_view_bundle() {
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn should_create_lives_label_bundle() {
-        let mut app = minimal_app(false);
+        let mut app = TestAppBuilder::new().build();
         app.add_plugins(AssetPlugin::default()).init_asset::<Font>();
 
         let font = dummy_font(&app);
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn should_create_lives_value_bundle() {
-        let mut app = minimal_app(false);
+        let mut app = TestAppBuilder::new().build();
         app.add_plugins(AssetPlugin::default()).init_asset::<Font>();
         app.init_asset::<Image>();
 

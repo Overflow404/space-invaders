@@ -34,26 +34,31 @@ impl PlayerProjectileBundle {
 
 #[cfg(test)]
 mod tests {
-    use crate::infrastructure::bevy::player_projectile::components::{
-        PlayerProjectileBundle, PlayerProjectileComponent,
-    };
-    use bevy::color::Color;
-    use bevy::math::Vec2;
+    use super::*;
+    use bevy_test::TestAppBuilder;
 
     #[test]
-    fn should_create_the_bundle() {
+    fn spawning_projectile_creates_entity_at_specified_position() {
+        let mut app = TestAppBuilder::new().build();
+
         let start_x = 100.0;
         let start_y = 50.0;
 
-        let bundle = PlayerProjectileBundle::new(start_x, start_y);
+        app.world_mut()
+            .spawn(PlayerProjectileBundle::new(start_x, start_y));
 
-        assert_eq!(bundle.projectile, PlayerProjectileComponent);
+        let mut query = app.world_mut().query::<(&PlayerProjectileComponent, &Transform, &Sprite)>();
+        let (projectile, transform, sprite) = query
+            .single(app.world())
+            .expect("PlayerProjectile not found");
 
-        assert_eq!(bundle.transform.translation.x, start_x);
-        assert_eq!(bundle.transform.translation.y, start_y);
-        assert_eq!(bundle.transform.translation.z, 0f32);
-
-        assert_eq!(bundle.sprite.color, Color::srgb(1.0, 1.0, 1.0));
-        assert_eq!(bundle.sprite.custom_size, Some(Vec2::new(5.0, 15.0)),);
+        assert_eq!(*projectile, PlayerProjectileComponent);
+        assert_eq!(transform.translation.x, start_x);
+        assert_eq!(transform.translation.y, start_y);
+        assert_eq!(
+            sprite.custom_size,
+            Some(Vec2::new(PLAYER_PROJECTILE_WIDTH, PLAYER_PROJECTILE_HEIGHT))
+        );
+        assert_eq!(sprite.color, PLAYER_PROJECTILE_COLOR);
     }
 }

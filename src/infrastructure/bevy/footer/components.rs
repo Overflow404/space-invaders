@@ -33,20 +33,23 @@ impl FooterBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy_test::TestAppBuilder;
 
     #[test]
-    fn should_create_the_footer_bundle() {
-        let bundle = FooterBundle::new();
+    fn spawning_footer_creates_line_at_bottom() {
+        let mut app = TestAppBuilder::new().build();
 
-        assert_eq!(bundle.transform.translation.x, LINE_X);
-        assert_eq!(bundle.transform.translation.y, LINE_Y);
-        assert_eq!(bundle.transform.translation.z, 0.0);
+        app.world_mut().spawn(FooterBundle::new());
 
+        let mut query = app.world_mut().query::<(&FooterComponent, &Transform, &Sprite)>();
+        let (_footer, transform, sprite) = query.single(app.world()).expect("Footer not found");
+
+        assert_eq!(transform.translation.x, LINE_X);
+        assert_eq!(transform.translation.y, LINE_Y);
         assert_eq!(
-            bundle.sprite.custom_size,
+            sprite.custom_size,
             Some(Vec2::new(LINE_LENGTH, LINE_THICKNESS))
         );
-
-        assert_eq!(bundle.sprite.color, LINE_COLOR);
+        assert_eq!(sprite.color, LINE_COLOR);
     }
 }

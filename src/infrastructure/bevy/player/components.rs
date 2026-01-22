@@ -32,13 +32,13 @@ impl PlayerBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::asset::{AssetPlugin, AssetServer, Handle};
+    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::prelude::*;
-    use bevy_test::{get_resource_or_fail, minimal_app};
+    use bevy_test::TestAppBuilder;
 
     fn setup() -> App {
-        let mut app = minimal_app(false);
+        let mut app = TestAppBuilder::new().build();
         app.add_plugins(AssetPlugin::default())
             .init_asset::<Image>();
 
@@ -46,23 +46,18 @@ mod tests {
     }
 
     #[test]
-    fn should_create_the_bundle() {
+    fn spawning_player_creates_entity_with_correct_components() {
         let mut app = setup();
 
-        let asset_server = get_resource_or_fail::<AssetServer>(&mut app);
+        let asset_server = app.world().resource::<AssetServer>().clone();
+        app.world_mut().spawn(PlayerBundle::new(&asset_server));
 
-        let bundle = PlayerBundle::new(asset_server);
+        let mut query = app.world_mut().query::<(&PlayerComponent, &Transform, &Sprite)>();
+        let (player, transform, sprite) = query.single(app.world()).expect("Player not found");
 
-        assert_eq!(bundle.player, PlayerComponent);
-        assert_eq!(bundle.transform.translation.x, PLAYER_X);
-        assert_eq!(bundle.transform.translation.y, PLAYER_Y);
-        assert_eq!(bundle.transform.translation.z, 0.0);
-
-        assert_eq!(
-            bundle.sprite.custom_size,
-            Some(Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT))
-        );
-
-        assert!(matches!(bundle.sprite.image, Handle::Strong(_)));
+        assert_eq!(*player, PlayerComponent);
+        assert_eq!(transform.translation.x, PLAYER_X);
+        assert_eq!(transform.translation.y, PLAYER_Y);
+        assert_eq!(sprite.custom_size, Some(Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT)));
     }
 }

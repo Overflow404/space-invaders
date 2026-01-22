@@ -104,7 +104,7 @@ mod tests {
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::color::Color;
     use bevy::ui::Val;
-    use bevy_test::{dummy_font, minimal_app};
+    use bevy_test::{dummy_font, TestAppBuilder};
 
     #[test]
     fn should_create_score_score_container_bundle() {
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn should_create_score_label_bundle() {
-        let mut app = minimal_app(false);
+        let mut app = TestAppBuilder::new().build();
         app.add_plugins(AssetPlugin::default()).init_asset::<Font>();
 
         let font = dummy_font(&app);
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn should_create_score_value_bundle() {
-        let mut app = minimal_app(false);
+        let mut app = TestAppBuilder::new().build();
         app.add_plugins(AssetPlugin::default()).init_asset::<Font>();
 
         let font = dummy_font(&app);

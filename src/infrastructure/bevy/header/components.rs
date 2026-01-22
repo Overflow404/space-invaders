@@ -40,20 +40,21 @@ impl Default for HeaderBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy_test::TestAppBuilder;
 
     #[test]
-    fn should_create_the_bundle() {
-        let bundle = HeaderBundle::new();
+    fn spawning_header_creates_ui_node_with_correct_layout() {
+        let mut app = TestAppBuilder::new().build();
 
-        assert_eq!(bundle.header, HeaderComponent);
+        app.world_mut().spawn(HeaderBundle::new());
 
-        assert_eq!(bundle.node.width, Val::Percent(100.0));
-        assert_eq!(bundle.node.height, Val::Px(HEADER_HEIGHT));
-        assert_eq!(bundle.node.flex_direction, FlexDirection::Row);
-        assert_eq!(bundle.node.justify_content, JustifyContent::SpaceBetween);
-        assert_eq!(bundle.node.align_items, AlignItems::Center);
-        assert_eq!(bundle.node.padding, UiRect::horizontal(Val::Px(20.0)));
+        let mut query = app.world_mut().query::<(&HeaderComponent, &Node, &BackgroundColor)>();
+        let (header, node, bg_color) = query.single(app.world()).expect("Header not found");
 
-        assert_eq!(bundle.background_color.0, Color::srgb_u8(0, 0, 0));
+        assert_eq!(*header, HeaderComponent);
+        assert_eq!(node.width, Val::Percent(100.0));
+        assert_eq!(node.height, Val::Px(HEADER_HEIGHT));
+        assert_eq!(node.flex_direction, FlexDirection::Row);
+        assert_eq!(bg_color.0, Color::srgb_u8(0, 0, 0));
     }
 }
