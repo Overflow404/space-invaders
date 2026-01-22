@@ -127,6 +127,7 @@ mod tests {
     #[cfg(test)]
     mod handle_enemy_killed_system {
         use super::*;
+        use crate::domain::enemy::EnemyId;
 
         #[test]
         fn should_increase_score_when_enemy_is_killed() {
@@ -135,7 +136,10 @@ mod tests {
                 .add_systems(Update, handle_enemy_killed_system);
 
             let dummy = spawn_dummy_entity(&mut app);
-            send_message(&mut app, EnemyKilledMessage::new(dummy, 1, dummy));
+            send_message(
+                &mut app,
+                EnemyKilledMessage::new(dummy, EnemyId::new(1), dummy),
+            );
 
             app.update();
 

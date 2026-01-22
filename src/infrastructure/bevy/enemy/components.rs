@@ -1,3 +1,4 @@
+use crate::domain::enemy::EnemyId;
 use crate::infrastructure::bevy::enemy::resources::{
     ENEMY_COLOR, ENEMY_HEIGHT, ENEMY_IMAGE, ENEMY_WIDTH,
 };
@@ -8,12 +9,12 @@ use bevy::prelude::{Bundle, Component, Entity, Message, Sprite, Transform, defau
 #[derive(Message)]
 pub struct EnemyKilledMessage {
     pub enemy_entity: Entity,
-    pub enemy_id: usize,
+    pub enemy_id: EnemyId,
     pub projectile_entity: Entity,
 }
 
 impl EnemyKilledMessage {
-    pub fn new(enemy_entity: Entity, enemy_id: usize, projectile_entity: Entity) -> Self {
+    pub fn new(enemy_entity: Entity, enemy_id: EnemyId, projectile_entity: Entity) -> Self {
         EnemyKilledMessage {
             enemy_entity,
             enemy_id,
@@ -31,17 +32,17 @@ pub struct EnemyBundle {
 
 #[derive(Component, Clone, PartialEq, Debug)]
 pub struct EnemyComponent {
-    pub id: usize,
+    pub id: EnemyId,
 }
 
 impl EnemyComponent {
-    pub fn new(id: usize) -> Self {
+    pub fn new(id: EnemyId) -> Self {
         Self { id }
     }
 }
 
 impl EnemyBundle {
-    pub fn new(id: usize, x: f32, y: f32, asset_server: &AssetServer) -> Self {
+    pub fn new(id: EnemyId, x: f32, y: f32, asset_server: &AssetServer) -> Self {
         Self {
             enemy: EnemyComponent::new(id),
             sprite: Sprite {
@@ -67,7 +68,7 @@ mod tests {
 
         let asset_server = app.world().resource::<AssetServer>().clone();
 
-        let expected_id = 99;
+        let expected_id = EnemyId::new(99);
         let expected_x = 100.0;
         let expected_y = 200.0;
 

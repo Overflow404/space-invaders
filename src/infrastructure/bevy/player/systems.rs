@@ -315,6 +315,7 @@ mod tests {
     #[cfg(test)]
     mod reload_player_weapon_system {
         use super::*;
+        use crate::domain::enemy::EnemyId;
 
         fn setup_reload() -> App {
             let mut app = setup();
@@ -333,7 +334,10 @@ mod tests {
             let mut app = setup_reload();
             let dummy = spawn_dummy_entity(&mut app);
 
-            send_message(&mut app, EnemyKilledMessage::new(dummy, 1, dummy));
+            send_message(
+                &mut app,
+                EnemyKilledMessage::new(dummy, EnemyId::new(1), dummy),
+            );
             app.update();
 
             assert!(

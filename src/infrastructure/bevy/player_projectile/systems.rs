@@ -94,6 +94,7 @@ mod tests {
     #[cfg(test)]
     mod player_projectile_lifecycle_system {
         use super::*;
+        use crate::domain::enemy::EnemyId;
         use bevy_test::get_resource_mut_or_fail;
 
         #[test]
@@ -106,7 +107,7 @@ mod tests {
 
             send_message(
                 &mut app,
-                EnemyKilledMessage::new(enemy_entity, 1, player_projectile_entity),
+                EnemyKilledMessage::new(enemy_entity, EnemyId::new(1), player_projectile_entity),
             );
 
             app.update();

@@ -1,29 +1,40 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EnemyId(usize);
+
+impl EnemyId {
+    pub fn new(id: usize) -> Self {
+        EnemyId(id)
+    }
+
+    pub fn value(&self) -> usize {
+        self.0
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct Enemy {
-    id: usize,
+    id: EnemyId,
     is_firing: bool,
 }
 
 impl Enemy {
+    pub fn new(id: usize) -> Self {
+        Enemy {
+            id: EnemyId::new(id),
+            is_firing: false,
+        }
+    }
+
+    pub fn get_id(&self) -> EnemyId {
+        self.id
+    }
+
     pub fn is_firing(&self) -> bool {
         self.is_firing
     }
 
     pub fn toggle_fire(&mut self) {
         self.is_firing = !self.is_firing;
-    }
-}
-
-impl Enemy {
-    pub fn new(id: usize) -> Self {
-        Enemy {
-            id,
-            is_firing: false,
-        }
-    }
-
-    pub fn get_id(&self) -> usize {
-        self.id
     }
 }
 
@@ -38,7 +49,7 @@ mod tests {
     #[test]
     fn new_enemy_has_assigned_id() {
         let enemy = create_enemy_with_id(42);
-        assert_eq!(enemy.get_id(), 42);
+        assert_eq!(enemy.get_id(), EnemyId::new(42));
     }
 
     #[test]

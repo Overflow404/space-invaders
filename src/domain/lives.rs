@@ -1,3 +1,5 @@
+pub const DEFAULT_LIVES: u8 = 3;
+
 pub struct Lives {
     current: u8,
 }
@@ -10,7 +12,9 @@ impl Default for Lives {
 
 impl Lives {
     pub fn new() -> Self {
-        Lives { current: 3 }
+        Lives {
+            current: DEFAULT_LIVES,
+        }
     }
 
     pub fn decrement(&mut self) {
@@ -24,7 +28,7 @@ impl Lives {
     }
 
     pub fn reset(&mut self) {
-        self.current = 3;
+        self.current = DEFAULT_LIVES;
     }
 }
 

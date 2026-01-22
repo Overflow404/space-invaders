@@ -14,7 +14,7 @@ impl Score {
     }
 
     pub fn increment(&mut self, points: u32) {
-        self.current += points;
+        self.current = self.current.saturating_add(points);
     }
 
     pub fn reset(&mut self) {
@@ -66,5 +66,19 @@ mod tests {
         let mut score = create_score_with_value(100);
         score.reset();
         assert_eq!(score.get_current(), 0);
+    }
+
+    #[test]
+    fn score_saturates_at_maximum_value() {
+        let mut score = create_score_with_value(u32::MAX - 10);
+        score.increment(20);
+        assert_eq!(score.get_current(), u32::MAX);
+    }
+
+    #[test]
+    fn score_handles_large_increments_without_overflow() {
+        let mut score = create_score();
+        score.increment(u32::MAX);
+        assert_eq!(score.get_current(), u32::MAX);
     }
 }

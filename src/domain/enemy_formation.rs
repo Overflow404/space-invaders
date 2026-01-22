@@ -1,4 +1,4 @@
-use crate::domain::enemy::Enemy;
+use crate::domain::enemy::{Enemy, EnemyId};
 use tracing::info;
 
 pub const NUMBER_OF_STEPS_ON_X_AXE: usize = 41;
@@ -123,9 +123,14 @@ impl EnemyFormation {
         self.status
     }
 
-    pub fn kill(&mut self, id: usize) {
-        let id_index = id - 1;
+    pub fn kill(&mut self, id: EnemyId) {
+        let id_value = id.value();
 
+        if id_value == 0 || id_value > COLUMNS * ROWS {
+            return;
+        }
+
+        let id_index = id_value - 1;
         let row = id_index / COLUMNS;
         let col = id_index % COLUMNS;
 
@@ -257,7 +262,7 @@ mod tests {
     fn killing_enemy_removes_it_from_formation() {
         let mut formation = create_formation();
 
-        formation.kill(3);
+        formation.kill(EnemyId::new(3));
 
         let enemies = formation.get_enemies();
         assert!(enemies[0][2].is_none());
@@ -267,8 +272,38 @@ mod tests {
     fn killing_all_enemies_annihilates_formation() {
         let mut formation = create_formation();
 
-        (1..=55).for_each(|id| formation.kill(id));
+        (1..=55).for_each(|id| formation.kill(EnemyId::new(id)));
 
         assert_eq!(formation.get_status(), FormationStatus::Annihilated);
+    }
+
+    #[test]
+    fn killing_invalid_enemy_id_does_nothing() {
+        let mut formation = create_formation();
+
+        formation.kill(EnemyId::new(999));
+
+        let enemies = formation.get_enemies();
+        let alive_count = enemies
+            .iter()
+            .flat_map(|row| row.iter())
+            .filter(|e| e.is_some())
+            .count();
+        assert_eq!(alive_count, 55);
+    }
+
+    #[test]
+    fn killing_zero_id_does_nothing() {
+        let mut formation = create_formation();
+
+        formation.kill(EnemyId::new(0));
+
+        let enemies = formation.get_enemies();
+        let alive_count = enemies
+            .iter()
+            .flat_map(|row| row.iter())
+            .filter(|e| e.is_some())
+            .count();
+        assert_eq!(alive_count, 55);
     }
 }
