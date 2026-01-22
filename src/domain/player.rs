@@ -24,24 +24,30 @@ impl Player {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::player::Player;
+    use super::*;
 
-    #[test]
-    fn should_create_player() {
-        let player = Player::new();
-        assert!(!player.is_firing, "Initial firing state should be false");
+    fn create_player() -> Player {
+        Player::new()
     }
 
     #[test]
-    fn toggle_fire_switches_state() {
-        let mut player = Player::new();
+    fn new_player_is_not_firing() {
+        let player = create_player();
+        assert!(!player.is_firing());
+    }
 
-        assert!(!player.is_firing(), "Initial firing state should be false");
-
+    #[test]
+    fn toggling_fire_starts_firing() {
+        let mut player = create_player();
         player.toggle_fire();
-        assert!(player.is_firing(), "Player should start firing");
+        assert!(player.is_firing());
+    }
 
+    #[test]
+    fn toggling_fire_twice_stops_firing() {
+        let mut player = create_player();
         player.toggle_fire();
-        assert!(!player.is_firing(), "Player should stop firing");
+        player.toggle_fire();
+        assert!(!player.is_firing());
     }
 }

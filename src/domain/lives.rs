@@ -30,36 +30,43 @@ impl Lives {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::lives::Lives;
+    use super::*;
+
+    fn create_lives() -> Lives {
+        Lives::new()
+    }
+
+    fn decrement_n_times(lives: &mut Lives, n: u8) {
+        for _ in 0..n {
+            lives.decrement();
+        }
+    }
 
     #[test]
-    fn should_create_lives() {
-        let lives = Lives::new();
+    fn new_lives_starts_at_three() {
+        let lives = create_lives();
         assert_eq!(lives.get_current(), 3);
     }
 
     #[test]
-    fn should_decrement_lives() {
-        let mut lives = Lives::new();
+    fn decrementing_lives_decreases_current_value() {
+        let mut lives = create_lives();
         lives.decrement();
         assert_eq!(lives.get_current(), 2);
     }
 
     #[test]
-    fn should_reset_lives() {
-        let mut lives = Lives::new();
+    fn resetting_lives_returns_to_three() {
+        let mut lives = create_lives();
         lives.decrement();
         lives.reset();
         assert_eq!(lives.get_current(), 3);
     }
 
     #[test]
-    fn should_not_decrement_lives_when_exhausted() {
-        let mut lives = Lives::new();
-        lives.decrement();
-        lives.decrement();
-        lives.decrement();
-        lives.decrement();
+    fn exhausted_lives_cannot_be_decremented_below_zero() {
+        let mut lives = create_lives();
+        decrement_n_times(&mut lives, 4);
 
         assert_eq!(lives.get_current(), 0);
     }

@@ -144,130 +144,131 @@ impl EnemyFormation {
 }
 #[cfg(test)]
 mod tests {
-    use crate::domain::enemy_formation::{
-        EnemyFormation, FormationStatus, MovingDirection, FREE_MOVING_SPACE_ON_X_AXE,
-    };
+    use super::*;
 
-    #[test]
-    fn should_create_formation() {
-        let formation = EnemyFormation::new();
+    fn create_formation() -> EnemyFormation {
+        EnemyFormation::new()
+    }
 
-        assert_eq!(formation.enemies.len(), 5);
-        assert_eq!(formation.enemies[0].len(), 11);
+    fn advance_formation_n_times(formation: &mut EnemyFormation, n: usize) {
+        for _ in 0..n {
+            formation.advance();
+        }
+    }
 
-        assert_eq!(formation.position, (0, 0));
-        assert_eq!(formation.direction, MovingDirection::ToRight);
-        assert_eq!(formation.status, FormationStatus::Assembled);
+    fn advance_until_breached(formation: &mut EnemyFormation) {
+        while formation.get_status() != FormationStatus::Breached {
+            formation.advance();
+        }
     }
 
     #[test]
-    fn should_advance_to_the_right_when_there_is_space() {
-        let mut formation = EnemyFormation::new();
+    fn new_formation_starts_assembled_at_origin() {
+        let formation = create_formation();
+
+        assert_eq!(formation.get_position(), (0, 0));
+        assert_eq!(formation.get_status(), FormationStatus::Assembled);
+
+        let enemies = formation.get_enemies();
+        assert_eq!(enemies.len(), 5);
+        assert_eq!(enemies[0].len(), 11);
+    }
+
+    #[test]
+    fn advancing_formation_moves_right_and_changes_status() {
+        let mut formation = create_formation();
 
         formation.advance();
 
-        assert_eq!(formation.position, (1, 0));
-        assert_eq!(formation.direction, MovingDirection::ToRight);
-        assert_eq!(formation.status, FormationStatus::Advancing);
+        assert_eq!(formation.get_position(), (1, 0));
+        assert_eq!(formation.get_status(), FormationStatus::Advancing);
     }
 
     #[test]
-    fn should_hit_right_wall_and_drop_down() {
-        let mut formation = EnemyFormation::new();
+    fn formation_drops_down_and_reverses_at_right_boundary() {
+        let mut formation = create_formation();
 
-        for _ in 0..FREE_MOVING_SPACE_ON_X_AXE {
-            formation.advance();
-        }
+        advance_formation_n_times(&mut formation, FREE_MOVING_SPACE_ON_X_AXE);
 
-        assert_eq!(formation.position, (30, 0));
-        assert_eq!(formation.direction, MovingDirection::ToRight);
+        assert_eq!(formation.get_position(), (30, 0));
 
         formation.advance();
 
-        assert_eq!(formation.position, (30, 1));
-        assert_eq!(formation.direction, MovingDirection::ToLeft);
+        assert_eq!(formation.get_position(), (30, 1));
     }
 
     #[test]
-    fn should_advance_to_the_left_when_there_is_space() {
-        let mut formation = EnemyFormation::new();
+    fn formation_moves_left_after_hitting_right_boundary() {
+        let mut formation = create_formation();
 
-        for _ in 0..(FREE_MOVING_SPACE_ON_X_AXE + 1) {
-            formation.advance();
-        }
+        advance_formation_n_times(&mut formation, FREE_MOVING_SPACE_ON_X_AXE + 1);
+
+        let (x_before, y_before) = formation.get_position();
+        formation.advance();
+        let (x_after, y_after) = formation.get_position();
+
+        assert!(x_after < x_before);
+        assert_eq!(y_after, y_before);
+    }
+
+    #[test]
+    fn formation_drops_down_and_reverses_at_left_boundary() {
+        let mut formation = create_formation();
+
+        advance_formation_n_times(&mut formation, FREE_MOVING_SPACE_ON_X_AXE);
+        formation.advance();
+        advance_formation_n_times(&mut formation, FREE_MOVING_SPACE_ON_X_AXE);
+
+        assert_eq!(formation.get_position(), (0, 1));
 
         formation.advance();
 
-        assert_eq!(formation.direction, MovingDirection::ToLeft);
+        assert_eq!(formation.get_position(), (0, 2));
     }
 
     #[test]
-    fn should_hit_left_wall_and_drop_down() {
-        let mut formation = EnemyFormation::new();
+    fn formation_becomes_breached_when_reaching_bottom() {
+        let mut formation = create_formation();
 
-        for _ in 0..FREE_MOVING_SPACE_ON_X_AXE {
-            formation.advance();
-        }
-        formation.advance();
-        for _ in 0..FREE_MOVING_SPACE_ON_X_AXE {
-            formation.advance();
-        }
+        advance_until_breached(&mut formation);
 
-        assert_eq!(formation.position, (0, 1));
-        assert_eq!(formation.direction, MovingDirection::ToLeft);
-
-        formation.advance();
-
-        assert_eq!(formation.position, (0, 2));
-        assert_eq!(formation.direction, MovingDirection::ToRight);
+        assert_eq!(formation.get_position().1, 13);
+        assert_eq!(formation.get_status(), FormationStatus::Breached);
     }
 
     #[test]
-    fn should_detect_breach_when_reaching_bottom() {
-        let mut formation = EnemyFormation::new();
+    fn breached_formation_stops_advancing() {
+        let mut formation = create_formation();
 
-        while formation.status != FormationStatus::Breached {
-            formation.advance();
-        }
+        advance_until_breached(&mut formation);
 
-        assert_eq!(formation.position.1, 13);
-        assert_eq!(formation.status, FormationStatus::Breached);
-    }
-
-    #[test]
-    fn should_not_advance_anymore_when_breached() {
-        let mut formation = EnemyFormation::new();
-
-        while formation.status != FormationStatus::Breached {
-            formation.advance();
-        }
-
-        let position_at_breach = formation.position;
+        let position_at_breach = formation.get_position();
 
         assert_eq!(position_at_breach.1, 13);
-        assert_eq!(formation.status, FormationStatus::Breached);
+        assert_eq!(formation.get_status(), FormationStatus::Breached);
 
         formation.advance();
 
-        assert_eq!(formation.position, position_at_breach);
-        assert_eq!(formation.status, FormationStatus::Breached);
+        assert_eq!(formation.get_position(), position_at_breach);
+        assert_eq!(formation.get_status(), FormationStatus::Breached);
     }
 
     #[test]
-    fn should_kill_an_enemy_by_id() {
-        let mut formation = EnemyFormation::new();
+    fn killing_enemy_removes_it_from_formation() {
+        let mut formation = create_formation();
 
         formation.kill(3);
 
-        assert!(formation.enemies[0][2].is_none());
+        let enemies = formation.get_enemies();
+        assert!(enemies[0][2].is_none());
     }
 
     #[test]
-    fn should_annihilate_the_formation() {
-        let mut formation = EnemyFormation::new();
+    fn killing_all_enemies_annihilates_formation() {
+        let mut formation = create_formation();
 
         (1..=55).for_each(|id| formation.kill(id));
 
-        assert_eq!(formation.status, FormationStatus::Annihilated);
+        assert_eq!(formation.get_status(), FormationStatus::Annihilated);
     }
 }

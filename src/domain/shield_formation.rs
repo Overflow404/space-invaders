@@ -25,12 +25,16 @@ impl ShieldFormation {
 }
 
 #[cfg(test)]
-mod test {
-    use crate::domain::shield_formation::ShieldFormation;
+mod tests {
+    use super::*;
+
+    fn create_shield_formation() -> ShieldFormation {
+        ShieldFormation::new()
+    }
 
     #[test]
-    fn should_create_shield_formation() {
-        let formation = ShieldFormation::new();
+    fn new_shield_formation_contains_four_shields() {
+        let formation = create_shield_formation();
         assert_eq!(formation.get_shields().len(), 4);
     }
 }

@@ -29,33 +29,36 @@ impl Enemy {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::enemy::Enemy;
+    use super::*;
 
-    #[test]
-    fn should_create_enemy() {
-        let enemy = Enemy::new(0);
-        assert_eq!(enemy.id, 0);
+    fn create_enemy_with_id(id: usize) -> Enemy {
+        Enemy::new(id)
     }
 
     #[test]
-    fn should_get_enemy_id() {
-        let enemy = Enemy::new(25);
-        assert_eq!(enemy.get_id(), 25);
+    fn new_enemy_has_assigned_id() {
+        let enemy = create_enemy_with_id(42);
+        assert_eq!(enemy.get_id(), 42);
     }
 
     #[test]
-    fn toggle_fire_switches_state() {
-        let mut enemy = Enemy::new(1);
+    fn new_enemy_is_not_firing() {
+        let enemy = create_enemy_with_id(1);
+        assert!(!enemy.is_firing());
+    }
 
-        assert!(!enemy.is_firing(), "Initial state should be false");
-
+    #[test]
+    fn toggling_fire_starts_firing() {
+        let mut enemy = create_enemy_with_id(1);
         enemy.toggle_fire();
-        assert!(enemy.is_firing(), "Player should fire after first toggle");
+        assert!(enemy.is_firing());
+    }
 
+    #[test]
+    fn toggling_fire_twice_stops_firing() {
+        let mut enemy = create_enemy_with_id(1);
         enemy.toggle_fire();
-        assert!(
-            !enemy.is_firing(),
-            "Player should stop firing after second toggle"
-        );
+        enemy.toggle_fire();
+        assert!(!enemy.is_firing());
     }
 }
