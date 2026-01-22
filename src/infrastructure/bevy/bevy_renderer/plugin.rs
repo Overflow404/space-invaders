@@ -13,12 +13,12 @@ use crate::infrastructure::bevy::player_projectile::plugin::PlayerProjectilePlug
 use crate::infrastructure::bevy::score::plugin::ScorePlugin;
 use crate::infrastructure::bevy::shield_formation::plugin::ShieldFormationPlugin;
 use crate::infrastructure::renderer::Renderer;
+use bevy::DefaultPlugins;
 use bevy::app::{App, Plugin, PluginGroup, PostUpdate, Startup};
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::utils::default;
 use bevy::window::{PresentMode, Window, WindowPlugin, WindowResolution};
-use bevy::DefaultPlugins;
 
 pub struct BevyRenderer;
 
@@ -92,24 +92,20 @@ mod tests {
         ScoreLabelComponent, ScoreValueComponent,
     };
     use crate::infrastructure::bevy::shield::components::ShieldComponent;
-    use bevy::asset::AssetPlugin;
-    use bevy::input::ButtonInput;
-    use bevy::prelude::{AssetApp, KeyCode};
-    use bevy::text::Font;
-    use bevy_test::{contains_single_component, count_components, minimal_app};
+    use bevy_test::{TestAppBuilder, contains_single_component, count_components};
 
     fn setup() -> App {
-        let mut app = minimal_app(false);
-        app.add_plugins(AssetPlugin::default())
-            .add_plugins(WindowPlugin::default())
-            .add_plugins(SpaceInvadersPlugin)
-            .init_asset::<Image>()
-            .init_asset::<Font>()
-            .init_resource::<ButtonInput<KeyCode>>()
-            .init_resource::<UiScale>();
-
-        app.update();
-        app
+        TestAppBuilder::new()
+            .with_assets()
+            .with_input()
+            .with_plugin(WindowPlugin::default())
+            .without_auto_update()
+            .with_setup(|app| {
+                app.init_resource::<UiScale>();
+                app.add_plugins(SpaceInvadersPlugin);
+                app.update();
+            })
+            .build()
     }
 
     #[test]

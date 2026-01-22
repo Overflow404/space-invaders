@@ -4,7 +4,7 @@ use crate::infrastructure::bevy::player_projectile::components::{
     PlayerProjectileComponent, PlayerProjectileExpiredMessage,
 };
 use crate::infrastructure::bevy::player_projectile::resources::{
-    PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_SPEED,
+    PLAYER_PROJECTILE_SPEED, PlayerProjectileMovementTimerResource,
 };
 use bevy::prelude::{
     Commands, Entity, MessageReader, MessageWriter, Query, Res, ResMut, Time, Transform, With,
@@ -68,13 +68,13 @@ mod tests {
         PlayerProjectileComponent, PlayerProjectileExpiredMessage,
     };
     use crate::infrastructure::bevy::player_projectile::resources::{
-        PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_SPEED,
+        PLAYER_PROJECTILE_SPEED, PlayerProjectileMovementTimerResource,
     };
     use bevy::app::{App, Update};
     use bevy::prelude::{Timer, TimerMode, Transform};
     use bevy_test::{
-        advance_time_by_seconds, contains_entity, did_component_despawn, did_message_fire,
-        get_component_or_fail, send_message, spawn_dummy_entity, TestAppBuilder,
+        TestAppBuilder, advance_time_by_seconds, contains_entity, did_component_despawn,
+        did_message_fire, get_component_or_fail, send_message, spawn_dummy_entity,
     };
 
     fn setup() -> App {

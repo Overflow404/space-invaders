@@ -4,7 +4,7 @@ use crate::infrastructure::bevy::score::resources::{
     SCORE_VALUE_FONT_SIZE, SCORE_VALUE_HEIGHT,
 };
 use bevy::asset::Handle;
-use bevy::prelude::{default, Bundle, Component};
+use bevy::prelude::{Bundle, Component, default};
 use bevy::text::{Font, TextColor, TextFont};
 use bevy::ui::widget::Text;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, Node, UiRect};
@@ -104,7 +104,7 @@ mod tests {
     use bevy::asset::{AssetApp, AssetPlugin};
     use bevy::color::Color;
     use bevy::ui::Val;
-    use bevy_test::{dummy_font, TestAppBuilder};
+    use bevy_test::{TestAppBuilder, dummy_font};
 
     #[test]
     fn should_create_score_score_container_bundle() {

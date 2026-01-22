@@ -42,18 +42,16 @@ mod tests {
     use bevy::image::Image;
     use bevy::utils::default;
     use bevy::window::WindowResolution;
-    use bevy_test::{get_component_or_fail, TestAppBuilder};
+    use bevy_test::{TestAppBuilder, get_component_or_fail};
 
     fn setup() -> App {
         TestAppBuilder::new()
             .with_assets()
             .with_setup(|app| {
-                app.init_asset::<Image>()
-                    .world_mut()
-                    .spawn(Window {
-                        resolution: WindowResolution::new(800, 600),
-                        ..default()
-                    });
+                app.init_asset::<Image>().world_mut().spawn(Window {
+                    resolution: WindowResolution::new(800, 600),
+                    ..default()
+                });
             })
             .build()
     }

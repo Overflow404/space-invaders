@@ -1,6 +1,6 @@
 use crate::infrastructure::bevy::header::resources::HEADER_HEIGHT;
 use bevy::color::Color;
-use bevy::prelude::{default, Bundle, Component, UiRect};
+use bevy::prelude::{Bundle, Component, UiRect, default};
 use bevy::ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, Val};
 
 #[derive(Component, PartialEq, Debug)]
@@ -48,7 +48,9 @@ mod tests {
 
         app.world_mut().spawn(HeaderBundle::new());
 
-        let mut query = app.world_mut().query::<(&HeaderComponent, &Node, &BackgroundColor)>();
+        let mut query = app
+            .world_mut()
+            .query::<(&HeaderComponent, &Node, &BackgroundColor)>();
         let (header, node, bg_color) = query.single(app.world()).expect("Header not found");
 
         assert_eq!(*header, HeaderComponent);

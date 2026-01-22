@@ -3,7 +3,7 @@ use crate::infrastructure::bevy::player::resources::{
 };
 use bevy::asset::AssetServer;
 use bevy::math::Vec2;
-use bevy::prelude::{default, Bundle, Component, Sprite, Transform};
+use bevy::prelude::{Bundle, Component, Sprite, Transform, default};
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
@@ -52,12 +52,17 @@ mod tests {
         let asset_server = app.world().resource::<AssetServer>().clone();
         app.world_mut().spawn(PlayerBundle::new(&asset_server));
 
-        let mut query = app.world_mut().query::<(&PlayerComponent, &Transform, &Sprite)>();
+        let mut query = app
+            .world_mut()
+            .query::<(&PlayerComponent, &Transform, &Sprite)>();
         let (player, transform, sprite) = query.single(app.world()).expect("Player not found");
 
         assert_eq!(*player, PlayerComponent);
         assert_eq!(transform.translation.x, PLAYER_X);
         assert_eq!(transform.translation.y, PLAYER_Y);
-        assert_eq!(sprite.custom_size, Some(Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT)));
+        assert_eq!(
+            sprite.custom_size,
+            Some(Vec2::new(PLAYER_WIDTH, PLAYER_HEIGHT))
+        );
     }
 }

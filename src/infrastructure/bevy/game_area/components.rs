@@ -1,7 +1,7 @@
 use crate::infrastructure::bevy::game_area::resources::BACKGROUND_IMAGE;
 use bevy::asset::AssetServer;
 use bevy::math::Vec2;
-use bevy::prelude::{default, Bundle, Component, Sprite, Transform};
+use bevy::prelude::{Bundle, Component, Sprite, Transform, default};
 
 #[derive(Component, PartialEq, Debug)]
 pub struct GameAreaComponent;
@@ -47,7 +47,9 @@ mod tests {
         app.world_mut()
             .spawn(GameAreaBundle::new(&asset_server, width, height));
 
-        let mut query = app.world_mut().query::<(&GameAreaComponent, &Transform, &Sprite)>();
+        let mut query = app
+            .world_mut()
+            .query::<(&GameAreaComponent, &Transform, &Sprite)>();
         let (game_area, transform, sprite) = query.single(app.world()).expect("GameArea not found");
 
         assert_eq!(*game_area, GameAreaComponent);

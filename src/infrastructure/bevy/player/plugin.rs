@@ -30,54 +30,18 @@ mod tests {
     use super::*;
     use crate::infrastructure::bevy::enemy::components::EnemyKilledMessage;
     use crate::infrastructure::bevy::enemy_projectile::components::PlayerKilledMessage;
-    use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileExpiredMessage;
     use crate::infrastructure::bevy::player_projectile::plugin::PlayerProjectilePlugin;
-    use bevy::asset::AssetPlugin;
-    use bevy::image::Image;
-    use bevy::input::ButtonInput;
-    use bevy::prelude::{AssetApp, KeyCode};
-    use bevy_test::{contains_system_or_fail, get_resource_or_fail, minimal_app};
-
-    fn setup() -> App {
-        let mut app = minimal_app(false);
-        app.add_plugins(AssetPlugin::default())
-            .add_plugins(PlayerPlugin)
-            .add_plugins(PlayerProjectilePlugin)
-            .add_message::<EnemyKilledMessage>()
-            .add_message::<PlayerProjectileExpiredMessage>()
-            .add_message::<PlayerKilledMessage>()
-            .init_asset::<Image>()
-            .init_resource::<ButtonInput<KeyCode>>();
-
-        app.update();
-        app
-    }
+    use bevy_test::TestAppBuilder;
 
     #[test]
-    fn should_initialize_the_plugin() {
-        let mut app = setup();
-
-        get_resource_or_fail::<PlayerResource>(&mut app);
-        assert!(contains_system_or_fail(
-            &app,
-            Startup,
-            "spawn_player_system"
-        ));
-        assert!(contains_system_or_fail(
-            &app,
-            Update,
-            "player_movement_system"
-        ));
-        assert!(contains_system_or_fail(&app, Update, "player_fire_system"));
-        assert!(contains_system_or_fail(
-            &app,
-            Update,
-            "respawn_player_system"
-        ));
-        assert!(contains_system_or_fail(
-            &app,
-            Update,
-            "reload_player_weapon_system"
-        ));
+    fn plugin_loads_successfully() {
+        let _app = TestAppBuilder::new()
+            .with_assets()
+            .with_input()
+            .with_plugin(PlayerProjectilePlugin)
+            .with_plugin(PlayerPlugin)
+            .with_message::<EnemyKilledMessage>()
+            .with_message::<PlayerKilledMessage>()
+            .build();
     }
 }

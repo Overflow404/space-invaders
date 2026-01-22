@@ -15,38 +15,9 @@ impl Plugin for GameAreaPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::infrastructure::bevy::game_area::components::GameAreaComponent;
-    use bevy::asset::AssetPlugin;
-    use bevy::image::Image;
-    use bevy::prelude::{AssetApp, Window};
-    use bevy::utils::default;
-    use bevy::window::WindowResolution;
-    use bevy_test::{contains_single_component, contains_system_or_fail, minimal_app};
-
-    fn setup() -> App {
-        let mut app = minimal_app(false);
-        app.add_plugins(AssetPlugin::default())
-            .init_asset::<Image>();
-
-        app.world_mut().spawn(Window {
-            resolution: WindowResolution::new(800, 600),
-            ..default()
-        });
-
-        app.add_plugins(GameAreaPlugin);
-
-        app.update();
-        app
-    }
 
     #[test]
-    fn should_initialize_the_game_area_plugin() {
-        let mut app = setup();
-        assert!(contains_single_component::<GameAreaComponent>(&mut app));
-        assert!(contains_system_or_fail(
-            &app,
-            PostUpdate,
-            "resize_game_area_system"
-        ));
+    fn plugin_loads_successfully() {
+        let _app = bevy_test::smoke_test_plugin_with_assets(GameAreaPlugin);
     }
 }

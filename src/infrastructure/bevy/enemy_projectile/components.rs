@@ -3,7 +3,7 @@ use crate::infrastructure::bevy::enemy_projectile::resources::{
     ENEMY_PROJECTILE_WIDTH,
 };
 use bevy::math::Vec2;
-use bevy::prelude::{default, Bundle, Component, Entity, Message, Sprite, TimerMode, Transform};
+use bevy::prelude::{Bundle, Component, Entity, Message, Sprite, TimerMode, Transform, default};
 use bevy::time::Timer;
 
 #[derive(Bundle)]
@@ -73,9 +73,12 @@ mod tests {
         app.world_mut()
             .spawn(EnemyProjectileBundle::new(start_x, start_y));
 
-        let mut query = app
-            .world_mut()
-            .query::<(&EnemyProjectileComponent, &Transform, &Sprite, &EnemyProjectileTimer)>();
+        let mut query = app.world_mut().query::<(
+            &EnemyProjectileComponent,
+            &Transform,
+            &Sprite,
+            &EnemyProjectileTimer,
+        )>();
         let (projectile, transform, sprite, timer) = query
             .single(app.world())
             .expect("EnemyProjectile not found");

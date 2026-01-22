@@ -97,7 +97,7 @@ mod tests {
     use crate::infrastructure::bevy::enemy_projectile::resources::ENEMY_PROJECTILE_SPEED;
     use bevy::app::{App, Update};
     use bevy::prelude::Transform;
-    use bevy_test::{advance_time_by_seconds, get_component_or_fail, TestAppBuilder};
+    use bevy_test::{TestAppBuilder, advance_time_by_seconds, get_component_or_fail};
 
     fn setup() -> App {
         TestAppBuilder::with_time_disabled()

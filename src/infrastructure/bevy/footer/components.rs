@@ -41,7 +41,9 @@ mod tests {
 
         app.world_mut().spawn(FooterBundle::new());
 
-        let mut query = app.world_mut().query::<(&FooterComponent, &Transform, &Sprite)>();
+        let mut query = app
+            .world_mut()
+            .query::<(&FooterComponent, &Transform, &Sprite)>();
         let (_footer, transform, sprite) = query.single(app.world()).expect("Footer not found");
 
         assert_eq!(transform.translation.x, LINE_X);

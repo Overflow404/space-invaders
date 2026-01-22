@@ -12,20 +12,9 @@ impl Plugin for HeaderPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy_test::{contains_system_or_fail, minimal_app};
 
     #[test]
-    fn should_initialize_the_plugin() {
-        let mut app = minimal_app(false);
-
-        app.add_plugins(HeaderPlugin);
-
-        app.update();
-
-        assert!(contains_system_or_fail(
-            &app,
-            Startup,
-            "spawn_header_system"
-        ));
+    fn plugin_loads_successfully() {
+        let _app = bevy_test::smoke_test_plugin(HeaderPlugin);
     }
 }

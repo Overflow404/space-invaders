@@ -1,7 +1,7 @@
 use bevy::asset::Handle;
 use bevy::color::Color;
 use bevy::image::Image;
-use bevy::prelude::{default, Bundle, Component, ImageNode};
+use bevy::prelude::{Bundle, Component, ImageNode, default};
 use bevy::text::{Font, TextColor, TextFont};
 use bevy::ui::widget::Text;
 use bevy::ui::{AlignItems, FlexDirection, JustifyContent, Node, UiRect, Val};
@@ -95,7 +95,7 @@ impl LivesLabelBundle {
 mod tests {
     use super::*;
     use bevy::asset::{AssetApp, AssetPlugin, AssetServer};
-    use bevy_test::{dummy_font, TestAppBuilder};
+    use bevy_test::{TestAppBuilder, dummy_font};
 
     #[test]
     fn should_create_lives_view_bundle() {

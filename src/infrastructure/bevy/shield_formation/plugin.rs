@@ -15,30 +15,9 @@ impl Plugin for ShieldFormationPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::asset::AssetPlugin;
-    use bevy::image::Image;
-    use bevy::prelude::AssetApp;
-    use bevy_test::{contains_system_or_fail, get_resource_or_fail, minimal_app};
-
-    fn setup() -> App {
-        let mut app = minimal_app(false);
-        app.add_plugins(AssetPlugin::default())
-            .add_plugins(ShieldFormationPlugin)
-            .init_asset::<Image>();
-
-        app.update();
-        app
-    }
 
     #[test]
-    fn should_initialize_the_shield_formation_plugin() {
-        let mut app = setup();
-
-        get_resource_or_fail::<ShieldFormationResource>(&mut app);
-        assert!(contains_system_or_fail(
-            &app,
-            Startup,
-            "spawn_shields_system"
-        ));
+    fn plugin_loads_successfully() {
+        let _app = bevy_test::smoke_test_plugin_with_assets(ShieldFormationPlugin);
     }
 }

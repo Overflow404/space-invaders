@@ -1,11 +1,11 @@
-use crate::domain::enemy_formation::{FormationStatus, COLUMNS, NUMBER_OF_STEPS_ON_X_AXE};
+use crate::domain::enemy_formation::{COLUMNS, FormationStatus, NUMBER_OF_STEPS_ON_X_AXE};
 use crate::infrastructure::bevy::enemy::components::{
     EnemyBundle, EnemyComponent, EnemyKilledMessage,
 };
+use crate::infrastructure::bevy::enemy::resources::{ENEMY_HEIGHT, ENEMY_WIDTH};
 use crate::infrastructure::bevy::enemy::resources::{
     EnemyFireProbability, EnemyProjectileMovementTimer,
 };
-use crate::infrastructure::bevy::enemy::resources::{ENEMY_HEIGHT, ENEMY_WIDTH};
 use crate::infrastructure::bevy::enemy_formation::resources::{
     EnemyFormationMovementTimer, EnemyFormationResource, SPACE_BETWEEN_ENEMIES_X,
     SPACE_BETWEEN_ENEMIES_Y, VERTICAL_DROP,
@@ -15,8 +15,8 @@ use crate::infrastructure::bevy::game_area::resources::{GAME_AREA_HEIGHT, GAME_A
 use crate::infrastructure::bevy::header::resources::HEADER_HEIGHT;
 use crate::infrastructure::bevy::player_projectile::components::PlayerProjectileComponent;
 use bevy::prelude::*;
-use rand::prelude::IteratorRandom;
 use rand::Rng;
+use rand::prelude::IteratorRandom;
 
 pub fn spawn_enemy_formation_system(
     commands: Commands,

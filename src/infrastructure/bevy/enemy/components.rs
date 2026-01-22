@@ -3,7 +3,7 @@ use crate::infrastructure::bevy::enemy::resources::{
 };
 use bevy::asset::AssetServer;
 use bevy::math::Vec2;
-use bevy::prelude::{default, Bundle, Component, Entity, Message, Sprite, Transform};
+use bevy::prelude::{Bundle, Component, Entity, Message, Sprite, Transform, default};
 
 #[derive(Message)]
 pub struct EnemyKilledMessage {
@@ -63,9 +63,7 @@ mod tests {
 
     #[test]
     fn spawning_enemy_creates_entity_at_correct_position() {
-        let mut app = TestAppBuilder::new()
-            .with_assets()
-            .build();
+        let mut app = TestAppBuilder::new().with_assets().build();
 
         let asset_server = app.world().resource::<AssetServer>().clone();
 
@@ -73,16 +71,25 @@ mod tests {
         let expected_x = 100.0;
         let expected_y = 200.0;
 
-        app.world_mut()
-            .spawn(EnemyBundle::new(expected_id, expected_x, expected_y, &asset_server));
+        app.world_mut().spawn(EnemyBundle::new(
+            expected_id,
+            expected_x,
+            expected_y,
+            &asset_server,
+        ));
 
-        let mut query = app.world_mut().query::<(&EnemyComponent, &Transform, &Sprite)>();
+        let mut query = app
+            .world_mut()
+            .query::<(&EnemyComponent, &Transform, &Sprite)>();
         let (enemy, transform, sprite) = query.single(app.world()).expect("Enemy not found");
 
         assert_eq!(enemy.id, expected_id);
         assert_eq!(transform.translation.x, expected_x);
         assert_eq!(transform.translation.y, expected_y);
-        assert_eq!(sprite.custom_size, Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT)));
+        assert_eq!(
+            sprite.custom_size,
+            Some(Vec2::new(ENEMY_WIDTH, ENEMY_HEIGHT))
+        );
         assert_eq!(sprite.color, ENEMY_COLOR);
     }
 }

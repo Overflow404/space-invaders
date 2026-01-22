@@ -76,7 +76,7 @@ mod tests {
     use bevy::image::Image;
     use bevy::prelude::{AssetApp, Children, ImageNode, Text};
     use bevy::text::Font;
-    use bevy_test::{contains_single_component, TestAppBuilder};
+    use bevy_test::{TestAppBuilder, contains_single_component};
 
     fn setup() -> App {
         TestAppBuilder::new()

@@ -26,7 +26,7 @@ mod tests {
     mod camera_system {
         use super::*;
         use crate::infrastructure::bevy::bevy_renderer::components::CameraComponent;
-        use bevy_test::{contains_single_component, TestAppBuilder};
+        use bevy_test::{TestAppBuilder, contains_single_component};
 
         #[test]
         fn should_spawn_camera() {
@@ -45,7 +45,7 @@ mod tests {
     #[cfg(test)]
     mod window_scale_system {
         use super::*;
-        use bevy::prelude::{default, UiScale, Window};
+        use bevy::prelude::{UiScale, Window, default};
         use bevy::window::WindowResolution;
         use bevy_test::TestAppBuilder;
 

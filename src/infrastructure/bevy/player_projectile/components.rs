@@ -2,7 +2,7 @@ use crate::infrastructure::bevy::player_projectile::resources::{
     PLAYER_PROJECTILE_COLOR, PLAYER_PROJECTILE_HEIGHT, PLAYER_PROJECTILE_WIDTH,
 };
 use bevy::math::Vec2;
-use bevy::prelude::{default, Bundle, Sprite, Transform};
+use bevy::prelude::{Bundle, Sprite, Transform, default};
 use bevy::prelude::{Component, Message};
 
 #[derive(Message)]
@@ -47,7 +47,9 @@ mod tests {
         app.world_mut()
             .spawn(PlayerProjectileBundle::new(start_x, start_y));
 
-        let mut query = app.world_mut().query::<(&PlayerProjectileComponent, &Transform, &Sprite)>();
+        let mut query = app
+            .world_mut()
+            .query::<(&PlayerProjectileComponent, &Transform, &Sprite)>();
         let (projectile, transform, sprite) = query
             .single(app.world())
             .expect("PlayerProjectile not found");

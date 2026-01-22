@@ -36,7 +36,7 @@ mod tests {
     use bevy::app::{App, Startup};
     use bevy::image::Image;
     use bevy::prelude::AssetApp;
-    use bevy_test::{count_components, TestAppBuilder};
+    use bevy_test::{TestAppBuilder, count_components};
 
     fn setup() -> App {
         TestAppBuilder::new()

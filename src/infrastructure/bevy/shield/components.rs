@@ -11,7 +11,7 @@ use bevy::asset::Assets;
 use bevy::color::{Color, ColorToPacked};
 use bevy::image::{Image, ImageSampler, ImageSamplerDescriptor};
 use bevy::math::Vec2;
-use bevy::prelude::{default, Bundle, Component, Sprite, Transform};
+use bevy::prelude::{Bundle, Component, Sprite, Transform, default};
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 
 #[derive(Component, PartialEq, Debug)]

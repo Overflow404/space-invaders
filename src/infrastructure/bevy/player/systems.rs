@@ -3,14 +3,17 @@ use crate::infrastructure::bevy::enemy_projectile::components::PlayerKilledMessa
 use crate::infrastructure::bevy::game_area::resources::GAME_AREA_WIDTH;
 use crate::infrastructure::bevy::player::components::{PlayerBundle, PlayerComponent};
 use crate::infrastructure::bevy::player::resources::{
-    PlayerResource, DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE, PLAYER_SPEED, PLAYER_WIDTH,
+    DISTANCE_BETWEEN_PLAYER_AND_PROJECTILE, PLAYER_SPEED, PLAYER_WIDTH, PlayerResource,
 };
 use crate::infrastructure::bevy::player_projectile::components::{
     PlayerProjectileBundle, PlayerProjectileExpiredMessage,
 };
 use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
 use bevy::input::ButtonInput;
-use bevy::prelude::{AssetServer, Commands, Entity, KeyCode, MessageReader, Query, Res, ResMut, Time, Transform, With};
+use bevy::prelude::{
+    AssetServer, Commands, Entity, KeyCode, MessageReader, Query, Res, ResMut, Time, Transform,
+    With,
+};
 
 pub fn spawn_player_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(PlayerBundle::new(&asset_server));
@@ -92,7 +95,6 @@ pub fn on_enemy_projectile_hitting_player_system(
     mut commands: Commands,
     mut player_killed_event_writer: MessageReader<PlayerKilledMessage>,
     player_query: Query<Entity, With<PlayerComponent>>,
-
 ) {
     for _ in player_killed_event_writer.read() {
         for player_entity in player_query.iter() {
@@ -117,8 +119,8 @@ mod tests {
     use bevy::input::ButtonInput;
     use bevy::prelude::{AssetApp, KeyCode, Timer, TimerMode};
     use bevy_test::{
-        advance_time_by_seconds, contains_single_component, count_components, get_resource_mut_or_fail,
-        get_resource_or_fail, send_message, spawn_dummy_entity, TestAppBuilder,
+        TestAppBuilder, advance_time_by_seconds, contains_single_component, count_components,
+        get_resource_mut_or_fail, get_resource_or_fail, send_message, spawn_dummy_entity,
     };
 
     fn setup() -> App {
@@ -299,7 +301,9 @@ mod tests {
         fn should_not_spawn_if_cooldown_active() {
             let mut app = setup_fire();
 
-            get_resource_mut_or_fail::<PlayerResource>(&mut app).0.toggle_fire();
+            get_resource_mut_or_fail::<PlayerResource>(&mut app)
+                .0
+                .toggle_fire();
             get_resource_mut_or_fail::<ButtonInput<KeyCode>>(&mut app).press(KeyCode::Space);
 
             app.update();
@@ -318,7 +322,9 @@ mod tests {
                 .add_message::<PlayerProjectileExpiredMessage>()
                 .add_systems(Update, reload_player_weapon_system);
 
-            get_resource_mut_or_fail::<PlayerResource>(&mut app).0.toggle_fire();
+            get_resource_mut_or_fail::<PlayerResource>(&mut app)
+                .0
+                .toggle_fire();
             app
         }
 

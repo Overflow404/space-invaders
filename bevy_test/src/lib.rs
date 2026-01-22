@@ -1,14 +1,28 @@
+use bevy::MinimalPlugins;
 use bevy::app::{App, Plugin, PluginGroup};
 use bevy::asset::{AssetPlugin, AssetServer, Handle};
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::ecs::system::RunSystemOnce;
 use bevy::image::Image;
 use bevy::input::ButtonInput;
-use bevy::prelude::{AssetApp, Component, Entity, KeyCode, Message, MessageReader, Messages, Mut, Resource, Text, Time, Transform, Vec3, With};
+use bevy::prelude::{
+    AssetApp, Component, Entity, KeyCode, Message, MessageReader, Messages, Mut, Resource, Text,
+    Time, Transform, Vec3, With,
+};
 use bevy::text::Font;
 use bevy::time::TimePlugin;
-use bevy::MinimalPlugins;
 use std::time::Duration;
+
+pub fn smoke_test_plugin<P: Plugin>(plugin: P) -> App {
+    TestAppBuilder::new().with_plugin(plugin).build()
+}
+
+pub fn smoke_test_plugin_with_assets<P: Plugin>(plugin: P) -> App {
+    TestAppBuilder::new()
+        .with_assets()
+        .with_plugin(plugin)
+        .build()
+}
 
 pub fn contains_system_or_fail(app: &App, schedule: impl ScheduleLabel, name: &str) -> bool {
     app.get_schedule(schedule)

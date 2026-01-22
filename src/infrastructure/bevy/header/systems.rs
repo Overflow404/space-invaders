@@ -13,7 +13,7 @@ mod tests {
     use bevy::color::Color;
     use bevy::prelude::UiRect;
     use bevy::ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, Val};
-    use bevy_test::{contains_single_component, get_component_or_fail, TestAppBuilder};
+    use bevy_test::{TestAppBuilder, contains_single_component, get_component_or_fail};
 
     fn setup() -> App {
         TestAppBuilder::new().build()
