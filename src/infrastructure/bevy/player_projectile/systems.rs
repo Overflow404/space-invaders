@@ -71,22 +71,24 @@ mod tests {
         PlayerProjectileMovementTimerResource, PLAYER_PROJECTILE_SPEED,
     };
     use bevy::app::{App, Update};
-    use bevy::prelude::{Time, Timer, TimerMode, Transform};
+    use bevy::prelude::{Timer, TimerMode, Transform};
     use bevy_test::{
         advance_time_by_seconds, contains_entity, did_component_despawn, did_message_fire,
-        get_component_or_fail, minimal_app, send_message, spawn_dummy_entity,
+        get_component_or_fail, send_message, spawn_dummy_entity, TestAppBuilder,
     };
 
     fn setup() -> App {
-        let mut app = minimal_app(true);
-        app.init_resource::<Time>()
-            .add_message::<PlayerProjectileExpiredMessage>()
-            .add_message::<EnemyKilledMessage>()
-            .insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
-                1.0,
-                TimerMode::Once,
-            )));
-        app
+        TestAppBuilder::with_time_disabled()
+            .with_time()
+            .with_setup(|app| {
+                app.add_message::<PlayerProjectileExpiredMessage>()
+                    .add_message::<EnemyKilledMessage>()
+                    .insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
+                        1.0,
+                        TimerMode::Once,
+                    )));
+            })
+            .build()
     }
 
     #[cfg(test)]

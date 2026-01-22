@@ -10,10 +10,10 @@ mod tests {
     use super::*;
     use crate::infrastructure::bevy::footer::components::FooterComponent;
     use bevy::app::{App, Startup};
-    use bevy_test::{contains_single_component, minimal_app};
+    use bevy_test::{contains_single_component, TestAppBuilder};
 
     fn setup() -> App {
-        minimal_app(false)
+        TestAppBuilder::new().build()
     }
 
     #[cfg(test)]

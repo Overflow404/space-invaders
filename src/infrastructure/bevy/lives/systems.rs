@@ -73,21 +73,22 @@ mod tests {
     use crate::infrastructure::bevy::lives::components::LivesViewComponent;
     use crate::infrastructure::bevy::lives::resources::LivesResource;
     use bevy::app::{App, Startup};
-    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::prelude::{AssetApp, Children, ImageNode, Text};
     use bevy::text::Font;
-    use bevy_test::{contains_single_component, minimal_app};
+    use bevy_test::{contains_single_component, TestAppBuilder};
 
     fn setup() -> App {
-        let mut app = minimal_app(false);
-        app.add_plugins(AssetPlugin::default())
-            .init_asset::<Image>()
-            .init_asset::<Font>()
-            .insert_resource(LivesResource(Lives::new()));
+        TestAppBuilder::new()
+            .with_assets()
+            .with_setup(|app| {
+                app.init_asset::<Image>()
+                    .init_asset::<Font>()
+                    .insert_resource(LivesResource(Lives::new()));
 
-        app.world_mut().spawn(HeaderComponent);
-        app
+                app.world_mut().spawn(HeaderComponent);
+            })
+            .build()
     }
 
     #[cfg(test)]

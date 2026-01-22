@@ -181,21 +181,22 @@ mod tests {
     use crate::infrastructure::bevy::enemy_formation::resources::EnemyFormationResource;
     use crate::infrastructure::bevy::player::resources::PlayerResource;
     use bevy::app::{App, Startup};
-    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::prelude::{AssetApp, Transform, With};
     use bevy::text::Font;
-    use bevy_test::minimal_app;
+    use bevy_test::TestAppBuilder;
 
     fn setup() -> App {
-        let mut app = minimal_app(true);
-        app.add_plugins(AssetPlugin::default())
-            .insert_resource(EnemyFormationResource(EnemyFormation::new()))
-            .insert_resource(PlayerResource(Player::new()))
-            .init_asset::<Image>()
-            .init_asset::<Font>()
-            .add_message::<EnemyKilledMessage>();
-        app
+        TestAppBuilder::with_time_disabled()
+            .with_assets()
+            .with_setup(|app| {
+                app.insert_resource(EnemyFormationResource(EnemyFormation::new()))
+                    .insert_resource(PlayerResource(Player::new()))
+                    .init_asset::<Image>()
+                    .init_asset::<Font>()
+                    .add_message::<EnemyKilledMessage>();
+            })
+            .build()
     }
 
     fn get_first_enemy_coordinates(app: &mut App) -> (f32, f32) {

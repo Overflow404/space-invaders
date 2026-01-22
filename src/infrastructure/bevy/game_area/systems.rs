@@ -38,22 +38,24 @@ pub fn resize_game_area_system(
 mod tests {
     use super::*;
     use bevy::app::App;
-    use bevy::asset::{AssetApp, AssetPlugin};
+    use bevy::asset::AssetApp;
     use bevy::image::Image;
     use bevy::utils::default;
     use bevy::window::WindowResolution;
-    use bevy_test::{get_component_or_fail, minimal_app};
+    use bevy_test::{get_component_or_fail, TestAppBuilder};
 
     fn setup() -> App {
-        let mut app = minimal_app(false);
-        app.add_plugins(AssetPlugin::default())
-            .init_asset::<Image>()
-            .world_mut()
-            .spawn(Window {
-                resolution: WindowResolution::new(800, 600),
-                ..default()
-            });
-        app
+        TestAppBuilder::new()
+            .with_assets()
+            .with_setup(|app| {
+                app.init_asset::<Image>()
+                    .world_mut()
+                    .spawn(Window {
+                        resolution: WindowResolution::new(800, 600),
+                        ..default()
+                    });
+            })
+            .build()
     }
 
     #[cfg(test)]

@@ -34,16 +34,17 @@ mod tests {
     use crate::infrastructure::bevy::shield::components::ShieldComponent;
     use crate::infrastructure::bevy::shield_formation::resources::ShieldFormationResource;
     use bevy::app::{App, Startup};
-    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::prelude::AssetApp;
-    use bevy_test::{count_components, minimal_app};
+    use bevy_test::{count_components, TestAppBuilder};
 
     fn setup() -> App {
-        let mut app = minimal_app(false);
-        app.add_plugins(AssetPlugin::default())
-            .init_asset::<Image>();
-        app
+        TestAppBuilder::new()
+            .with_assets()
+            .with_setup(|app| {
+                app.init_asset::<Image>();
+            })
+            .build()
     }
 
     #[cfg(test)]

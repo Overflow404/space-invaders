@@ -13,10 +13,10 @@ mod tests {
     use bevy::color::Color;
     use bevy::prelude::UiRect;
     use bevy::ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, Node, Val};
-    use bevy_test::{contains_single_component, get_component_or_fail, minimal_app};
+    use bevy_test::{contains_single_component, get_component_or_fail, TestAppBuilder};
 
     fn setup() -> App {
-        minimal_app(false)
+        TestAppBuilder::new().build()
     }
 
     #[cfg(test)]

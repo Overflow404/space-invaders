@@ -21,19 +21,22 @@ pub fn window_scale_system(
 mod tests {
     use super::*;
     use bevy::app::Startup;
-    use bevy_test::minimal_app;
 
     #[cfg(test)]
     mod camera_system {
         use super::*;
         use crate::infrastructure::bevy::bevy_renderer::components::CameraComponent;
-        use bevy_test::contains_single_component;
+        use bevy_test::{contains_single_component, TestAppBuilder};
 
         #[test]
         fn should_spawn_camera() {
-            let mut app = minimal_app(false);
-            app.add_systems(Startup, camera_system);
-            app.update();
+            let mut app = TestAppBuilder::new()
+                .without_auto_update()
+                .with_setup(|app| {
+                    app.add_systems(Startup, camera_system);
+                    app.update();
+                })
+                .build();
 
             assert!(contains_single_component::<CameraComponent>(&mut app));
         }
@@ -44,22 +47,25 @@ mod tests {
         use super::*;
         use bevy::prelude::{default, UiScale, Window};
         use bevy::window::WindowResolution;
+        use bevy_test::TestAppBuilder;
 
         #[test]
         fn should_scale_up() {
-            let mut app = minimal_app(false);
-            app.init_resource::<UiScale>();
-            app.add_systems(Startup, window_scale_system);
-
-            app.world_mut().spawn(Window {
-                resolution: WindowResolution::new(
-                    WINDOW_WIDTH as u32 * 2u32,
-                    WINDOW_HEIGHT as u32 * 2u32,
-                ),
-                ..default()
-            });
-
-            app.update();
+            let app = TestAppBuilder::new()
+                .without_auto_update()
+                .with_setup(|app| {
+                    app.init_resource::<UiScale>();
+                    app.add_systems(Startup, window_scale_system);
+                    app.world_mut().spawn(Window {
+                        resolution: WindowResolution::new(
+                            WINDOW_WIDTH as u32 * 2u32,
+                            WINDOW_HEIGHT as u32 * 2u32,
+                        ),
+                        ..default()
+                    });
+                    app.update();
+                })
+                .build();
 
             let ui_scale = app.world().resource::<UiScale>();
             assert_eq!(ui_scale.0, 2.0);
@@ -67,16 +73,18 @@ mod tests {
 
         #[test]
         fn should_use_minimum_scale() {
-            let mut app = minimal_app(false);
-            app.init_resource::<UiScale>();
-            app.add_systems(Startup, window_scale_system);
-
-            app.world_mut().spawn(Window {
-                resolution: WindowResolution::new(2400, 1050),
-                ..default()
-            });
-
-            app.update();
+            let app = TestAppBuilder::new()
+                .without_auto_update()
+                .with_setup(|app| {
+                    app.init_resource::<UiScale>();
+                    app.add_systems(Startup, window_scale_system);
+                    app.world_mut().spawn(Window {
+                        resolution: WindowResolution::new(2400, 1050),
+                        ..default()
+                    });
+                    app.update();
+                })
+                .build();
 
             let ui_scale = app.world().resource::<UiScale>();
             assert_eq!(ui_scale.0, 1.5);
@@ -84,16 +92,18 @@ mod tests {
 
         #[test]
         fn should_scale_down() {
-            let mut app = minimal_app(false);
-            app.init_resource::<UiScale>();
-            app.add_systems(Startup, window_scale_system);
-
-            app.world_mut().spawn(Window {
-                resolution: WindowResolution::new(600, 350),
-                ..default()
-            });
-
-            app.update();
+            let app = TestAppBuilder::new()
+                .without_auto_update()
+                .with_setup(|app| {
+                    app.init_resource::<UiScale>();
+                    app.add_systems(Startup, window_scale_system);
+                    app.world_mut().spawn(Window {
+                        resolution: WindowResolution::new(600, 350),
+                        ..default()
+                    });
+                    app.update();
+                })
+                .build();
 
             let ui_scale = app.world().resource::<UiScale>();
             assert_eq!(ui_scale.0, 0.5);

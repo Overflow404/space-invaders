@@ -60,22 +60,23 @@ mod tests {
     use crate::infrastructure::bevy::header::components::HeaderComponent;
     use crate::infrastructure::bevy::score::resources::ScoreResource;
     use bevy::app::{App, Startup, Update};
-    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::prelude::{AssetApp, Text};
     use bevy::text::Font;
     use bevy_test::{
-        contains_single_component, get_resource_mut_or_fail, get_resource_or_fail, minimal_app,
-        send_message, spawn_dummy_entity,
+        contains_single_component, get_resource_mut_or_fail, get_resource_or_fail,
+        send_message, spawn_dummy_entity, TestAppBuilder,
     };
 
     fn setup() -> App {
-        let mut app = minimal_app(false);
-        app.add_plugins(AssetPlugin::default())
-            .insert_resource(ScoreResource(Score::new()))
-            .init_asset::<Image>()
-            .init_asset::<Font>();
-        app
+        TestAppBuilder::new()
+            .with_assets()
+            .with_setup(|app| {
+                app.insert_resource(ScoreResource(Score::new()))
+                    .init_asset::<Image>()
+                    .init_asset::<Font>();
+            })
+            .build()
     }
 
     #[cfg(test)]

@@ -113,27 +113,28 @@ mod tests {
     };
     use crate::infrastructure::bevy::player_projectile::resources::PlayerProjectileMovementTimerResource;
     use bevy::app::{App, Update};
-    use bevy::asset::AssetPlugin;
     use bevy::image::Image;
     use bevy::input::ButtonInput;
-    use bevy::prelude::{AssetApp, KeyCode, Time, Timer, TimerMode};
+    use bevy::prelude::{AssetApp, KeyCode, Timer, TimerMode};
     use bevy_test::{
         advance_time_by_seconds, contains_single_component, count_components, get_resource_mut_or_fail,
-        get_resource_or_fail, minimal_app, send_message, spawn_dummy_entity,
+        get_resource_or_fail, send_message, spawn_dummy_entity, TestAppBuilder,
     };
 
     fn setup() -> App {
-        let mut app = minimal_app(true);
-        app.add_plugins(AssetPlugin::default())
-            .init_resource::<ButtonInput<KeyCode>>()
-            .init_resource::<Time>()
-            .init_asset::<Image>()
-            .insert_resource(PlayerResource(Player::new()))
-            .insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
-                1.0,
-                TimerMode::Once,
-            )));
-        app
+        TestAppBuilder::with_time_disabled()
+            .with_assets()
+            .with_input()
+            .with_time()
+            .with_setup(|app| {
+                app.init_asset::<Image>()
+                    .insert_resource(PlayerResource(Player::new()))
+                    .insert_resource(PlayerProjectileMovementTimerResource(Timer::from_seconds(
+                        1.0,
+                        TimerMode::Once,
+                    )));
+            })
+            .build()
     }
 
     #[cfg(test)]

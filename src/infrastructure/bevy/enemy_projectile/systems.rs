@@ -96,14 +96,16 @@ mod tests {
     };
     use crate::infrastructure::bevy::enemy_projectile::resources::ENEMY_PROJECTILE_SPEED;
     use bevy::app::{App, Update};
-    use bevy::prelude::{Time, Transform};
-    use bevy_test::{advance_time_by_seconds, get_component_or_fail, minimal_app};
+    use bevy::prelude::Transform;
+    use bevy_test::{advance_time_by_seconds, get_component_or_fail, TestAppBuilder};
 
     fn setup() -> App {
-        let mut app = minimal_app(true);
-        app.init_resource::<Time>()
-            .add_message::<EnemyProjectileExpiredMessage>();
-        app
+        TestAppBuilder::with_time_disabled()
+            .with_time()
+            .with_setup(|app| {
+                app.add_message::<EnemyProjectileExpiredMessage>();
+            })
+            .build()
     }
 
     #[cfg(test)]
@@ -250,7 +252,7 @@ mod tests {
         use crate::infrastructure::bevy::enemy_projectile::systems::on_enemy_projectile_hitting_player_system;
         use crate::infrastructure::bevy::enemy_projectile::systems::tests::setup;
         use bevy::app::Update;
-        use bevy::asset::{AssetApp, AssetPlugin, AssetServer};
+        use bevy::asset::{AssetApp, AssetPlugin};
         use bevy::image::Image;
         use bevy_test::send_message;
 
@@ -262,7 +264,6 @@ mod tests {
             app.add_systems(Update, on_enemy_projectile_hitting_player_system);
             app.add_message::<PlayerKilledMessage>();
 
-            let asset_server = app.world().resource::<AssetServer>().clone();
             let projectile = app
                 .world_mut()
                 .spawn(EnemyProjectileBundle::new(0.0, 0.0))
