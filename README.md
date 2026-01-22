@@ -1,6 +1,6 @@
 # Space Invaders
 
-Work in progress - A rust implementation of the old fashioned space invaders game
+Work in progress - A rust implementation of the old-fashioned space invaders game
 
 Solution of [this](https://codingchallenges.fyi/challenges/challenge-space-invaders/) coding challenge.
 
